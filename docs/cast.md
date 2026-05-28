@@ -48,18 +48,56 @@ void f(const Base* base) {
 
 ## Hooks
 
-In C++ builds with `NEEDFUL_CPP_ENHANCED`, `h_cast()` calls a hook
-function you define that can validate the data at runtime:
+In C++ builds with `NEEDFUL_CPP_ENHANCED`, `h_cast()` dispatches through a
+`CastHook<From, To>` template you partially specialize to validate data at
+runtime. For example, to verify that a `Number*` really contains a `Float`
+before downcasting:
 
 ```cpp
-template<typename To, typename From>
-To NeedfulHookableCast(From from) {
-    // e.g. check that From* really contains a valid To object
-    return static_cast<To>(from);
-}
+template<typename F>
+struct CastHook<const F*, const Float*> {
+    static void Validate_Bits(const F* p) {
+        if (not p)
+            return;  // null is allowed; nothing to validate
+        assert(raw_cast(const Number*, p)->is_float);
+    }
+};
 ```
 
-Hooks fire only in debug builds; release builds see zero overhead.
+Hooks fire only when `NEEDFUL_CAST_CALLS_HOOKS` is defined (typically in debug
+builds); release builds see zero overhead.
+
+### Null pointer casts and the hook
+
+Null pointer casts are passed through to the hook rather than short-circuited
+in the cast machinery. This is intentional for two reasons:
+
+**Policy belongs in the hook.** Most hooks return early on null (there are no
+bits to validate), but a hook can also `crash` or assert — making null casts to
+that type a hard error in debug builds. If the machinery silently skipped null,
+hooks would lose that ability.
+
+**C++11/MSVC compatibility.** Intercepting null in the generic cast machinery
+requires an `if` whose condition depends on a type trait
+(`std::is_pointer<T>::value`) — and MSVC raises warning C4127
+("conditional expression is constant") on exactly that pattern, even when
+wrapped in helper structs. With `/WX` (warnings-as-errors), that is a build
+failure. The clean C++ solution would be `if constexpr`, but that requires
+C++17. Working around it in C++11 while keeping the check in the machinery
+means disguising the constant as a runtime value (e.g. via an overloaded
+function returning `const void*`) — but that introduces a real function call
+in unoptimized debug builds, precisely where cast performance matters most.
+Since hooks receive a concrete pointer argument, the null check there is a
+plain runtime branch: no warning, no workaround overhead.
+
+The conventional null guard is:
+
+```cpp
+if (not p)
+    return;  // null is allowed; nothing to validate
+```
+
+Omit or replace it with a hard error to make null casts illegal for that type.
 
 ## Related
 

@@ -271,6 +271,27 @@
 //        struct CastHook<Foo<X>, Y*>  // note no reference on Foo<X>
 //          { static void Validate_Bits(Foo<X>& foo) { ... } }
 //
+// 4. Null pointer casts are dispatched to the hook rather than intercepted in
+//    the cast machinery.  This is intentional for two reasons:
+//
+//    a) Policy belongs in the hook.  Most hooks return early on null (there
+//       are no bits to validate), but a hook can just as well crash or
+//       assert--making null casts to that type a hard error in debug builds.
+//       Centralizing the check in the machinery would silently impose the
+//       "allow null" policy on every type.
+//
+//    b) The cost stays where it is already paid.  Adding a null branch in the
+//       cast machinery would affect every cast regardless of type or nullness.
+//       In the hook, the check is compiled away entirely for the default
+//       (no-op) hook.
+//
+//    The conventional hook null-guard pattern is:
+//
+//        if (not p)
+//            return;  // null is allowed; nothing to validate
+//
+//    Omit or replace this guard to make null casts a hard error for the type.
+//
 
 template<typename V, typename T>
 struct CastHook {  // object template for partial specialization [2]
