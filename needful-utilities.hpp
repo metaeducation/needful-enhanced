@@ -67,7 +67,7 @@
 // pointer-reinterpreting to the standard-layout first member.
 //
 #define NEEDFUL_MATERIALIZE_PRVALUE(expr) \
-    (&needful_xtreme_cast( \
+    (&needful_c_cast( \
         const needful::remove_reference_t<decltype(expr)>&, \
         (expr)))
 

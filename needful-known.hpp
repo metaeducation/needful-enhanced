@@ -101,7 +101,7 @@ struct IsConvertibleAny<T>
 //    it can be converted to T.  known_not(T, expr) and known_any(T, expr)
 //    wouldn't know what type to convert it to if you wanted it to convert!
 //
-// 2. x_cast_known(T, expr) *does* change the type of expr; and it comes in
+// 2. c_cast_known(T, expr) *does* change the type of expr; and it comes in
 //    lenient form, that detects constness and applies it to T as needed
 //    based on the constness of expr.
 //
@@ -164,21 +164,21 @@ struct NotConvertibleAsserter {
     >), \
     (expr))  // [1]
 
-#undef needful_rigid_x_cast_known
-#define needful_rigid_x_cast_known(T,expr) \
+#undef needful_rigid_c_cast_known
+#define needful_rigid_c_cast_known(T,expr) \
     (NEEDFUL_DUMMY_INSTANCE(needful::IsConvertibleAsserter< \
         needful::remove_reference_t<decltype(expr)>, \
         T \
     >), \
-    needful_xtreme_cast(T, (expr)))  // [2]
+    needful_c_cast(T, (expr)))  // [2]
 
-#undef needful_lenient_x_cast_known
-#define needful_lenient_x_cast_known(T,expr) \
+#undef needful_lenient_c_cast_known
+#define needful_lenient_c_cast_known(T,expr) \
     (NEEDFUL_DUMMY_INSTANCE(needful::IsConvertibleAsserter< \
         needful::remove_reference_t<decltype(expr)>, \
         needful_constify_t(T) /* loosen to matching constified T too */ \
     >), \
-    needful_xtreme_cast(needful_merge_const_t(decltype(expr), T), (expr))) // [2]
+    needful_c_cast(needful_merge_const_t(decltype(expr), T), (expr))) // [2]
 
 
 //=//// TYPE LIST HELPER //////////////////////////////////////////////////=//
@@ -364,7 +364,7 @@ struct ExactWrapper {
         >,
         IfExactType<U>* = nullptr
     >
-    ExactWrapper(U* u) : p {x_cast(TP, u)}
+    ExactWrapper(U* u) : p {c_cast(TP, u)}
         {}
 
     template<

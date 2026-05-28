@@ -28,7 +28,7 @@ PRO-TIP: #define cast as h_cast in your codebase!
 | `p_cast(T, expr)` | Pointer ↔ `intptr_t` |
 | `f_cast(T, expr)` | Function pointer to function pointer |
 | `v_cast(T, expr)` | `va_list*` ↔ `void*` |
-| `x_cast(T, expr)` | "Xtreme" fallback; exact C semantics |
+| `c_cast(T, expr)` | fallback; exact C semantics, stands out better than plain parentheses |
 
 All are no-ops in C builds — they expand to `(T)(expr)`.
 

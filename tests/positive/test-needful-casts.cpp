@@ -69,7 +69,7 @@ void test_cast_types() {
 #define OUTER_MACRO(arg) SINGLE_ARG_MACRO(arg)
 
 void test_cast_macro_commas() {
-    OUTER_MACRO(needful_xtreme_cast(int, 0));
+    OUTER_MACRO(needful_c_cast(int, 0));
 
     OUTER_MACRO(needful_lenient_hookable_cast(int, 0));
     OUTER_MACRO(needful_lenient_unhookable_cast(int, 0));

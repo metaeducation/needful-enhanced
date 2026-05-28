@@ -95,7 +95,7 @@
 //    as an extractor for the raw value (or you could store in a variable).
 //
 // 5. Hookable_Cast_Helper blocks cast() from stripping Option().  But
-//    x_cast() and other explicit conversions are allowed here, since they
+//    c_cast() and other explicit conversions are allowed here, since they
 //    indicate the caller is deliberately extracting.
 //
 
@@ -135,7 +135,7 @@ struct OptionWrapper {
         typename = enable_if_t<not needful_is_convertible_v(U, T)>
     >
     explicit OptionWrapper(const U& something)
-        : o {needful_xtreme_cast(T, something)}
+        : o {needful_c_cast(T, something)}
       {}
 
     template <typename X>
@@ -148,7 +148,7 @@ struct OptionWrapper {
 
     template<typename U>
     explicit operator U() const {
-        return raw_cast(U, o);  // cast() blocks removal, for x_cast() only [5]
+        return raw_cast(U, o);  // cast() blocks removal, for c_cast() only [5]
     }
 
     explicit operator bool() const {  // explicit exception in `if`

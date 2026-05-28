@@ -8,7 +8,7 @@ permalink: /internals/template-cast-operator
 # Internals: The Template Cast Operator Problem
 
 *This article explains a recurring implementation quirk in Needful's wrapper
-types: why certain conversions use the idiom `x_cast(T*, x_cast(void*, u))`
+types: why certain conversions use the idiom `c_cast(T*, c_cast(void*, u))`
 instead of a direct cast, and what goes wrong if you try the obvious
 alternatives.*
 
@@ -26,7 +26,7 @@ live inside *template constructors* that accept a family of compatible types:
 ```cpp
 template<typename U, IfContravariant<U, T>* = nullptr>
 ContraWrapper(const U& u) {
-    this->p = x_cast(T*, x_cast(void*, u));  // ← the idiom in question
+    this->p = c_cast(T*, c_cast(void*, u));  // ← the idiom in question
 }
 ```
 
@@ -90,12 +90,12 @@ wrong in principle and misleading to future readers.
 The idiom:
 
 ```cpp
-this->p = x_cast(T*, x_cast(void*, u));
+this->p = c_cast(T*, c_cast(void*, u));
 ```
 
 breaks into two steps:
 
-**Step 1: `x_cast(void*, u)`** — C-style cast to `void*`.
+**Step 1: `c_cast(void*, u)`** — C-style cast to `void*`.
 
 A C-style cast attempts conversions in this order: `const_cast`, `static_cast`,
 `static_cast` with const, `reinterpret_cast`, then combinations. Crucially, it
@@ -111,7 +111,7 @@ So `(void*)u` resolves as:
 
 The pointer that comes out is the correct adjusted address.
 
-**Step 2: `x_cast(T*, result)`** — C-style cast from `void*` to `Base*`.
+**Step 2: `c_cast(T*, result)`** — C-style cast from `void*` to `Base*`.
 
 `void*` → `Base*` is a standard conversion. Because step 1 produced the
 *correct* `Derived*` (which for a standard-layout type with no added fields is
@@ -123,17 +123,17 @@ still going through semantically correct pointer values.
 
 ---
 
-## Why `x_cast` Instead of a Plain C-Style Cast
+## Why `c_cast` Instead of a Plain C-Style Cast
 
-`x_cast` expands to a C-style cast `(T)(expr)`. It's used rather than bare
+`c_cast` expands to a C-style cast `(T)(expr)`. It's used rather than bare
 parentheses for two reasons:
 
 1. **Visibility.** A bare `(void*)u` in template code is easy to miss during
-   review. `x_cast(void*, u)` is a visible signal that something unusual is
+   review. `c_cast(void*, u)` is a visible signal that something unusual is
    happening.
 
 2. **Searchability.** Every use of this workaround can be found by searching
-   for `x_cast`. If a cleaner solution becomes possible in a later C++
+   for `c_cast`. If a cleaner solution becomes possible in a later C++
    standard, all sites are easy to locate and update.
 
 ---
@@ -163,7 +163,7 @@ A few alternatives were considered:
 bypasses the conversion operator entirely, which would be cleaner. But `p` is
 a private field accessed via `NEEDFUL_DECLARE_WRAPPED_FIELD`, and friend
 declarations for every pair of wrapper types would be required. The
-`x_cast` workaround works without coupling the types together.
+`c_cast` workaround works without coupling the types together.
 
 **A `.raw_pointer()` accessor** — adding a public method that returns the raw
 pointer would work and be clean. This would be a reasonable future improvement.
@@ -182,7 +182,7 @@ limitation.
 
 ## Summary
 
-The `x_cast(T*, x_cast(void*, u))` idiom exists because:
+The `c_cast(T*, c_cast(void*, u))` idiom exists because:
 
 1. Wrapper types expose `operator T*()` for their specific `T`, not for base types.
 2. `static_cast` cannot cross from a wrapper to an unrelated pointer type.
@@ -193,4 +193,4 @@ The `x_cast(T*, x_cast(void*, u))` idiom exists because:
    conversion.
 
 This is tracked as an internal implementation detail. If a `.raw_pointer()`
-accessor or equivalent is added in the future, all `x_cast(T*, x_cast(void*, ...))` sites in `needful-contra.hpp` are the candidates for cleanup.
+accessor or equivalent is added in the future, all `c_cast(T*, c_cast(void*, ...))` sites in `needful-contra.hpp` are the candidates for cleanup.

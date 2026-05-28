@@ -18,7 +18,7 @@ built with Jekyll and the [just-the-docs](https://just-the-docs.com) theme.
 | `comments.md` | `/comments` | `possibly`, `dont`, `heeded`, `unnecessary`, `definitely`, `impossible` |
 | `nocast.md` | `/nocast` | `nocast`, `needful_nocast_0` — C/C++ portability bridges |
 | `faq.md` | `/faq` | Frequently asked questions and design rationale |
-| `internals-template-cast.md` | `/internals/template-cast-operator` | Why SinkWrapper uses `x_cast(T*, x_cast(void*, u))` |
+| `internals-template-cast.md` | `/internals/template-cast-operator` | Why SinkWrapper uses `c_cast(T*, c_cast(void*, u))` |
 
 `nav_order` in each page's YAML front matter controls the sidebar order.
 

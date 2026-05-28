@@ -220,7 +220,7 @@ struct NEEDFUL_NODISCARD ResultWrapper {
         typename = void
     >
     explicit ResultWrapper(U&& something)
-        : r {needful_xtreme_cast(T, something)}
+        : r {needful_c_cast(T, something)}
     {}
 
     template <
@@ -237,7 +237,7 @@ struct NEEDFUL_NODISCARD ResultWrapper {
         typename = void
     >
     explicit ResultWrapper (const ResultWrapper<X>& result)
-        : r {needful_xtreme_cast(T, result.r)}
+        : r {needful_c_cast(T, result.r)}
     {}
 };
 

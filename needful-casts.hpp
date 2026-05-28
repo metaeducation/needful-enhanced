@@ -38,7 +38,7 @@
 //
 
 
-//=//// x_cast(): XTREME CAST (AKA WHAT PARENTHESES WOULD DO) /////////////=//
+//=//// c_cast(): XTREME CAST (AKA WHAT PARENTHESES WOULD DO) /////////////=//
 //
 // Unhookable cast which does not offer any validation hooks.  Use e.g. when
 // casting a fresh allocation to avoid triggering validation of uninitialized
@@ -120,7 +120,7 @@
 #undef needful_lenient_unhookable_cast
 #define needful_lenient_unhookable_cast(T,expr) \
     (NEEDFUL_DUMMY_INSTANCE(needful::ValistCastBlocker<decltype(expr), T>), \
-        needful_xtreme_cast(needful_merge_const_t(decltype(expr), T), (expr)))
+        needful_c_cast(needful_merge_const_t(decltype(expr), T), (expr)))
 
 #undef needful_raw_cast
 #define needful_raw_cast(T,expr)   needful_lenient_unhookable_cast(T,expr)
@@ -376,7 +376,7 @@ Hookable_Cast_Helper(const From& from) {
     CastHook<ConstFrom, ConstTo>::Validate_Bits(from);
   #endif
 
-    return needful_xtreme_cast(ConstTo, from);
+    return needful_c_cast(ConstTo, from);
 }
 
 
@@ -432,7 +432,7 @@ Hookable_Cast_Helper(FromRef&& from)  // && is why helper is a function! [A]
 
     return needful_mutable_cast(
         ResultType,  // passthru const on const mismatch (lenient)
-        needful_xtreme_cast(ConstTo, std::forward<FromRef>(from))
+        needful_c_cast(ConstTo, std::forward<FromRef>(from))
     );
 }
 
@@ -481,7 +481,7 @@ Hookable_Cast_Helper(const FromWrapperRef& from_wrapper)
 
     CastResult cast_inner = needful_mutable_cast(  // rewrap, keep semantics
         CastResult,
-        needful_xtreme_cast(ConstTo, inner)
+        needful_c_cast(ConstTo, inner)
     );
     return ResultType{cast_inner};
 }
@@ -529,7 +529,7 @@ Hookable_Cast_Helper(const FromWrapperRef& from_wrapper)
 
     return needful_mutable_cast(
         ResultType,  // passthru const on const mismatch (lenient)
-        needful_xtreme_cast(ConstTo, inner)
+        needful_c_cast(ConstTo, inner)
     );
 }
 
@@ -732,7 +732,7 @@ NEEDFUL_DEFINE_DOWNCAST_HELPERS(UnhookableDowncast, unhookable);
 // integer gets wrapped in a non-Needful class later.  At that point i_cast
 // becomes commentary--"this is integer-like"--rather than a hard enforcement.
 // That's acceptable; the alternative (refusing class targets and forcing
-// everything to x_cast) gives i_cast() poor invariants.
+// everything to c_cast) gives i_cast() poor invariants.
 //
 // IMPLEMENTATION NOTES:
 //
@@ -744,7 +744,7 @@ NEEDFUL_DEFINE_DOWNCAST_HELPERS(UnhookableDowncast, unhookable);
 // - NEEDFUL_MATERIALIZE_PRVALUE(expr) binds expr to a same-type const
 //   ref and takes its address.  This forces temporary materialization
 //   so even prvalues get a stack location we can pointer-reinterpret.
-//   The outer *x_cast(const ExtractType*, ...) dereferences through
+//   The outer *c_cast(const ExtractType*, ...) dereferences through
 //   the reinterpreted pointer—zero cost, no conversion operator call.
 //
 
@@ -765,8 +765,8 @@ struct IntegerCastHelper {
 #undef needful_integer_cast
 #define needful_integer_cast(T,expr) \
     (Needful_Integer_Cast_Validate(T), \
-    needful_xtreme_cast(T, \
-        *needful_xtreme_cast( \
+    needful_c_cast(T, \
+        *needful_c_cast( \
             const typename needful::IntegerCastHelper< \
                 needful::remove_reference_t<decltype(expr)> \
             >::type *, \
@@ -802,7 +802,7 @@ struct PointerCastHelper {
 #define needful_pointer_cast(T,expr) \
     (NEEDFUL_DUMMY_INSTANCE(needful::PointerCastHelper< \
         T, needful::remove_reference_t<decltype(expr)>>), \
-    needful_xtreme_cast(T, (expr)))
+    needful_c_cast(T, (expr)))
 
 
 //=//// FUNCTION POINTER CAST /////////////////////////////////////////////=//

@@ -64,7 +64,7 @@ struct NeedWrapper {
         typename = enable_if_t<not needful_is_convertible_v(U, T)>
     >
     explicit NeedWrapper(const U& something)
-        : n {needful_xtreme_cast(T, something)}
+        : n {needful_c_cast(T, something)}
       { assert(n); }
 
     template <
