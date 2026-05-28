@@ -40,7 +40,7 @@ Result(int)    r = needful_nocast_0;   // used internally by fail(...)
 > contexts). This asymmetry is intentional: `needful_nocast_0` is plumbing, not
 > a typical user-facing API.
 
-## `downcast` and `u_downcast`
+## `downcast` and `raw_downcast`
 
 For C codebases that model inheritance, `downcast` casts a base pointer to a
 derived pointer. In C it expands via `void*`; in C++ it uses `nocast` to
@@ -50,7 +50,7 @@ accomplish the same without warnings:
 Derived* d = downcast(base_ptr);   // base -> derived (trust the programmer)
 ```
 
-`u_downcast` is the unhooked version.
+`raw_downcast` is the unhooked version.
 
 ## Related
 
