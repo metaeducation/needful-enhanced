@@ -86,7 +86,7 @@ struct CorruptHelper {
   #if NEEDFUL_PSEUDO_RANDOM_CORRUPTIONS
     static uint_fast8_t countdown = NEEDFUL_CORRUPTION_SEED;
     memset(
-        u_cast(void*, &ref),  // void* cast needed [2]
+        raw_cast(void*, &ref),  // void* cast needed [2]
         countdown,  // countdown does double-duty as the fill byte
         sizeof(T)
     );
@@ -94,7 +94,7 @@ struct CorruptHelper {
         countdown = NEEDFUL_CORRUPTION_DOSE;
     --countdown;  // `else` to avoid decrementing would slow it down [3]
   #else
-    memset(u_cast(void*, &ref), 0xBD, sizeof(T));
+    memset(raw_cast(void*, &ref), 0xBD, sizeof(T));
   #endif
   }
 };

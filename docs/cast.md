@@ -20,7 +20,8 @@ PRO-TIP: #define cast as h_cast in your codebase!
 | Cast | Use For |
 |---|---|
 | `h_cast(T, expr)` | Safe default; runs debug-build validation hooks |
-| `u_cast(T, expr)` | Unhooked; use on fresh `malloc()` or in critical paths |
+| `raw_cast(T, expr)` | Unhooked; data not yet valid (fresh `malloc()`, uninitialized) |
+| `fast_cast(T, expr)` | Unhooked; data is valid but hook overhead is unacceptable on hot path |
 | `m_cast(T, expr)` | Remove const: `const T*` → `T*` |
 | `i_cast(T, expr)` | Integer-to-integer: `enum E` ↔ `int` |
 | `ii_cast(T, expr)` | Unwrap `Option(int)` to `int` (optimized) |

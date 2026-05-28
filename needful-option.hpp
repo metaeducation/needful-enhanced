@@ -148,7 +148,7 @@ struct OptionWrapper {
 
     template<typename U>
     explicit operator U() const {
-        return u_cast(U, o);  // cast() blocks removal, for x_cast() only [5]
+        return raw_cast(U, o);  // cast() blocks removal, for x_cast() only [5]
     }
 
     explicit operator bool() const {  // explicit exception in `if`

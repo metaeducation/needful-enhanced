@@ -103,7 +103,7 @@
 #endif
 
 
-//=//// u_cast(): UNHOOKABLE CONST-PRESERVING CAST ////////////////////////=//
+//=//// raw_cast(): UNHOOKABLE CONST-PRESERVING CAST //////////////////////=///
 //
 // This cast is useful for defining macros that want to mirror the constness
 // of the input pointer, when you don't know if the caller is passing a
@@ -121,6 +121,12 @@
 #define needful_lenient_unhookable_cast(T,expr) \
     (NEEDFUL_DUMMY_INSTANCE(needful::ValistCastBlocker<decltype(expr), T>), \
         needful_xtreme_cast(needful_merge_const_t(decltype(expr), T), (expr)))
+
+#undef needful_raw_cast
+#define needful_raw_cast(T,expr)   needful_lenient_unhookable_cast(T,expr)
+
+#undef needful_fast_cast
+#define needful_fast_cast(T,expr)  needful_lenient_unhookable_cast(T,expr)
 
 
 
@@ -197,7 +203,7 @@
 // in either C or C++:
 //
 //    Float* Allocate_Float(float f) {
-//        Float* number = u_cast(Float*, malloc(sizeof(Float)));
+//        Float* number = raw_cast(Float*, malloc(sizeof(Float)));
 //        number->is_float = true;
 //        number->foi.f = f;
 //        return number;
@@ -514,7 +520,7 @@ Hookable_Cast_Helper(const FromWrapperRef& from_wrapper)
 
 //=//// RIGID CAST FORMS /////////////////////////////////////////////////=//
 //
-// By default, cast() and u_cast() are lenient, meaning if you try to cast
+// By default, cast() and raw_cast() are lenient, meaning if you try to cast
 // a const expression to a mutable type, rather than giving a compile-time
 // error, the expression will be cast but with constness applied to the
 // output type.  This is useful for many cases (such as making a polymorphic
