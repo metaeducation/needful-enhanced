@@ -268,9 +268,10 @@
 
 template<typename V, typename T>
 struct CastHook {  // object template for partial specialization [2]
-    static void Validate_Bits(V v) {
-        UNUSED(v);
-        return;
+    NEEDFUL_ALWAYS_INLINE static void Validate_Bits(V v) {
+        (void)(v);  // can't use NEEDFUL_UNUSED: in C++ that calls Unused_Helper
+                    // which *corrupts* the variable--the opposite of what we
+                    // want for a no-op default hook.
     }
 };
 
