@@ -34,9 +34,15 @@
 //    destructured into T for the pointed-to type.
 //
 // 2. The primary purpose of the existence of Need() is to stop implicit
-//    conversions to bool.  But if we explicitly say we delete it, then that
-//    winds up being considered for overload resolution--even if private.
-//    This is apparently by design--leaving a comment is the only workaround.
+//    conversions to bool.  A public `operator bool() const = delete` is the
+//    key: when the compiler resolves a bool conversion, the deleted operator
+//    is the *best* match (no extra standard conversion needed vs. the
+//    operator T() → T* → bool two-step), so it wins and is ill-formed.
+//    Keeping it public (not private) gives "use of deleted function" errors
+//    rather than access errors, and lets std::is_convertible return false
+//    cleanly in C++17 rather than a hard error.  The enable_if on the
+//    explicit operator U() template is a secondary defense to block
+//    static_cast<bool>() routes that bypass the implicit path.
 //
 // 3. Non-dependent enable_if conditions work in MSVC, but GCC has trouble
 //    with them.  Introducing a dependent type seems to help it along.
@@ -48,9 +54,6 @@
 
 template<typename T>
 struct NeedWrapper {
-  private:  // even private deleted operators get considered for overload [2]
-    /* operator bool() const = delete; */
-
   public:
     NEEDFUL_DECLARE_WRAPPED_FIELD (T, n);
 
@@ -83,6 +86,8 @@ struct NeedWrapper {
     NeedWrapper(const NeedWrapper& other) : n {other.n}
         {}  // shouldn't need to assert(n)
 
+    operator bool() const = delete;  // see note [2]
+
     NeedWrapper& operator=(std::nullptr_t) = delete;
     NeedWrapper& operator=(NoneStruct) = delete;
 
@@ -108,7 +113,10 @@ struct NeedWrapper {
 
     operator ExactWrapper<needful_constify_t(T)>() const { return n; }
 
-    template<typename U>
+    template<
+        typename U,
+        typename = enable_if_t<not std::is_same<U, bool>::value>  // [2]
+    >
     explicit operator U() const
         { return static_cast<U>(n); }
 

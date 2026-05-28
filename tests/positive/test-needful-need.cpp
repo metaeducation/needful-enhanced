@@ -87,6 +87,14 @@ void test_need_nullptr_blocked() {
 
     // Need(T*) is NOT constructible from NoneStruct (deleted constructor)
     STATIC_ASSERT(not std::is_constructible<Need(int*), needful::NoneStruct>::value);
+
+    // Need(T*) is NOT implicitly convertible to bool -- even though T* itself
+    // is (pointer-to-bool is a standard conversion).  The deleted operator
+    // bool() wins overload resolution over the operator T() → bool two-step.
+    STATIC_ASSERT(not std::is_convertible<Need(int*), bool>::value);
+
+    // Same for non-pointer T: Need(int) is not bool-convertible either.
+    STATIC_ASSERT(not std::is_convertible<Need(int), bool>::value);
 }
 
 

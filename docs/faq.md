@@ -40,26 +40,6 @@ around call sites that use `fail()` or `none`.
 
 ---
 
-## Why can `Need(T*)` still be coerced to bool indirectly? {#need-bool-indirect}
-
-`NeedWrapper<T*>` provides `operator T*()` to allow implicit conversion back
-to the raw pointer type. Since `T*` is implicitly convertible to `bool`, the
-indirect path `Need(T*) → T* → bool` exists.
-
-This means `bool b = need_ptr;` compiles, which seems to contradict the
-promise that `Need(T*)` blocks boolean coercion.
-
-The current behavior is a known limitation. The correct fix is to delete
-`operator bool()` explicitly and also prevent the indirect path — but doing
-so requires removing `operator T*()` or adding a `= delete` for the specific
-`bool` case, which has tradeoffs. This is tracked as a known issue.
-
-For now, the C++ build *does* catch the most common case: you cannot use a
-`Need(T*)` directly in an `if` condition without the compiler warning about
-the implicit chain in `-Wconversion` mode.
-
----
-
 ## Why does `decltype(known(T, expr))` give a reference type? {#known-decltype}
 
 `known(T, expr)` in C++ builds expands to a comma expression:
