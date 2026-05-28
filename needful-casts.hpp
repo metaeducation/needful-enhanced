@@ -354,11 +354,27 @@ struct IsBasePtrOf<F*, T*> {
     static const bool value = std::is_base_of<F, T>::value;
 };
 
+// IsVoidPtrCast<From, To>: true when one side is void* and the other is any
+// pointer type.  void* is a universal "base" in C: any pointer converts to it
+// implicitly, and void* can be cast back to any pointer explicitly.  Since
+// void is not a C++ class, is_base_of won't catch it -- so we handle it
+// explicitly here.
+//
+template<typename From, typename To>
+struct IsVoidPtrCast {
+    static const bool value =
+        (std::is_void<typename std::remove_pointer<From>::type>::value
+            and std::is_pointer<To>::value)
+        or (std::is_pointer<From>::value
+            and std::is_void<typename std::remove_pointer<To>::type>::value);
+};
+
 template<typename From, typename To>
 struct CastLegalityChecker {
     static_assert(
         CastHook<From, To>::legal
-        or IsBasePtrOf<From, To>::value,  // downcast: F is base of T
+        or IsBasePtrOf<From, To>::value   // downcast: F is base of T
+        or IsVoidPtrCast<From, To>::value, // void* <-> any pointer
         "raw_cast: source type not accepted for this target type"
     );
 };
@@ -436,7 +452,8 @@ Hookable_Cast_Helper(const From& from) {
     using ConstFrom = needful_constify_t(From);
     static_assert(
         CastHook<ConstFrom, ConstTo>::legal
-        or IsBasePtrOf<ConstFrom, ConstTo>::value,
+        or IsBasePtrOf<ConstFrom, ConstTo>::value
+        or IsVoidPtrCast<ConstFrom, ConstTo>::value,
         "cast: source type not accepted for this target type");
     CastHook<ConstFrom, ConstTo>::Validate_Bits(from);
   #endif
@@ -494,7 +511,8 @@ Hookable_Cast_Helper(FromRef&& from)  // && is why helper is a function! [A]
     using ConstFrom = needful_constify_t(HookFrom);
     static_assert(
         CastHook<ConstFrom, ConstTo>::legal
-        or IsBasePtrOf<ConstFrom, ConstTo>::value,
+        or IsBasePtrOf<ConstFrom, ConstTo>::value
+        or IsVoidPtrCast<ConstFrom, ConstTo>::value,
         "cast: source type not accepted for this target type");
     CastHook<ConstFrom, ConstTo>::Validate_Bits(static_cast<ConstFrom>(from));
   #endif
@@ -547,7 +565,8 @@ Hookable_Cast_Helper(const FromWrapperRef& from_wrapper)
     using ConstFrom = needful_constify_t(InnerFrom);  // hooks see raw type
     static_assert(
         CastHook<ConstFrom, ConstTo>::legal
-        or IsBasePtrOf<ConstFrom, ConstTo>::value,
+        or IsBasePtrOf<ConstFrom, ConstTo>::value
+        or IsVoidPtrCast<ConstFrom, ConstTo>::value,
         "cast: source type not accepted for this target type");
     CastHook<ConstFrom, ConstTo>::Validate_Bits(inner);
   #endif
