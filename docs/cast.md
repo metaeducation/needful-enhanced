@@ -13,13 +13,9 @@ and in C++ builds they can run validation hooks.
 
 ## Quick Selection Guide
 
-```
-PRO-TIP: #define cast as h_cast in your codebase!
-```
-
 | Cast | Use For |
 |---|---|
-| `h_cast(T, expr)` | Safe default; runs debug-build validation hooks |
+| `cast(T, expr)` | Safe default; runs debug-build validation hooks |
 | `raw_cast(T, expr)` | Unhooked; data not yet valid (fresh `malloc()`, uninitialized) |
 | `fast_cast(T, expr)` | Unhooked; data is valid but hook overhead is unacceptable on hot path |
 | `m_cast(T, expr)` | Remove const: `const T*` → `T*` |
@@ -31,6 +27,56 @@ PRO-TIP: #define cast as h_cast in your codebase!
 | `c_cast(T, expr)` | fallback; exact C semantics, stands out better than plain parentheses |
 
 All are no-ops in C builds — they expand to `(T)(expr)`.
+
+## Why `cast()` Runs Hooks
+
+The most natural question a newcomer asks is: *why does the plainest name run
+validation, when the built-in C cast does nothing?*
+
+The answer is the **pit of success**: the easiest thing to type should be the
+safest thing to do.  People reach for `cast` without thinking.  If that got
+them raw, unchecked behavior, they would have to remember to opt *in* to
+safety everywhere.  Instead, opting *out* requires an explicit, named choice:
+
+- **`raw_cast`** — "I know this memory isn't valid yet (fresh allocation)."
+- **`fast_cast`** — "I know it's valid, but I can't afford hooks on this path."
+- **`c_cast`** — "I need exact C semantics and have thought about why."
+
+Each name is a declaration of intent that stands out in code review.  An
+auditor can `grep` for `raw_cast` and `fast_cast` to find every place that
+skips validation, and evaluate whether each has a good reason.  If `cast` were
+the raw one, every cast would look the same regardless of whether the author
+had thought about it.
+
+There is also a **long-term maintenance argument**.  As a codebase grows,
+`cast()` calls accumulate far ahead of the people writing CastHook
+specializations for new types.  Making `cast` hookable means those
+specializations can be added incrementally, and all existing call sites
+immediately benefit — no sweep of the codebase required.  If `cast` were raw,
+adding a new validation rule would require auditing every cast to decide which
+ones should have been `h_cast` all along.
+
+Finally, this **reflects what the word means**.  Naming the hooked macro
+`h_cast` and leaving plain `cast` as the synonym for "I didn't bother" would
+teach the wrong lesson: that instrumentation is opt-in, exceptional, for
+special cases only.  In Needful, instrumentation is the norm.  The special
+cases are the ones that opt out.
+
+### Gradual Adoption
+
+If you are adding Needful to an existing codebase incrementally, it can help
+to start by redefining `cast` as `raw_cast` — so the first pass is just
+making old-style parentheses casts visible without changing behaviour:
+
+```c
+#define cast(T, expr)  raw_cast(T, expr)  // temporary: migration in progress
+```
+
+Once every call site is named, you can tighten them one by one: leave the
+frequent/hot-path ones as `raw_cast` or `fast_cast`, and flip the rest to
+plain `cast` once you are confident they are casting already-valid data.  When
+the migration is complete, remove the override and let `cast` mean what it
+always should have.
 
 ## Constness Behavior
 
@@ -48,7 +94,7 @@ void f(const Base* base) {
 
 ## Hooks
 
-In C++ builds with `NEEDFUL_CPP_ENHANCED`, `h_cast()` dispatches through a
+In C++ builds with `NEEDFUL_CPP_ENHANCED`, `cast()` dispatches through a
 `CastHook<From, To>` template you partially specialize to validate data at
 runtime. For example, to verify that a `Number*` really contains a `Float`
 before downcasting:
@@ -120,7 +166,7 @@ struct Base    { int x; };
 struct Derived { int x; int y; };
 
 int main() {
-    int i = h_cast(int, 3.7);         // narrowing: double -> int
+    int i = cast(int, 3.7);         // narrowing: double -> int
     assert(i == 3);
 
     const int ci = 5;

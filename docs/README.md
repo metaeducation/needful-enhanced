@@ -12,7 +12,7 @@ built with Jekyll and the [just-the-docs](https://just-the-docs.com) theme.
 | `need.md` | `/need` | `Need(T)` — non-null/non-zero type |
 | `option.md` | `/option` | `Option(T)` — Rust-like optional |
 | `result.md` | `/result` | `Result(T)` — cooperative error propagation |
-| `cast.md` | `/cast` | Cast family: `h_cast`, `m_cast`, `raw_cast`, etc. |
+| `cast.md` | `/cast` | Cast family: `cast`, `m_cast`, `raw_cast`, etc. |
 | `contra.md` | `/contra` | `Contra(T)` / `Sink(T)` / `Init(T)` — contravariant output parameters |
 | `known.md` | `/known` | `known(T, expr)` — compile-time type assertion inside macros |
 | `comments.md` | `/comments` | `possibly`, `dont`, `heeded`, `unnecessary`, `definitely`, `impossible` |

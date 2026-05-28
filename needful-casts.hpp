@@ -33,7 +33,7 @@
 //     signature. Everyone can specialize that -- both fully and partially,
 //     and without affecting the results of overload resolution."
 //
-//    The exception is h_cast() which requires && for "universal references".
+//    The exception is cast() which requires && for "universal references".
 //    Hence Hookable_Cast_Helper is a function, not a struct.
 //
 
@@ -221,7 +221,7 @@
 //    }
 //
 // Because Float* is not a smart pointer class, there's not a place in typical
-// C++ to add any runtime validation at the moment of casting.  But h_cast()
+// C++ to add any runtime validation at the moment of casting.  But cast()
 // macro is based on a `CastHook` template you can inject any validation for
 // that pointer pairing that you want:
 //
@@ -251,7 +251,7 @@
 //    because it is the most constrained (mutable pointers can be made const,
 //    and have const methods called on them, not necessarily vice versa).
 //    Hence mutable casts from Number* to Float* above runs the same code,
-//    while returning the correct mutable output from the h_cast()...and it
+//    while returning the correct mutable output from the cast()...and it
 //    correctly prohibits casting from a const Number* to a mutable Float*.
 //
 // 2. This has to be an object template and not a function template, in order
@@ -303,12 +303,12 @@ struct CastHook {  // object template for partial specialization [2]
 };
 
 
-//=//// h_cast(): HOOKABLE CAST, IDEALLY cast() = h_cast() ////////////////=//
+//=//// cast(): HOOKABLE CAST /////////////////////////////////////////////=//
 //
 // This is the form of hookable cast you should generally reach for.
 //
 // USAGE:
-//    T result = h_cast(T, value);
+//    T result = cast(T, value);
 //
 // The five overloads of Hookable_Cast_Helper are:
 //

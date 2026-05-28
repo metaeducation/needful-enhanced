@@ -261,7 +261,7 @@ struct IsWrapperSemantic : std::false_type {};
 // and enums.  For wrapped types, it looks through the wrapper to classify
 // based on the inner type (e.g. Need(int) is basic, Need(Foo*) is not).
 //
-// This drives SFINAE in the h_cast() overloads:
+// This drives SFINAE in the cast() overloads:
 //   - basic -> basic:  overload 1 (constexpr static_cast, no hooks)
 //   - non-basic -> basic:  overload 2 (hooks, but basic target)
 //   - everything else:  overloads 3/4/5 (reinterpret_cast territory)
