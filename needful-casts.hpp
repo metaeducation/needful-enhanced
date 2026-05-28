@@ -118,16 +118,13 @@
 //
 
 #undef needful_lenient_unhookable_cast
-#define needful_lenient_unhookable_cast(T,expr) \
-    (NEEDFUL_DUMMY_INSTANCE(needful::ValistCastBlocker<decltype(expr), T>), \
-        needful_c_cast(needful_merge_const_t(decltype(expr), T), (expr)))
-
-#undef needful_raw_cast
-#define needful_raw_cast(T,expr)   needful_lenient_unhookable_cast(T,expr)
-
-#undef needful_fast_cast
-#define needful_fast_cast(T,expr)  needful_lenient_unhookable_cast(T,expr)
-
+#define needful_lenient_unhookable_cast(T,expr) /* legality check, no runtime validation */ \
+    (NEEDFUL_DUMMY_INSTANCE(needful::CastLegalityChecker< \
+        needful_constify_t(needful::remove_reference_t<decltype(expr)>), \
+        needful_constify_t(T) \
+    >), \
+    NEEDFUL_DUMMY_INSTANCE(needful::ValistCastBlocker<decltype(expr), T>), \
+    needful_c_cast(needful_merge_const_t(decltype(expr), T), (expr)))
 
 
 //=//// m_cast(): MUTABILITY CAST /////////////////////////////////////////=//
@@ -292,14 +289,78 @@
 //
 //    Omit or replace this guard to make null casts a hard error for the type.
 //
+// 5. Specialized hooks narrow `legal` by declaring a type list and deriving
+//    the value from it:
+//
+//        template<typename F>
+//        struct CastHook<const F*, const Float*> {
+//            DECLARE_C_TYPE_LIST(allowed, void, Byte, Number);
+//            static const bool legal = allowed::contains<F>::value;
+//
+//            static void Validate_Bits(const F* p) {
+//                if (not p)
+//                    return;  // null is allowed
+//                assert(raw_cast(const Number*, p)->is_float);
+//            }
+//        };
+//
+//    The cast machinery (overloads 2/3/4) then static_asserts `legal` before
+//    calling Validate_Bits, so the From-type check fires for cast() and
+//    raw_cast() alike.  The STATIC_ASSERT in Validate_Bits is not needed.
+//
+//    fast_cast() bypasses all of this deliberately.
+//
 
 template<typename V, typename T>
 struct CastHook {  // object template for partial specialization [2]
+    static const bool legal = true;  // unconstrained by default; specialized
+                                     // hooks narrow this with a type list [5]
     NEEDFUL_ALWAYS_INLINE static void Validate_Bits(V v) {
         (void)(v);  // can't use NEEDFUL_UNUSED: in C++ that calls Unused_Helper
                     // which *corrupts* the variable--the opposite of what we
                     // want for a no-op default hook.
     }
+};
+
+
+//=//// CastLegalityChecker: COMPILE-TIME LEGALITY ASSERT /////////////////=//
+//
+// Used by raw_cast() to enforce the same From-type whitelist as cast(),
+// without paying any runtime cost.  CastHook<From,To>::legal is a static
+// const bool evaluated at instantiation; this struct's static_assert fires
+// if the types are not in the allowed set for the hook.
+//
+// raw_cast uses NEEDFUL_DUMMY_INSTANCE to trigger instantiation: the struct
+// constructor is trivial and the optimizer (or NEEDFUL_ALWAYS_INLINE) removes
+// all traces from codegen.
+//
+// IsBasePtrOf is a helper that only applies std::is_base_of when both types
+// are pointers.  Using `is_base_of<remove_pointer_t<F>, remove_pointer_t<T>>`
+// directly, MSVC would instantiate it even for non-pointer types (e.g. when
+// casting NoneStruct -> OptionWrapper<SymId>), which instantiates the wrapper
+// template and triggers C4623 (deleted default constructor warning-as-error).
+//
+
+// IsBasePtrOf<F*, T*>: true when F is a base class of T.
+// I.e., casting F* -> T* is a downcast: you claim to know the object is T.
+//
+template<typename From, typename To>
+struct IsBasePtrOf {
+    static const bool value = false;
+};
+
+template<typename F, typename T>
+struct IsBasePtrOf<F*, T*> {
+    static const bool value = std::is_base_of<F, T>::value;
+};
+
+template<typename From, typename To>
+struct CastLegalityChecker {
+    static_assert(
+        CastHook<From, To>::legal
+        or IsBasePtrOf<From, To>::value,  // downcast: F is base of T
+        "raw_cast: source type not accepted for this target type"
+    );
 };
 
 
@@ -373,6 +434,10 @@ Hookable_Cast_Helper(const From& from) {
 
   #if NEEDFUL_CAST_CALLS_HOOKS
     using ConstFrom = needful_constify_t(From);
+    static_assert(
+        CastHook<ConstFrom, ConstTo>::legal
+        or IsBasePtrOf<ConstFrom, ConstTo>::value,
+        "cast: source type not accepted for this target type");
     CastHook<ConstFrom, ConstTo>::Validate_Bits(from);
   #endif
 
@@ -427,6 +492,10 @@ Hookable_Cast_Helper(FromRef&& from)  // && is why helper is a function! [A]
         From
     >;
     using ConstFrom = needful_constify_t(HookFrom);
+    static_assert(
+        CastHook<ConstFrom, ConstTo>::legal
+        or IsBasePtrOf<ConstFrom, ConstTo>::value,
+        "cast: source type not accepted for this target type");
     CastHook<ConstFrom, ConstTo>::Validate_Bits(static_cast<ConstFrom>(from));
   #endif
 
@@ -476,6 +545,10 @@ Hookable_Cast_Helper(const FromWrapperRef& from_wrapper)
 
   #if NEEDFUL_CAST_CALLS_HOOKS
     using ConstFrom = needful_constify_t(InnerFrom);  // hooks see raw type
+    static_assert(
+        CastHook<ConstFrom, ConstTo>::legal
+        or IsBasePtrOf<ConstFrom, ConstTo>::value,
+        "cast: source type not accepted for this target type");
     CastHook<ConstFrom, ConstTo>::Validate_Bits(inner);
   #endif
 
