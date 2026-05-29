@@ -64,13 +64,13 @@ struct NeedWrapper {
     >
     explicit NeedWrapper(const U& something)
         : n {needful_c_cast(T, something)}
-      { assert(n); }
+            { NEEDFUL_ASSERT(n); }
 
     template <
         typename U,
         typename = enable_if_t<needful_is_convertible_v(U, T)>
     >
-    NeedWrapper(U&& u) : n {static_cast<T>(u)} { assert(n); }
+    NeedWrapper(U&& u) : n {static_cast<T>(u)} { NEEDFUL_ASSERT(n); }
 
     template <
         typename U,
@@ -90,7 +90,7 @@ struct NeedWrapper {
     NeedWrapper& operator=(const NeedWrapper& other) {
         if (this != &other) {
             this->n = other.n;
-            assert(this->n);
+            NEEDFUL_ASSERT(this->n);
         }
         return *this;
     }
@@ -101,7 +101,7 @@ struct NeedWrapper {
     >
     NeedWrapper& operator=(U&& u) {
         this->n = static_cast<T>(u);
-        assert(this->n);
+        NEEDFUL_ASSERT(this->n);
         return *this;
     }
 

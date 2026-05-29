@@ -74,6 +74,34 @@ header:
 The file must be compiled as **C++11 or later**. Needful will `#error` if you
 set the flag in a C build.
 
+## Customizing Runtime Assertions
+
+Needful's internal runtime invariant checks go through `NEEDFUL_ASSERT(expr)`.
+If you do nothing, `needful.h` falls back to the platform `assert()` by
+including `<assert.h>` itself.
+
+If your project uses a custom assert implementation, define `NEEDFUL_ASSERT`
+before including `needful.h`:
+
+```c
+#define NEEDFUL_ASSERT(expr)  my_project_assert(expr)
+#define NEEDFUL_CPP_ENHANCED  1
+#include "needful.h"
+```
+
+If you already replace `assert()` globally via a project header, you can route
+Needful through that too:
+
+```c
+#include "assert-fix.h"
+#define NEEDFUL_ASSERT(expr)  assert(expr)
+#define NEEDFUL_CPP_ENHANCED  1
+#include "needful.h"
+```
+
+This only affects Needful's own runtime checks. Your code can still use
+whatever assertion mechanism it wants.
+
 ## `.gitignore` Considerations
 
 If `needful-enhanced/` is cloned into a directory already tracked by your
@@ -109,7 +137,7 @@ working:
 
 ```cpp
 #define NEEDFUL_CPP_ENHANCED  1
-#include <cassert>
+#include <assert.h>
 #include "needful.h"
 
 int main() {

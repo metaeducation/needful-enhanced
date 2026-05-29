@@ -209,7 +209,7 @@ T operator+(  // lower precedence than % [1]
     UnwrapHelper,
     const OptionWrapper<T>& option
 ){
-    assert(option.o);  // non-null or non-zero
+  NEEDFUL_ASSERT(option.o);  // non-null or non-zero
     return option.o;
 }
 

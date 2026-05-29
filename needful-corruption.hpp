@@ -147,7 +147,7 @@ struct CorruptHelper<T*> {  // Pointer (faster than memset() fallback)
 
 #undef Assert_Corrupted_If_Needful
 #define Assert_Corrupted_If_Needful(ptr) \
-    assert(needful::CorruptHelper<decltype(ptr)>::is_corrupt(ptr))
+  NEEDFUL_ASSERT(needful::CorruptHelper<decltype(ptr)>::is_corrupt(ptr))
 
 
 //=//// BOOLEAN CORRUPTION (MUST FLUCTUATE TRUE + FALSE) //////////////////=//

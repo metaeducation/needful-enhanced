@@ -409,7 +409,7 @@ struct ExactWrapper {
     ExactWrapper(const SinkWrapper<U*>& sink)
         : p {static_cast<TP>(sink)}
     {
-        dont(assert(not sink.corruption_pending));  // must allow corrupt [2]
+        dont(NEEDFUL_ASSERT(not sink.corruption_pending));  // must allow corrupt [2]
     }
 
     template<typename U, IfExactType<U>* = nullptr>
@@ -442,7 +442,7 @@ struct ExactWrapper {
 
     template<typename U, IfExactType<U>* = nullptr>
     ExactWrapper& operator=(const SinkWrapper<U*>& sink) {
-        dont(assert(not sink.corruption_pending));  // must allow corrupt [2]
+        dont(NEEDFUL_ASSERT(not sink.corruption_pending));  // must allow corrupt [2]
         this->p = static_cast<TP>(sink);  // not sink.p (flush corruption)
         return *this;
     }

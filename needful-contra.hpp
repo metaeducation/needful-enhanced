@@ -224,7 +224,7 @@ struct ContraWrapper {
 
     template<typename U, IfContravariant<SinkWrapper<U>, T>* = nullptr>
     ContraWrapper(const SinkWrapper<U>& sink) {
-        assert(not sink.corruption_pending);  // catch corruption transfer [1]
+        NEEDFUL_ASSERT(not sink.corruption_pending);  // catch corruption transfer [1]
         this->p = static_cast<T*>(sink.p);
     }
 
@@ -248,7 +248,7 @@ struct ContraWrapper {
 
     template<typename U, IfContravariant<SinkWrapper<U>, T>* = nullptr>
     ContraWrapper& operator=(const SinkWrapper<U>& sink) {
-        assert(not sink.corruption_pending);  // catch corruption transfer [1]
+        NEEDFUL_ASSERT(not sink.corruption_pending);  // catch corruption transfer [1]
         this->p = static_cast<T*>(sink.p);
         return *this;
     }

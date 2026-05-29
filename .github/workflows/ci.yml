@@ -120,6 +120,10 @@ jobs:
       run: mv /usr/bin/link.exe /usr/bin/gnu-link
 
 
+    - name: Check Enhanced Headers Use NEEDFUL_ASSERT
+      run: python tools/check-no-raw-assert.py
+
+
   #====# BUILD AND TEST STEPS #================================================#
 
     - name: Configure Tests With CMake

@@ -95,19 +95,12 @@
 #endif
 
 
-//=//// assert() MUST BE DEFINED BEFORE USING EXTENDED NEEDFUL ////////////=//
+//=//// NEEDFUL_ASSERT COMES FROM %needful.h /////////////////////////////=//
 //
-// The C++ implementation uses assert(), but doesn't #include <assert.h> on
-// its own, as there may be overriding assert() definitions desired.
+// Runtime invariant checks in the enhanced implementation go through the
+// NEEDFUL_ASSERT(expr) macro.  %needful.h provides a default fallback to
+// <assert.h>, while letting host projects override it before inclusion.
 //
-// (Some assert implementations provided by the system are antagonistic to
-// debuggers and need replacement.)
-//
-
-#if !defined(assert)  // must define assert() [2]
-    #error "Include <assert.h> or assert-fix.h before including needful.h"
-    #include <stophere>  // https://stackoverflow.com/a/45661130
-#endif
 
 
 //=//// NEEDFUL_DONT_INCLUDE_STDARG_H /////////////////////////////////////=//
