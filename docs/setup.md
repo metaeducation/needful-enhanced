@@ -74,6 +74,11 @@ header:
 The file must be compiled as **C++11 or later**. Needful will `#error` if you
 set the flag in a C build.
 
+Checked builds also verify that `needful.h` and `needful-enhanced/` agree on
+a shared compatibility version. If they drift apart, inclusion fails early
+with a direct mismatch error instead of falling through to opaque template
+errors.
+
 ## Customizing Runtime Assertions
 
 Needful's internal runtime invariant checks go through `NEEDFUL_ASSERT(expr)`.

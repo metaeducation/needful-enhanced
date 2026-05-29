@@ -41,6 +41,21 @@
     #error "You must include cplusplus-needfuls.hpp only in C++ builds"
 #endif
 
+#define NEEDFUL_ENHANCED_EXPECTED_VERSION_MAJOR  0
+#define NEEDFUL_ENHANCED_EXPECTED_VERSION_MINOR  0
+#define NEEDFUL_ENHANCED_EXPECTED_VERSION_PATCH  0
+
+#define NEEDFUL_ENHANCED_EXPECTED_VERSION \
+  NEEDFUL_VERSION_ENCODE( \
+    NEEDFUL_ENHANCED_EXPECTED_VERSION_MAJOR, \
+    NEEDFUL_ENHANCED_EXPECTED_VERSION_MINOR, \
+    NEEDFUL_ENHANCED_EXPECTED_VERSION_PATCH \
+  )
+
+#if NEEDFUL_VERSION != NEEDFUL_ENHANCED_EXPECTED_VERSION
+  #error "needful.h and needful-enhanced have mismatched compatibility versions"
+#endif
+
 
 //=//// <utility> FOR std::forward() //////////////////////////////////////=//
 //
