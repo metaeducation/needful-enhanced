@@ -151,6 +151,24 @@ The constructs and their current test coverage:
 | Corruption / `NEEDFUL_DOES_CORRUPTIONS` | — | — |
 
 
+## Installation Smoke Tests
+
+CTest also runs a small installation-layout matrix that exercises the
+distribution contract in a temporary consumer directory:
+
+- `smoke-standalone-header-only` copies only `needful.h` and verifies it can
+	compile and run without any `needful-enhanced/` directory present.
+- `smoke-enhanced-matching` copies `needful.h` plus the current
+	`needful-enhanced/` tree and verifies a checked build compiles and runs.
+- `smoke-enhanced-missing` requests `NEEDFUL_CPP_ENHANCED` without copying the
+	companion directory and verifies compilation fails.
+- `smoke-enhanced-mismatched-version` copies both, then intentionally mutates
+	the copied compatibility macro to verify the version-mismatch `#error`.
+
+These tests are intended to catch regressions in layout assumptions and
+header/repo skew before they turn into opaque user-facing failures.
+
+
 ## Running the Tests
 
 **Positive + negative (via CTest):**

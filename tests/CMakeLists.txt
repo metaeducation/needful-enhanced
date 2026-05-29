@@ -74,6 +74,39 @@ endif()
 enable_testing()
 
 
+#=[ INSTALLATION SMOKE TESTS ]===============================================
+#
+# These verify the intended consumer layout in a temporary directory:
+#
+# * standalone header-only use without needful-enhanced/
+# * matching needful.h + needful-enhanced/
+# * checked build requested but companion directory missing
+# * checked build with an intentional version mismatch
+
+set(NEEDFUL_SMOKE_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/run-install-smoke.cmake")
+set(NEEDFUL_ENHANCED_DIR "${CMAKE_CURRENT_SOURCE_DIR}/..")
+
+function(add_needful_smoke_test test_name smoke_mode)
+    add_test(
+        NAME "${test_name}"
+        COMMAND
+            "${CMAKE_COMMAND}"
+            -DSMOKE_MODE=${smoke_mode}
+            -DNEEDFUL_H_DIR=${NEEDFUL_H_DIR}
+            -DNEEDFUL_ENHANCED_DIR=${NEEDFUL_ENHANCED_DIR}
+            -DCXX_COMPILER=${CMAKE_CXX_COMPILER}
+            -DMSVC_COMPILER=$<BOOL:${MSVC}>
+            -DBINARY_DIR=${CMAKE_CURRENT_BINARY_DIR}
+            -P "${NEEDFUL_SMOKE_SCRIPT}"
+    )
+endfunction()
+
+add_needful_smoke_test("smoke-standalone-header-only" "standalone")
+add_needful_smoke_test("smoke-enhanced-matching" "matching")
+add_needful_smoke_test("smoke-enhanced-missing" "missing")
+add_needful_smoke_test("smoke-enhanced-mismatched-version" "mismatched")
+
+
 #=[ POSITIVE TESTS ]==========================================================
 #
 # Compiled as normal targets; the resulting binary is run by CTest and must
