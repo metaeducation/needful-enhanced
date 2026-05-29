@@ -78,6 +78,25 @@ int result = Some_Func(30) except (Error* e) {
 This is standard C99. `except` expands into a `for` loop that runs exactly
 once, scoping the error variable to the block.
 
+### How the scoping trick works
+
+C99 allows a `for` loop to declare multiple variables in its init clause *if
+they are the same type*. Since the error variable is a pointer, a dummy
+`_once` sentinel of the same pointer type can be co-declared:
+
+```c
+for (Error* e = Needful_Get_Failure(), *_once = nullptr; !_once; ++_once)
+    if (Needful_Test_And_Clear_Failure())
+        /* { error body } */
+    else
+        /* { success body } */
+```
+
+`_once` starts as `nullptr`, so `!_once` is true and the body runs once.
+`++_once` makes it non-null and the loop exits. This scopes `e` to the
+loop body exactly like a normal `if` block — while the `if`/`else`
+structure leaves the `else` clause free for the success case.
+
 ## Setup: Result Hooks
 
 `Result(T)` needs to know how to store, retrieve, and clear the thread-local
@@ -101,6 +120,29 @@ including `needful.h` to get a built-in `const char*`-based implementation:
 
 > **Note:** `NEEDFUL_DECLARE_RESULT_HOOKS` defines storage and implementations
 > inline. Only define it in **one** translation unit per program.
+
+## `Result(None)` — Fallible Functions With No Return Value
+
+C does not allow `return value;` in a `void`-returning function, which means
+`Result(void)` can't work: you can't write `return fail(...)` because there's
+nothing legal to return. `None` is a unit type defined precisely to fill this
+gap:
+
+```c
+Result(None) Do_Something(void) {
+    if (some_condition)
+        return fail("something went wrong");
+    return none;  // success: return the unit value
+}
+```
+
+`Result(None)` expands to `None` (an enum with a single zero value) in C
+builds, and to a wrapper in C++ builds.  The C++ version ensures the compiler
+checks that you handled the result rather than silently discarding it.
+
+> **Background:** Proposals to allow `return` of void expressions in C++ have
+> been rejected (see [P0146R0](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2015/p0146r0.html)).
+> `None` is Needful's practical workaround.
 
 ## Related
 

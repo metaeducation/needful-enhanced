@@ -145,6 +145,62 @@ if (not p)
 
 Omit or replace it with a hard error to make null casts illegal for that type.
 
+## `v_cast` — `va_list` ↔ `void*`
+
+`va_list` is implementation-defined in a way that makes regular casts
+unsafe across platforms. On GCC/Linux x86-64 (and others), `va_list` is a
+typedef for a fixed-size *array* type. Arrays in C decay to a pointer to
+their first element — so `(void*)ap` when `ap` is an array-based `va_list`
+gives you a pointer *into* the array, not a pointer *to the `va_list` object
+itself*. When the receiving function casts that `void*` back to `va_list*`,
+it gets a `va_list*` pointing at an element, not at the `va_list` — and
+code that works correctly on struct-based platforms fails silently on
+array-based ones.
+
+The fix is to always pass `&ap` (pointer to the `va_list` object) rather
+than `ap` itself, and to cast *that* to `void*`:
+
+```c
+void process_args(void* vp) {
+    va_list* ap = v_cast(va_list*, vp);
+    // use *ap with va_arg...
+}
+
+void call_it(int first, ...) {
+    va_list ap;
+    va_start(ap, first);
+    process_args(v_cast(void*, &ap));  // &ap, not ap
+    va_end(ap);
+}
+```
+
+`v_cast` enforces this in C++ builds: only `va_list* ↔ void*` is
+permitted (not bare `va_list`). Needful includes `<stdarg.h>` to pull in
+the `va_list` definition; suppress this with `NEEDFUL_DONT_INCLUDE_STDARG_H`.
+
+## `c_cast_known` — Combined Cast and Type Assertion
+
+`c_cast_known(T, expr)` is a combined form of `c_cast(T, known(T, expr))`
+that sidesteps a C preprocessor limitation: when `T` contains commas (as
+C++ template types do), the macro parser splits on those commas before it
+knows they are part of a type name:
+
+```c
+// Fails: preprocessor sees 3 arguments to known(), not 2
+cast(std::pair<int, char>*, known(std::pair<int, char>*, expr))
+
+// Works: single macro call; T is the first argument verbatim
+c_cast_known(std::pair<int, char>*, expr)
+```
+
+Lenient and rigid variants mirror the behavior of the base cast:
+
+| Variant | Constness behavior |
+|---|---|
+| `c_cast_known(T, expr)` | Lenient — alias for `lenient_c_cast_known` |
+| `lenient_c_cast_known(T, expr)` | Passes `const` through |
+| `rigid_c_cast_known(T, expr)` | Errors on constness mismatch |
+
 ## Related
 
 - [nocast](/nocast) — bridge `void*` and enum zero without a cast
