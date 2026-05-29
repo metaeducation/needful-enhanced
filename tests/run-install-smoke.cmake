@@ -85,12 +85,18 @@ endif()
 if(SMOKE_MODE STREQUAL "mismatched")
     set(MISMATCH_FILE "${INCLUDE_DIR}/needful-enhanced/cplusplus-needfuls.hpp")
     file(READ "${MISMATCH_FILE}" MISMATCH_TEXT)
-    string(REPLACE
-        "#define NEEDFUL_ENHANCED_EXPECTED_VERSION_PATCH  0"
+    set(ORIGINAL_MISMATCH_TEXT "${MISMATCH_TEXT}")
+    string(REGEX REPLACE
+        "#define[ \t]+NEEDFUL_ENHANCED_EXPECTED_VERSION_PATCH[ \t]+[0-9]+"
         "#define NEEDFUL_ENHANCED_EXPECTED_VERSION_PATCH  1"
         MISMATCH_TEXT
         "${MISMATCH_TEXT}"
     )
+    if(MISMATCH_TEXT STREQUAL ORIGINAL_MISMATCH_TEXT)
+        message(FATAL_ERROR
+            "Smoke test '${SMOKE_MODE}' could not perturb the enhanced version in ${MISMATCH_FILE}"
+        )
+    endif()
     file(WRITE "${MISMATCH_FILE}" "${MISMATCH_TEXT}")
 endif()
 
