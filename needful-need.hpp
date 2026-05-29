@@ -20,18 +20,14 @@
 //
 
 
-//=//// NEED() FOR COVARIANT NON-BOOLEAN-COERCIBLE INPUT PARAMETERS ///////=//
+//=//// NeedWrapper: STRICT NON-NULL / NON-BOOLEAN TYPE /////////////////////=//
 //
-// Need() implements covariance...for types that are not supposed to be null
-// or zero, and hence disable boolean coercion.
+// NeedWrapper allows implicit conversion to its underlying type, making it
+// largely transparent in usage. However, it blocks boolean coercions and
+// explicit null/zero assignments to catch bugs at compile-time.
 //
-// Because it doesn't define every operation you might want to use on the
-// contained type, it works with unwrap() to extract the value.  But it does
-// have basic equality and inequality.
-//
-// 1. Works with pointers or non-pointers (so the pointer is not implicit
-//    as it is with Sink() and Init()).  If it is a pointer, then TP is
-//    destructured into T for the pointed-to type.
+// 1. Need(T) works with pointers or non-pointer types like integers or enums
+//    (unlike Sink(T) or Init(T) which intrinsically imply pointers).
 //
 // 2. The primary purpose of the existence of Need() is to stop implicit
 //    conversions to bool.  A public `operator bool() const = delete` is the

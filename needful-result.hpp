@@ -14,7 +14,7 @@
 //=//// fail() ////////////////////////////////////////////////////////////=//
 //
 // Sets the global error state (`g_failure`) to the error pointer `p` and
-// returns NEEDFUL_RESULT_0 from the current function, propagating th
+// returns NEEDFUL_RESULT_0 from the current function, propagating the
 // error up the call stack. This is for cooperative error signaling, and can
 // be caught by except()...see panic() for divergent errors.
 //
@@ -95,7 +95,7 @@
 //
 //=//// rescue (expr) (decl) {...} ////////////////////////////////////////=//
 //
-// Rescuing diverent failures uses a different syntax than except().
+// Rescuing divergent failures uses a different syntax than except().
 //
 //     rescue (
 //         target = Some_Result_Bearing_Function(args)

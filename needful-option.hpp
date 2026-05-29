@@ -17,25 +17,19 @@
 //
 //=//// NOTES /////////////////////////////////////////////////////////////=//
 //
-// A. Since in C you can't stop raw pointers from being null, Need(T) may
-//    seem better than Option(T).  That would mark when pointers were *not*
-//    optional...and assume unwrapped pointers were nullable.  But in practice
-//    the relative rarity of optional states would make this more heavyweight
-//    and look worse.  So Need(T) is saved for special cases only--where there
-//    is an emergent risk to someone thinking they can test for null.
+// A. By Needful convention, unadorned pointers like `Foo*` are typically
+//    assumed to be non-null. Option(T) is used to make nullability explicit
+//    when states are legitimately optional. This documents intent and aids
+//    readability, rather than heavily littering the codebase with Need(T).
 //
-//    The tradeoff is made to live with ambiguity that some raw pointers are
-//    nullable.  Hopefully these are at the edges of the code only, for
-//    interfacing with libraries that don't use Needful.  Another place it
-//    can be useful is a convenience pattern which *immediately* checks the
-//    null case of an optional extraction, like:
+//    Option() may also be safely unwrapped into raw variables when logic
+//    immediately branches on the truthiness of the variable:
 //
 //        Foo* foo = opt Some_Optional_Foo(...);
 //        if (! foo)
 //           return Some_Missing_Foo_Error(...);
 //
-//        Use_Foo(foo);  // don't have to unwrap an Option(Foo)
-//        Use_Foo_Again(foo);  // used again, no unwrap needed
+//        Use_Foo(foo);  /* safe because of immediate early return */
 //
 
 
@@ -66,37 +60,23 @@
 
 //=//// OPTION WRAPPER ////////////////////////////////////////////////////=//
 //
-// 1. `T` must be explicitly bool-coercible.  `std::is_convertible<T, bool>`
-//    doesn't check for that, so use our C++11-compatible shim for C++20.
+// 1. `T` must be explicitly bool-coercible. Things like `Option(Need(T))`
+//    are deliberately invalid to enforce clear boundaries. `static_assert`
+//    provides clear errors for these cases.
 //
-//    This means that obviously, things like Option(Need(T)) cannot work.
-//    But if not obvious, a clear error helps people who are confused.
+// 2. Unlike std::optional, Needful's Option(T) is identical in size to T.
+//    It leverages a natural empty/falsey "sentinel" state instead of a
+//    separate tracking boolean, making it fully C ABI compatible and zero-cost.
 //
-// 2. Unlike std::optional, Needful's Option() can only store types that have
-//    a natural empty/falsey "sentinel" state.
+// 3. To allow transparent 0-initialization in globals and C structures, the
+//    default constructor is retained. Uninitialized locals remain so.
 //
-//    BUT this means Option(T) is the same size as T, with no separate boolean
-//    to track the disengaged state!  Hence it is notably cheaper than
-//    std::optional, and can interoperate cleanly with C code.
+// 4. We want to avoid situations where Option(T) is implicitly assigned the
+//    results of Need(T) functions, creating a misleading situation where
+//    that result appears testable. So prvalue Need(T) construction is blocked.
 //
-// 3. Since we want Option to work in plain C, we can't do defaulting to a
-//    zeroed value.  But we also can't disable the default constructor,
-//    because we want to default construct structures with Option members.
-//
-//    Also: global variables need to be compatible with the 0-initialization
-//    property they'd have if they weren't marked as Option().
-//
-// 4. We want to avoid situations where Option(T) variables are assigned the
-//    results of Need(T) functions, because this creates a misleading
-//    situation where the variable may be boolean tested.  However C++ does
-//    not distinguish between creating a variable or passing to a function
-//    argument that is merely permissive.  The compromise chosen is to block
-//    prvalue Need(T) from implicitly constructing Option(T), with `needed`
-//    as an extractor for the raw value (or you could store in a variable).
-//
-// 5. Hookable_Cast_Helper blocks cast() from stripping Option().  But
-//    c_cast() and other explicit conversions are allowed here, since they
-//    indicate the caller is deliberately extracting.
+// 5. Explicit c_cast() and standard conversions are allowed because they
+//    indicate deliberate extraction.
 //
 
 #undef NeedfulOption
@@ -119,7 +99,7 @@ struct OptionWrapper {
     OptionWrapper () = default;  // garbage, or 0 if global [3]
 
     OptionWrapper(NoneStruct)
-        : o {needful_nocast_0}
+        : o {}
       {}
 
     template <
@@ -239,14 +219,8 @@ T operator+(  // lower precedence than % [1]
 // The operator for giving you back the raw (possibly null or 0) value from a
 // wrapped Option(T) is called `opt`.
 //
-// 1. `opt` is a name with some flaws, as it sort of sounds like something
-//    that creates an Option from a raw pointer, vs. creating a raw pointer
-//    from an Option.  However, on balance it seems to be the best name.
-//
-//    (It was once called `maybe`, but in the context of the system Needful
-//    was designed for, that means something completely different now.)
-//
-//    See also: [A] at top of file.
+// 1. You can think of `opt` as unwrapping an optional to access its raw
+//    potential empty state safely. See also: [A] at top of file.
 //
 // 2. See the definition of UnwrapHelper for mechanics of how this "keyword"
 //    is accomplished (and why the `+` operator was chosen specifically).
@@ -254,7 +228,7 @@ T operator+(  // lower precedence than % [1]
 struct OptHelper {};
 constexpr OptHelper g_opt_helper = {};
 
-#undef needful_opt  // imperfect name for raw extract, but oh well [1]
+#undef needful_opt
 #define needful_opt \
     needful::g_opt_helper +  // lower precedence than % [2]
 
@@ -281,7 +255,7 @@ T operator+(
 ){
     static_assert(
         sizeof(T) != sizeof(T),  // dependent false
-        "cannot use `need` on an Option(T) -- use `opt` or `unwrap` instead"
+        "cannot use `needed` on an Option(T) -- use `opt` or `unwrap` instead"
     );
     return *static_cast<T*>(nullptr);  // unreachable
 }

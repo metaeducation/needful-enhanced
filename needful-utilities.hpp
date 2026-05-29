@@ -114,7 +114,12 @@
 // a macro intended to be used outside the needful:: namespace, at which
 // point it has to carry the namespace.)
 //
-// 1. is_convertible_v<From,To> is not something you can define in C++11.
+// 1. CWG 1558: In C++11, unused parameters in alias templates were not
+//    guaranteed to cause substitution failure. The make_void struct forces the
+//    compiler to evaluate the parameters before resolving to void, ensuring
+//    SFINAE works reliably even on older C++11 compilers (like GCC 4.8).
+//
+// 2. is_convertible_v<From,To> is not something you can define in C++11.
 //
 //      template<typename From, typename To>  // needs C++14 :-(
 //      constexpr bool is_convertible_v = std::is_convertible<F, T>::value;
@@ -143,13 +148,15 @@ using add_pointer_t = typename std::add_pointer<T>::type;
 template<bool B, typename T = void>  // C++14
 using enable_if_t = typename std::enable_if<B, T>::type;
 
+template<typename... Ts> struct make_void { typedef void type; };  // [1]
+
 template<typename... Ts>  // C++17 (polyfill for C++11/14 builds)
-using void_t = void;
+using void_t = typename make_void<Ts...>::type;
 
 template<bool B, typename T, typename F>  // C++14
 using conditional_t = typename std::conditional<B, T, F>::type;
 
-#define needful_is_convertible_v(From,To) /* macro HACK [1] */ \
+#define needful_is_convertible_v(From,To) /* macro HACK [2] */ \
     std::is_convertible<From, To>::value
 
 template<typename From, typename To>

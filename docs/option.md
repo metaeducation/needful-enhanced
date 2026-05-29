@@ -47,6 +47,23 @@ and requires explicit `unwrap` or `opt`.
 - No C++ dependency — compiles as plain C
 - Can be used in C structs without any C++ contamination
 
+## The Naming of `opt`
+
+If you are wondering why `opt` was chosen for the "raw extraction" operator:
+
+While `unwrap` is fairly standard terminology (popularized by Rust) for
+extracting a guaranteed-present value with a safety check, there isn't a
+universally agreed-upon short name for "give me the raw underlying contents
+even if it's empty."
+
+`opt` is a terse signal that you are acknowledging the optional nature of the
+value and explicitly choosing to pull out the potentially-null/falsey raw state.
+While short identifiers like `opt` run a slight risk of shadowing local
+variables in some codebases, it was chosen for brevity, so as not to overwhelm
+lines that simply need to pass a nullable pointer into an older C API.
+If `opt` causes collisions in your scope, `cast(T, optional_var)` is
+semantically equivalent.
+
 ## Limitations
 
 Types without a natural zero state (e.g. a struct with no "empty"

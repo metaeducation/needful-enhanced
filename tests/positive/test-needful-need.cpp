@@ -77,9 +77,9 @@ void test_need_copy_assign() {
 
 //=//// Need(T) CONSTRUCTION IS BLOCKED FOR nullptr AND none ////////////=//
 //
-// Need() provides a runtime guarantee of non-null, but the compile-time
-// blocking is specifically for nullptr_t and NoneStruct (not bool coercion,
-// which goes through the implicit operator T() -> T* -> bool path).
+// Need() blocks nullptr/none construction and also blocks implicit
+// conversion to bool.  The deleted operator bool() wins overload
+// resolution over the indirect T -> bool route.
 
 void test_need_nullptr_blocked() {
     // Need(T*) is NOT constructible from nullptr_t (deleted constructor)

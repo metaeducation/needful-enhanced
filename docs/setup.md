@@ -96,7 +96,7 @@ The typical pattern is a C production build and a C++ checking build:
 - run: gcc -o app main.c
 
 # C++ build (type-checking)
-- run: g++ -std=c++11 -DNEEDUL_CPP_ENHANCED=1 -o app main.cpp
+- run: g++ -x c++ -std=c++11 -DNEEDFUL_CPP_ENHANCED=1 -o app main.c
 ```
 
 No source changes are needed between the two. Every `needful` construct is a
@@ -119,3 +119,18 @@ int main() {
     return 0;
 }
 ```
+
+## Note on Alternative Tokens (MSVC)
+
+The C++ code in `needful-enhanced/` makes use of C++ standard "alternative
+operator representations" (like `and`, `or`, and `not` instead of `&&`, `||`,
+and `!`) as a principled stance on readability.
+
+If you are compiling a C++ checked build with **MSVC** (Microsoft Visual C++),
+the compiler does not treat these as keywords by default.
+
+While you *could* pass compiler flags like `/permissive-` or `/Za` (which
+enforce broader standards compliance, but have sweeping side effects that often
+break legacy Windows code), the **safest and most narrow workaround** is to
+simply include the standard header `<ciso646>`, which is done automatically
+when you build with NEEDFUL_CPP_ENHANCED in MSVC.

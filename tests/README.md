@@ -179,20 +179,6 @@ single-file distribution.
 
 ## Testing FAQ
 
-### Why can't I `STATIC_ASSERT(not needful_is_convertible_v(Need(T*), bool))`?
-
-`NeedWrapper<T*>` has `operator T()` which yields a raw `T*`, and raw
-pointers are implicitly convertible to `bool`.  Even though `NeedWrapper`
-also declares `explicit operator bool()`, the indirect path
-`NeedWrapper → T* → bool` is still available implicitly — the explicit
-annotation only suppresses the *direct* conversion.  The same applies to
-`SinkWrapper`, `InitWrapper`, and `ContraWrapper`, all of which expose
-`operator T*()`.
-
-The runtime cost of needlessly testing a `Need()` value for truthiness is
-zero, so this is intentionally not a hard error.  What the library *does*
-block are `nullptr` and `NoneStruct` construction (the deleted constructors),
-which are the mistakes that actually cause bugs.
 
 ### Why does `STATIC_ASSERT_SAME(decltype(known(T, expr)), T)` fail?
 
