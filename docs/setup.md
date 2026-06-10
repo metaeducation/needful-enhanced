@@ -9,8 +9,8 @@ permalink: /setup
 
 There are only two moving parts:
 
-- `needful.h` by itself for the normal header-only C experience
-- `needful-enhanced/` beside it when you want the optional C++ checking layer
+- [`needful.h`][needful-h] for the normal header-only C experience
+- [`needful-enhanced/`][needful-enhanced-repo] for the optional C++ checking layer
 
 If you never define `NEEDFUL_CPP_ENHANCED`, you can stop at `needful.h`.
 If you do define it, Needful expects the companion `needful-enhanced/`
@@ -60,12 +60,6 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(needful_enhanced)
 ```
-
-> `needful.h` is currently maintained in the
-> [Ren-C repository](https://github.com/metaeducation/ren-c/blob/master/src/include/needful.h).
-> The goal is still a standalone distribution model, but today the practical
-> setup is: copy or vendor `needful.h`, then place `needful-enhanced/` next to
-> it only if you want checked builds.
 
 ## Enabling the Enhancements
 
@@ -174,3 +168,6 @@ enforce broader standards compliance, but have sweeping side effects that often
 break legacy Windows code), the **safest and most narrow workaround** is to
 simply include the standard header `<ciso646>`, which is done automatically
 when you build with NEEDFUL_CPP_ENHANCED in MSVC.
+
+[needful-h]: https://raw.githubusercontent.com/metaeducation/needful/refs/heads/main/needful.h
+[needful-enhanced-repo]: https://github.com/metaeducation/needful-enhanced/

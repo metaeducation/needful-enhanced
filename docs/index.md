@@ -7,11 +7,11 @@ permalink: /
 
 # Needful
 
-**One header. Zero dependencies. Rust-grade safety for C.**
+**[One header.][needful-h-raw] Zero dependencies. Rust-grade safety for C.**
 
-Needful is a single-file, header-only library that brings `Option(T)`,
-`Result(T)`, non-null `Need(T)`, type-safe casts, and executable comment
-annotations to C codebases—with zero runtime cost and no tools beyond
+Needful is a [single-file, header-only library][needful-repo] that brings
+`Option(T)`, `Result(T)`, non-null `Need(T)`, type-safe casts, and executable
+comment annotations to C codebases, with zero runtime cost and no tools beyond
 the compiler you already have.
 
 The key trick: every Needful construct compiles as a **transparent no-op in
@@ -24,12 +24,13 @@ it harder.
 
 ## Getting Started
 
-**Step 1.** Drop `needful.h` into your project and `#include` it.
-All macros expand to trivial C — your build won't even notice.
+**Step 1.** Drop [`needful.h`][needful-h-raw] into your project and
+`#include` it. All macros expand to trivial C - your build won't even notice.
 
-**Step 2.** When ready, add the `needful-enhanced/` enhancement files alongside
-`needful.h` and `#define NEEDFUL_CPP_ENHANCED  1`. Build as C++11 or
-later. Every macro grows teeth: type mismatches become compile errors.
+**Step 2.** When ready, add the [`needful-enhanced/`][needful-enhanced-repo]
+enhancement files alongside `needful.h` and
+`#define NEEDFUL_CPP_ENHANCED  1`. Build as C++11 or later. Every macro grows
+teeth: type mismatches become compile errors.
 
 **Step 3.** Run both modes in CI: C build for production, C++ build to catch
 bugs. No code changes needed between them.
@@ -53,8 +54,9 @@ bugs. No code changes needed between them.
 
 ## Design Goals
 
-- **No magic.** The C definitions are written out in full so you can see how
-  trivial they are. Adding Needful to a C project is a low-impact proposition.
+- **No magic.** [The C definitions are written out in full][needful-h-raw] so
+  you can see how trivial they are. Adding Needful to a C project is a
+  low-impact proposition.
 - **Gradual adoption.** Use just `nocast` today. Add `Option` next month.
   Enable `NEEDFUL_CPP_ENHANCED` when you're ready. Nothing breaks.
 - **Codebase documentation.** The comment macros (`possibly`, `definitely`,
@@ -66,3 +68,7 @@ bugs. No code changes needed between them.
 ## Frequently Asked Questions
 
 Common gotchas and design rationale are collected in the [FAQ](/faq).
+
+[needful-h-raw]: https://raw.githubusercontent.com/metaeducation/needful/refs/heads/main/needful.h
+[needful-repo]: https://github.com/metaeducation/needful/
+[needful-enhanced-repo]: https://github.com/metaeducation/needful-enhanced/

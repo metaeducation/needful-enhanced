@@ -27,4 +27,4 @@ aux_links:
   "GitHub":
     - "https://github.com/metaeducation/needful-enhanced"
   "needful.h (raw)":
-    - "https://raw.githubusercontent.com/metaeducation/ren-c/master/src/include/needful.h"
+    - "https://raw.githubusercontent.com/metaeducation/needful/refs/heads/main/needful.h"

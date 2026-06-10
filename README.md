@@ -1,9 +1,8 @@
 # needful-enhanced
 
-C++ compile-time type enforcement for
-[needful.h](https://needful.metaeducation.com).
+C++ compile-time type enforcement for [needful.h][needful-h-src].
 
-Full documentation: **[needful.metaeducation.com](https://needful.metaeducation.com)**
+Full documentation: **[needful.metaeducation.com][needful-site]**
 
 ---
 
@@ -14,12 +13,12 @@ project that owns the `needful.h` next to it. That project's build setup
 (a script, CMake, or a manual step) cloned it here specifically for
 development-time type checking.
 
-It is intentionally **not committed** to the parent project's repository —
+It is intentionally **not committed** to the parent project's repository -
 you will likely find it listed in that project's `.gitignore`. It is a
 separate git repository that just happens to live alongside `needful.h`.
 
 Setting it up in a different project, or understanding what it does:
-→ [needful.metaeducation.com/setup](https://needful.metaeducation.com/setup)
+[needful.metaeducation.com/setup][needful-setup]
 
 ---
 
@@ -51,6 +50,9 @@ needful-*.hpp  The enhancement headers included by needful.h
 
 ## needful.h
 
-`needful.h` is currently maintained in the
-[Ren-C repository](https://github.com/metaeducation/ren-c/blob/master/src/include/needful.h).
+`needful.h` is currently maintained in the [Ren-C repository][needful-h-src].
 A standalone distribution is planned.
+
+[needful-site]: https://needful.metaeducation.com
+[needful-setup]: https://needful.metaeducation.com/setup
+[needful-h-src]: https://github.com/metaeducation/ren-c/blob/master/src/include/needful.h
