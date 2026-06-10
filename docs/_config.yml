@@ -17,7 +17,7 @@ highlighter: rouge
 gh_edit_link: true
 gh_edit_link_text: "Edit this page on GitHub"
 gh_edit_repository: "https://github.com/metaeducation/needful-enhanced"
-gh_edit_branch: "master"
+gh_edit_branch: "main"
 gh_edit_view_mode: "edit"
 
 # Navigation order is set in each page's front matter via nav_order.
