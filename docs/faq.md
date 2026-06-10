@@ -93,22 +93,20 @@ intentional: `nocast` appears at user call sites regularly (e.g.
 
 ---
 
-## Why is `STATIC_ASSERT` a no-op in C builds? {#static-assert-c-noop}
+## Why is there no `STATIC_ASSERT` shim for pre-C11 C? {#static-assert-c-noop}
 
-There is no portable, reliable C shim for `STATIC_ASSERT`. C11 introduced
-`_Static_assert(cond, "message")` (and C23 dropped the required message),
-but that is unavailable on many embedded toolchains and C99 targets. Older
+Needful uses C11's official `_Static_assert(cond, "message")` automatically
+when compiling as C11 or newer.
+
+The problem is pre-C11 C: there is no portable, reliable replacement. Older
 tricks — such as `typedef int sa[-1]` on false conditions — only work at
-file or function scope, not inside expressions, and produce cryptic error
-messages. The edge cases across compilers and standards are too numerous to
-paper over reliably.
+file or function scope, not inside expressions, and produce cryptic errors.
+Compiler and standard edge cases are too numerous to paper over cleanly.
 
-Needful's approach: `STATIC_ASSERT` is a genuine no-op in C builds, and the
-C++ enhanced build enforces it. Run the C++ build in CI to catch
-static-assertion failures without depending on a C shim that only half-works.
-
-If you specifically need C11 `_Static_assert`, use it directly — Needful
-does not wrap it.
+So Needful intentionally does not provide a pre-C11 shim. In pre-C11 C,
+`STATIC_ASSERT` is a no-op; in C11+ it maps to `_Static_assert`; and the C++
+enhanced build enforces it as well. Run the C++ build in CI if you need
+strong compile-time checking on older C toolchains.
 
 ---
 
