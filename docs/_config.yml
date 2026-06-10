@@ -4,6 +4,7 @@ description: >
   Zero runtime cost, no dependencies, no tools beyond your compiler.
 
 url: "https://needful.metaeducation.com"
+baseurl: ""
 
 # Use just-the-docs theme for clean technical documentation.
 # https://just-the-docs.com
