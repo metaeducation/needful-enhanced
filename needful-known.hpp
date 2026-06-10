@@ -1,7 +1,7 @@
 //
 //  file: %needful-known.hpp
 //  summary: "Compile-time only type assurance helpers using C++ type_traits"
-//  homepage: <needful homepage TBD>
+//  homepage: https://needful.metaeducation.com/known
 //
 //=/////////////////////////////////////////////////////////////////////////=//
 //

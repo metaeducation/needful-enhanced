@@ -1,7 +1,7 @@
 //
 //  file: %needful-need.hpp
 //  summary: "Need Wrapper Trick to get Non-Boolean-Coercible Types"
-//  homepage: <needful homepage TBD>
+//  homepage: https://needful.metaeducation.com/need
 //
 //=////////////////////////////////////////////////////////////////////////=//
 //

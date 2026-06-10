@@ -1,7 +1,7 @@
 //
 //  file: %needful-asserts.hpp
 //  summary: "Assertions and commentary macros for C and C++""
-//  homepage: <needful homepage TBD>
+//  homepage: https://needful.metaeducation.com/comments
 //
 //=/////////////////////////////////////////////////////////////////////////=//
 //

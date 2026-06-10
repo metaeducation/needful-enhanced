@@ -1,7 +1,7 @@
 //
 //  file: %needful-const.hpp
 //  summary: "Mutability transference from input arguments to return results"
-//  homepage: <needful homepage TBD>
+//  homepage: https://needful.metaeducation.com/need
 //
 //=/////////////////////////////////////////////////////////////////////////=//
 //

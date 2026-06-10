@@ -1,7 +1,7 @@
 //
 //  file: %needful-corruption.hpp
 //  summary: "Helpers for deliberately corrupting memory in debug builds"
-//  homepage: <needful homepage TBD>
+//  homepage: https://needful.metaeducation.com/contra
 //
 //=/////////////////////////////////////////////////////////////////////////=//
 //

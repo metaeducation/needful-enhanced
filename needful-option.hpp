@@ -1,7 +1,7 @@
 //
 //  file: %needful-option.hpp
 //  summary: "Optional Wrapper Trick for C's Boolean Coercible Types"
-//  homepage: <needful homepage TBD>
+//  homepage: https://needful.metaeducation.com/option
 //
 //=////////////////////////////////////////////////////////////////////////=//
 //

@@ -1,7 +1,7 @@
 //
 //  file: %needful-result.hpp
 //  summary: "Simulate Rust's Result<T,E> And `?` w/o Exceptions or longjmp()"
-//  homepage: <needful homepage TBD>
+//  homepage: https://needful.metaeducation.com/result
 //
 //=/////////////////////////////////////////////////////////////////////////=//
 //

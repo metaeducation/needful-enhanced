@@ -1,7 +1,7 @@
 //
 //  file: %cplusplus-needfuls.hpp
 //  summary: "Performs #includes of macro overrides of %needful.h with C++"
-//  homepage: <needful homepage TBD>
+//  homepage: https://needful.metaeducation.com/setup
 //
 //=////////////////////////////////////////////////////////////////////////=//
 //

@@ -1,7 +1,7 @@
 //
 //  file: %needful-contra.hpp
 //  summary: "Contravariant type checking and corruption of output parameters"
-//  homepage: <needful homepage TBD>
+//  homepage: https://needful.metaeducation.com/contra
 //
 //=/////////////////////////////////////////////////////////////////////////=//
 //
