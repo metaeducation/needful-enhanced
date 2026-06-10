@@ -153,8 +153,14 @@ The constructs and their current test coverage:
 
 ## Installation Smoke Tests
 
-CTest also runs a small installation-layout matrix that exercises the
-distribution contract in a temporary consumer directory:
+CTest also runs a small installation-layout matrix that exercises the intended
+consumer setup in a temporary directory. The contract is:
+
+- `needful.h` alone must work.
+- `NEEDFUL_CPP_ENHANCED` must work when `needful-enhanced/` is present beside it.
+- `NEEDFUL_CPP_ENHANCED` must fail clearly when the companion tree is missing or out of sync.
+
+The four smoke tests cover that contract directly:
 
 - `smoke-standalone-header-only` copies only `needful.h` and verifies it can
 	compile and run without any `needful-enhanced/` directory present.
@@ -165,8 +171,8 @@ distribution contract in a temporary consumer directory:
 - `smoke-enhanced-mismatched-version` copies both, then intentionally mutates
 	the copied compatibility macro to verify the version-mismatch `#error`.
 
-These tests are intended to catch regressions in layout assumptions and
-header/repo skew before they turn into opaque user-facing failures.
+These tests exist to catch layout regressions and header/repo skew before they
+turn into confusing downstream setup failures.
 
 
 ## Running the Tests

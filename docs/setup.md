@@ -7,16 +7,20 @@ permalink: /setup
 
 # Setting Up `NEEDFUL_CPP_ENHANCED`
 
-`needful.h` works standalone with no configuration. The `NEEDFUL_CPP_ENHANCED`
-flag is an *opt-in* that activates compile-time type enforcement by pulling in
-C++ wrapper types from a companion directory, `needful-enhanced/`.
+There are only two moving parts:
 
-This page explains how to add that companion directory to a project.
+- `needful.h` by itself for the normal header-only C experience
+- `needful-enhanced/` beside it when you want the optional C++ checking layer
+
+If you never define `NEEDFUL_CPP_ENHANCED`, you can stop at `needful.h`.
+If you do define it, Needful expects the companion `needful-enhanced/`
+directory to be present and compiled as C++11 or later.
 
 ## What Goes Where
 
-Needful expects `needful-enhanced/` to sit **next to** (not inside) `needful.h`
-in your include path. The header includes the `.hpp` files via a relative path:
+The checked build is intentionally simple: keep `needful-enhanced/` **next to**
+`needful.h` in your include tree. `needful.h` reaches the companion headers by
+relative path:
 
 ```
 your-project/
@@ -30,8 +34,8 @@ your-project/
 
 ## Getting the Files
 
-`needful-enhanced/` is a separate git repository. Add it next to `needful.h`
-however is appropriate for your project:
+`needful-enhanced/` is a separate git repository. Put it beside `needful.h`
+using whatever integration style fits your project:
 
 **Clone directly:**
 ```sh
@@ -57,22 +61,24 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(needful_enhanced)
 ```
 
-> **Note:** `needful.h` itself is currently maintained in the
+> `needful.h` is currently maintained in the
 > [Ren-C repository](https://github.com/metaeducation/ren-c/blob/master/src/include/needful.h).
-> A standalone distribution is planned; for now, fetch it from there.
+> The goal is still a standalone distribution model, but today the practical
+> setup is: copy or vendor `needful.h`, then place `needful-enhanced/` next to
+> it only if you want checked builds.
 
 ## Enabling the Enhancements
 
-Once `needful-enhanced/` is in place, define the flag **before** including the
-header:
+Once the companion directory is in place, opt in with one define before
+including the header:
 
 ```c
 #define NEEDFUL_CPP_ENHANCED  1
 #include "needful.h"
 ```
 
-The file must be compiled as **C++11 or later**. Needful will `#error` if you
-set the flag in a C build.
+That translation unit must be compiled as **C++11 or later**. Needful will
+`#error` if you set the flag in a C build.
 
 Checked builds also verify that `needful.h` and `needful-enhanced/` agree on
 a shared compatibility version. If they drift apart, inclusion fails early
@@ -109,20 +115,20 @@ whatever assertion mechanism it wants.
 
 ## `.gitignore` Considerations
 
-If `needful-enhanced/` is cloned into a directory already tracked by your
-project's git, ignore it so your repo doesn't try to track a foreign tree:
+If you clone `needful-enhanced/` into a tracked part of your tree, ignore it so
+your project does not accidentally absorb a separate repository:
 
 ```gitignore
 # needful-enhanced/ is a separate repo cloned for development-time checks
 src/include/needful-enhanced/
 ```
 
-This is why the directory typically appears `.gitignore`d when you encounter it
-on a developer filesystem — the project intentionally does not commit it.
+This is the intended workflow for teams that want checked builds available
+without making the companion tree part of the main repository.
 
 ## Running Both Modes in CI
 
-The typical pattern is a C production build and a C++ checking build:
+The intended CI story is one normal build and one checking build:
 
 ```yaml
 # C build (production)
@@ -132,8 +138,9 @@ The typical pattern is a C production build and a C++ checking build:
 - run: g++ -x c++ -std=c++11 -DNEEDFUL_CPP_ENHANCED=1 -o app main.c
 ```
 
-No source changes are needed between the two. Every `needful` construct is a
-transparent no-op in the C build and a type-enforced wrapper in the C++ build.
+No source changes are needed between the two. In the C build, Needful stays a
+transparent macro layer. In the checked C++ build, the same source gets the
+extra type enforcement.
 
 ## Verifying the Setup
 
