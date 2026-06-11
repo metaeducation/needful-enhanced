@@ -7,10 +7,26 @@ permalink: /contra
 
 # `Contra(T)`, `Sink(T)`, `Init(T)` — Contravariant Output Parameters
 
-## The Core Idea: Contravariance
+## The Core Idea: [Contravariance][variance-wiki]
+
+While C builds don't have inheritance available, it's possible for a C++
+enhanced build to conditionally declare an inheritance relationship to a
+struct (as long as it doesn't add any fields!)  Needful can leverage this
+relationship.
+
+```cpp
+struct Base { int bits; };
+
+#if NEEDFUL_CPP_ENHANCED  // declare inheritance if using C++ enhanced mode
+  struct Derived : Base {};  // no extra fields — same layout
+#else
+  typedef Base Derived;  // Derived identical to Base in C version
+#endif
+```
 
 When a function writes *into* a parameter (output), the type safety rules
-run backwards compared to input parameters. This is **contravariance**.
+run backwards compared to input parameters. This is known as
+[**contravariance**][variance-wiki].
 
 For inputs, covariance applies: a function accepting `Base*` can accept
 `Derived*` — passing something more specific where something less specific
@@ -31,7 +47,7 @@ builds.
 
 ## The Three Wrappers: A Gradient
 
-| Type | Use case | Corruption? | Cost |
+| Type | Use case | Corruption? | Debug Build Cost |
 |---|---|---|---|
 | `Contra(T)` | Read-only pass-through of a contravariant pointer | Never | Zero |
 | `Sink(T)` | Write-only output; reader must not look at old value | Yes, deferred | Small |
@@ -157,10 +173,15 @@ because the writer fills exactly the same bytes (same-sizeof inheritance).
 #include <cassert>
 #include "needful.h"
 
-struct Base    { int bits; };
-struct Derived : Base {};  // no extra fields — same layout
+struct Base { int bits; };
 
-static_assert(sizeof(Base) == sizeof(Derived), "same layout required");
+#if NEEDFUL_CPP_ENHANCED  // declare inheritance if using C++ enhanced mode
+  struct Derived : Base {};  // no extra fields — same layout
+#else
+  typedef Base Derived;  // Derived identical to Base in C version
+#endif
+
+STATIC_ASSERT(sizeof(Base) == sizeof(Derived), "same layout required");
 
 void init_derived(Sink(Derived) out) {
     Derived* p = out;
@@ -190,10 +211,15 @@ Even though `Derived` adds no fields (same sizeof), it is a *subtype* of
 #include <cassert>
 #include "needful.h"
 
-struct Base    { int bits; };
-struct Derived : Base {};
+struct Base { int bits; };
 
-static_assert(sizeof(Base) == sizeof(Derived), "same layout");
+#if NEEDFUL_CPP_ENHANCED  // declare inheritance if using C++ enhanced mode
+  struct Derived : Base {};  // no extra fields — same layout
+#else
+  typedef Base Derived;  // Derived identical to Base in C version
+#endif
+
+STATIC_ASSERT(sizeof(Base) == sizeof(Derived), "same layout");
 
 void write_base(Sink(Base) out) {
     Base* p = out;
@@ -206,3 +232,5 @@ int main() {
     return 0;
 }
 ```
+
+[variance-wiki]: https://en.wikipedia.org/wiki/Type_variance
