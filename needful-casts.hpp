@@ -701,7 +701,7 @@ struct UpcastHelper {
     >::type)(expr))
 
 
-//=//// downcast(): SINGLE-ARITY CAST THAT ONLY ALLOWS DOWNCASTING ////////=//
+//=//// downcast: SINGLE-ARITY CAST THAT ONLY ALLOWS DOWNCASTING //////////=//
 //
 //   https://en.wikipedia.org/wiki/Downcasting
 //
@@ -725,7 +725,7 @@ struct UpcastHelper {
 // 3. By making DowncastHolder [[nodiscard]], it's safe to use with things
 //    like trap() and except():
 //
-//       trap (Derived* derived = downcast(base_ptr));
+//       trap (Derived* derived = downcast Get_Base_Ptr());
 //
 // 4. See remarks in Option(T) about why + is used here to combine better
 //    with the % used by Result(T) extraction, and why << is avoided due to

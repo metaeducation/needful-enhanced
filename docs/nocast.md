@@ -47,10 +47,10 @@ derived pointer. In C it expands via `void*`; in C++ it uses `nocast` to
 accomplish the same without warnings:
 
 ```c
-Derived* d = downcast(base_ptr);   // base -> derived (trust the programmer)
+Derived* d = downcast base_ptr;   // base -> derived (trust the programmer)
 ```
 
-`raw_downcast` is the unhooked version.
+`raw_downcast` is the unhooked version, suitable to use on fresh allocations.
 
 ## Related
 
