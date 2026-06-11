@@ -48,11 +48,6 @@ tools/         extract-doctests.py — docs-as-tests infrastructure
 needful-*.hpp  The enhancement headers included by needful.h
 ```
 
-## needful.h
-
-`needful.h` is currently maintained in the [Ren-C repository][needful-h-src].
-A standalone distribution is planned.
-
 [needful-site]: https://needful.metaeducation.com
 [needful-setup]: https://needful.metaeducation.com/setup
-[needful-h-src]: https://github.com/metaeducation/ren-c/blob/master/src/include/needful.h
+[needful-h-src]: https://github.com/metaeducation/needful/blob/main/needful.h
