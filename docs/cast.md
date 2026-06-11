@@ -222,10 +222,15 @@ machinery:
 `upcast(T, expr)` is the opposite direction: it permits only implicit,
 assignment-safe conversions and mirrors source constness onto `T`.
 
+If you use clang-format with Needful syntax, see the
+[clang-format FAQ note](/faq#clang-format-needful).
+
 ## Related
 
 - [nocast](/nocast) — bridge `void*` and enum zero without a cast
 - [`downcast` / `upcast`](/cast#downcast) — inheritance-aware casting
+- [clang-format + Needful](/faq#clang-format-needful) — keep cast-like spacing
+    for `downcast`/`nocast`
 
 ---
 

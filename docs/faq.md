@@ -127,3 +127,36 @@ const char* Needful_Test_And_Clear_Failure(void) {
 }
 // ... other hooks ...
 ```
+
+---
+
+## How should I configure clang-format for Needful syntax? {#clang-format-needful}
+
+Needful uses operator-like tokens such as `downcast` and `nocast`, and often
+ships `needful.h` as a vendored third-party file. A default clang-format setup
+may reflow these in ways that are technically formatted but semantically less
+readable.
+
+Recommended setup:
+
+- Treat `downcast` and `nocast` as type names so unary `*` keeps cast-like
+  spacing in expression contexts, instead of looking like multiplication.
+- Exclude `xxx/include/needful.h` from formatting if that file is vendored
+  and should remain upstream-identical.
+
+Example `.clang-format` fragment:
+
+```yaml
+TypeNames:
+  - downcast
+  - nocast
+```
+
+Example `.clang-format-ignore` fragment:
+
+```text
+.*xxx/include/needful.h
+.*xxx/include/needful-enhanced/.*
+```
+
+Note: clang-format itself does not automatically apply `.gitignore` rules.
