@@ -25,6 +25,8 @@ and in C++ builds they can run validation hooks.
 | `f_cast(T, expr)` | Function pointer to function pointer |
 | `v_cast(T, expr)` | `va_list*` ↔ `void*` |
 | `c_cast(T, expr)` | fallback; exact C semantics, stands out better than plain parentheses |
+| `downcast expr` | Base pointer/expression to derived target type by context |
+| `upcast(T, expr)` | Assignment-safe implicit conversion with const mirrored from source |
 
 All are no-ops in C builds — they expand to `(T)(expr)`.
 
@@ -201,6 +203,25 @@ Lenient and rigid variants mirror the behavior of the base cast:
 | `lenient_c_cast_known(T, expr)` | Passes `const` through |
 | `rigid_c_cast_known(T, expr)` | Errors on constness mismatch |
 
+## `downcast` / `upcast`
+
+`downcast` is a single-arity cast helper used like an expression:
+
+```cpp
+Derived* d = downcast base_ptr;
+```
+
+In enhanced C++ builds, `downcast` only participates when the reverse
+conversion is valid (derived pointer to base pointer), which is what defines
+the hierarchy relationship. It also preserves const safety through the cast
+machinery:
+
+- mutable source may be targeted as mutable or const
+- const source may only be targeted as const
+
+`upcast(T, expr)` is the opposite direction: it permits only implicit,
+assignment-safe conversions and mirrors source constness onto `T`.
+
 ## Related
 
 - [nocast](/nocast) — bridge `void*` and enum zero without a cast
@@ -249,6 +270,50 @@ int main() {
     struct Derived : Base {};
     const Base* cb = nullptr;
     Derived* d = m_cast(Derived*, cb);  // ERROR: invalid m_cast downcast
+    NEEDFUL_UNUSED(d);
+    return 0;
+}
+```
+
+### `downcast` allows mutable source to const target
+
+<!-- doctest: positive-test -->
+```cpp
+#define NEEDFUL_CPP_ENHANCED  1
+#include <cassert>
+#include "needful.h"
+
+struct Base {};
+struct Derived : Base {};
+
+int main() {
+    Base* b = nullptr;
+
+    Derived* d1 = downcast b;         // mutable source -> mutable target
+    const Derived* d2 = downcast b;   // mutable source -> const target
+
+    NEEDFUL_UNUSED(d1);
+    NEEDFUL_UNUSED(d2);
+    return 0;
+}
+```
+
+### `downcast` rejects const-stripping targets
+
+<!-- doctest: negative-test -->
+```cpp
+// MATCH-ERROR-TEXT: cannot initialize return object of type   <- Clang
+// MATCH-ERROR-TEXT: operator To() const                       <- GCC/MSVC
+#define NEEDFUL_CPP_ENHANCED  1
+#include <cassert>
+#include "needful.h"
+
+struct Base {};
+struct Derived : Base {};
+
+int main() {
+    const Base* cb = nullptr;
+    Derived* d = downcast cb;  // ERROR: would strip constness
     NEEDFUL_UNUSED(d);
     return 0;
 }

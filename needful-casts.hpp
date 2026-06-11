@@ -742,7 +742,10 @@ struct UpcastHelper {
         template< /* "downcast" means "reverse is_convertible" [2] */ \
             typename To, \
             typename = enable_if_t< \
-                needful_is_deep_pointer_convertible_v(To, From) \
+                needful_is_deep_pointer_convertible_v( \
+                    needful_constify_t(To), \
+                    needful_constify_t(From) \
+                ) \
             > \
         > \
         operator To() const \
