@@ -6,8 +6,9 @@
 //
 
 #define NEEDFUL_CPP_ENHANCED  1
-#include <cassert>  // must include before needful.h when using enhancements
 #include "needful.h"
+
+#define STATIC_ASSERT  NEEDFUL_STATIC_ASSERT
 
 #define STATIC_ASSERT_SAME(T1,T2) \
     static_assert(std::is_same<T1,T2>::value, "Types are not the same")

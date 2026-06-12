@@ -95,17 +95,21 @@ int* find_nonzero(int* arr, int len) {
 
 <!-- doctest: positive-test -->
 ```cpp
-#define NEEDFUL_CPP_ENHANCED  1
-#include <cassert>
+#include <assert.h>
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_COMMMENT_SHORTHANDS  1
 #include "needful.h"
 
 int find_first_nonzero(int* arr, int len) {
     for (int i = 0; i < len; ++i) {
-        possibly(arr[i] == 0);       // some elements may be zero
+        possibly(arr[i] == 0);  // some elements may be zero
         if (arr[i] != 0)
             return arr[i];
     }
-    impossible(len > 0);             // only reached when all are zero
+    impossible(len > 0);  // only reached when all are zero
     return 0;
 }
 
@@ -124,8 +128,11 @@ int main() {
 ```cpp
 // MATCH-ERROR-TEXT: must be explicitly convertible to bool  <- needful static_assert
 // MATCH-ERROR-TEXT: static assertion failed                 <- GCC/Clang
-#define NEEDFUL_CPP_ENHANCED  1
-#include <cassert>
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_COMMENT_SHORTHANDS  1
 #include "needful.h"
 
 struct NotBool { int x; };

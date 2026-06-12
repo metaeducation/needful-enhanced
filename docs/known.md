@@ -86,8 +86,10 @@ caller passes a simple variable, not an expression with side effects.
 
 <!-- doctest: positive-test -->
 ```cpp
-#define NEEDFUL_CPP_ENHANCED  1
-#include <cassert>
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_KNOWN_SHORTHANDS  1
 #include "needful.h"
 
 int main() {
@@ -95,11 +97,11 @@ int main() {
     int* ptr = &value;
 
     void* p = lenient_known(int*, ptr);  // OK: ptr is int*
-    (void)p;
+    NEEDFUL_UNUSED(p);
 
     const int* cp = ptr;
-    const void* q = lenient_known(int*, cp);   // OK: lenient accepts const int*, passes through as const int*
-    (void)q;
+    const void* q = lenient_known(int*, cp);   // OK: passes through const int*
+    NEEDFUL_UNUSED(q);
 
     return 0;
 }
@@ -111,14 +113,17 @@ int main() {
 ```cpp
 // MATCH-ERROR-TEXT: static assertion failed  <- GCC/Clang
 // MATCH-ERROR-TEXT: static_assert            <- MSVC
-#define NEEDFUL_CPP_ENHANCED  1
-#include <cassert>
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_KNOWN_SHORTHANDS  1
 #include "needful.h"
 
 int main() {
     const int* cp = nullptr;
     int* p = rigid_known(int*, cp);  // ERROR: const int* != int*
-    (void)p;
+    NEEDFUL_UNUSED(p);
     return 0;
 }
 ```

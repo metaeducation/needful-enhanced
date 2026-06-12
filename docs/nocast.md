@@ -65,8 +65,12 @@ Derived* d = downcast base_ptr;   // base -> derived (trust the programmer)
 
 <!-- doctest: positive-test -->
 ```cpp
-#define NEEDFUL_CPP_ENHANCED  1
-#include <cassert>
+#include <assert.h>
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_CAST_SHORTHANDS  1
 #include "needful.h"
 
 typedef enum { RED = 0, GREEN = 1, BLUE = 2 } Color;
@@ -78,11 +82,11 @@ int main() {
     assert(p == nullptr);
 
     // enum from zero: C allows; C++ does not
-    Color c = needful_nocast_0;
+    Color c = nocast 0;
     assert(c == RED);
 
     // int* from zero: portable across C and C++
-    int* np = needful_nocast_0;
+    int* np = nocast 0;
     assert(np == nullptr);
 
     return 0;

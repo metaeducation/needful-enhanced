@@ -157,9 +157,13 @@ checks that you handled the result rather than silently discarding it.
 
 <!-- doctest: positive-test -->
 ```cpp
-#define NEEDFUL_CPP_ENHANCED  1
-#define NEEDFUL_DECLARE_RESULT_HOOKS  1
-#include <cassert>
+#include "assert.h"
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_RESULT_SHORTHANDS  1
+#define NEEDFUL_DECLARE_RESULT_HOOKS  1  // use some simple default hooks
 #include "needful.h"
 
 Result(int) double_if_positive(int x) {
@@ -189,9 +193,12 @@ int main() {
 // MATCH-ERROR-TEXT: cannot convert   <- GCC, MSVC
 // MATCH-ERROR-TEXT: no viable conversion  <- Clang
 // MATCH-ERROR-TEXT: cannot initialize  <- GCC alternate
-#define NEEDFUL_CPP_ENHANCED  1
-#define NEEDFUL_DECLARE_RESULT_HOOKS  1
-#include <cassert>
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_RESULT_SHORTHANDS  1
+#define NEEDFUL_DECLARE_RESULT_HOOKS  1  // use some simple default hooks
 #include "needful.h"
 
 Result(int) compute(int x) {
@@ -202,7 +209,7 @@ Result(int) compute(int x) {
 
 int main() {
     int n = compute(5);  // ERROR: Result(int) is not implicitly int
-    (void)n;
+    NEEDFUL_UNUSED(n);
     return 0;
 }
 ```

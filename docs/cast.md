@@ -240,15 +240,16 @@ If you use clang-format with Needful syntax, see the
 
 <!-- doctest: positive-test -->
 ```cpp
-#define NEEDFUL_CPP_ENHANCED  1
-#include <cassert>
+#include <assert.h>
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_CAST_SHORTHANDS  1
 #include "needful.h"
 
-struct Base    { int x; };
-struct Derived { int x; int y; };
-
 int main() {
-    int i = cast(int, 3.7);         // narrowing: double -> int
+    int i = cast(int, 3.7);  // narrowing: double -> int
     assert(i == 3);
 
     const int ci = 5;
@@ -266,13 +267,25 @@ int main() {
 <!-- doctest: negative-test -->
 ```cpp
 // MATCH-ERROR-TEXT: upcast() cannot implicitly convert
-#define NEEDFUL_CPP_ENHANCED  1
-#include <cassert>
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_CAST_SHORTHANDS  1
 #include "needful.h"
 
+struct BaseStruct { int x; };
+typedef struct BaseStruct Base;
+
+#if NEEDFUL_CPP_ENHANCED
+  struct Derived : Base {};  // no extra fields — same layout
+#else
+  typedef Base Derived;  // Derived identical to Base if not enhanced
+#endif
+
+STATIC_ASSERT(sizeof(Base) == sizeof(Derived), "same layout required");
+
 int main() {
-    struct Base    {};
-    struct Derived : Base {};
     const Base* cb = nullptr;
     Derived* d = m_cast(Derived*, cb);  // ERROR: invalid m_cast downcast
     NEEDFUL_UNUSED(d);
@@ -284,12 +297,23 @@ int main() {
 
 <!-- doctest: positive-test -->
 ```cpp
-#define NEEDFUL_CPP_ENHANCED  1
-#include <cassert>
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_CAST_SHORTHANDS  1
 #include "needful.h"
 
-struct Base {};
-struct Derived : Base {};
+struct BaseStruct { int x; };
+typedef struct BaseStruct Base;
+
+#if NEEDFUL_CPP_ENHANCED
+  struct Derived : Base {};  // no extra fields — same layout
+#else
+  typedef Base Derived;  // Derived identical to Base if not enhanced
+#endif
+
+STATIC_ASSERT(sizeof(Base) == sizeof(Derived), "same layout required");
 
 int main() {
     Base* b = nullptr;
@@ -309,12 +333,23 @@ int main() {
 ```cpp
 // MATCH-ERROR-TEXT: cannot initialize return object of type   <- Clang
 // MATCH-ERROR-TEXT: operator To() const                       <- GCC/MSVC
-#define NEEDFUL_CPP_ENHANCED  1
-#include <cassert>
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_CAST_SHORTHANDS  1
 #include "needful.h"
 
-struct Base {};
-struct Derived : Base {};
+struct BaseStruct { int x; };
+typedef struct BaseStruct Base;
+
+#if NEEDFUL_CPP_ENHANCED
+  struct Derived : Base {};  // no extra fields — same layout
+#else
+  typedef Base Derived;  // Derived identical to Base if not enhanced
+#endif
+
+STATIC_ASSERT(sizeof(Base) == sizeof(Derived), "same layout required");
 
 int main() {
     const Base* cb = nullptr;

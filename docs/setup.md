@@ -67,7 +67,9 @@ Once the companion directory is in place, opt in with one define before
 including the header:
 
 ```c
-#define NEEDFUL_CPP_ENHANCED  1
+#ifdef __cplusplus  // C builds alert if NEEDFUL_CPP_ENHANCED defined nonzero
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
 #include "needful.h"
 ```
 
@@ -90,7 +92,9 @@ before including `needful.h`:
 
 ```c
 #define NEEDFUL_ASSERT(expr)  my_project_assert(expr)
-#define NEEDFUL_CPP_ENHANCED  1
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
 #include "needful.h"
 ```
 
@@ -100,7 +104,9 @@ Needful through that too:
 ```c
 #include "assert-fix.h"
 #define NEEDFUL_ASSERT(expr)  assert(expr)
-#define NEEDFUL_CPP_ENHANCED  1
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
 #include "needful.h"
 ```
 
@@ -142,13 +148,16 @@ A quick smoke test — if this compiles and runs, the enhancement layer is
 working:
 
 ```cpp
-#define NEEDFUL_CPP_ENHANCED  1
 #include <assert.h>
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
 #include "needful.h"
 
 int main() {
     int x = 42;
-    Need(int) n = x;
+    NeedfulNeed(int) n = x;
     assert(n == 42);
     return 0;
 }

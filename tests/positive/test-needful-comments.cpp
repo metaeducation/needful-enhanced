@@ -10,8 +10,10 @@
 // needful.h in the include path.
 //
 
+#include <assert.h>
+
 #define NEEDFUL_CPP_ENHANCED  1
-#include <cassert>  // must include before needful.h when using enhancements
+#define NEEDFUL_COMMENT_SHORTHANDS  1
 #include "needful.h"
 
 
@@ -95,7 +97,7 @@ void test_heeded() {
 void test_static_assert() {
     NEEDFUL_STATIC_ASSERT(1 + 1 == 2);
     NEEDFUL_STATIC_ASSERT(not (1 + 1 == 3));  // STATIC_ASSERT_NOT has no shorthand
-    STATIC_IGNORE(0 == 1);  // ignored: no error even for false
+    NEEDFUL_STATIC_IGNORE(0 == 1);  // ignored: no error even for false
 }
 
 void test_static_assert_lvalue() {

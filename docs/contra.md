@@ -169,16 +169,21 @@ because the writer fills exactly the same bytes (same-sizeof inheritance).
 
 <!-- doctest: positive-test -->
 ```cpp
-#define NEEDFUL_CPP_ENHANCED  1
-#include <cassert>
+#include <assert.h>
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_CONTRA_SHORTHANDS  1
 #include "needful.h"
 
-struct Base { int bits; };
+struct BaseStruct { int bits; };
+typedef struct BaseStruct Base;
 
-#if NEEDFUL_CPP_ENHANCED  // declare inheritance if using C++ enhanced mode
+#if NEEDFUL_CPP_ENHANCED
   struct Derived : Base {};  // no extra fields — same layout
 #else
-  typedef Base Derived;  // Derived identical to Base in C version
+  typedef Base Derived;  // Derived identical to Base if not enhanced
 #endif
 
 STATIC_ASSERT(sizeof(Base) == sizeof(Derived), "same layout required");
@@ -213,10 +218,10 @@ Even though `Derived` adds no fields (same sizeof), it is a *subtype* of
 
 struct Base { int bits; };
 
-#if NEEDFUL_CPP_ENHANCED  // declare inheritance if using C++ enhanced mode
+#if NEEDFUL_CPP_ENHANCED
   struct Derived : Base {};  // no extra fields — same layout
 #else
-  typedef Base Derived;  // Derived identical to Base in C version
+  typedef Base Derived;  // Derived identical to Base if not enhanced
 #endif
 
 STATIC_ASSERT(sizeof(Base) == sizeof(Derived), "same layout");

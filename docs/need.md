@@ -59,15 +59,19 @@ These blocks are extracted and compiled as part of the CI test suite.
 
 <!-- doctest: positive-test -->
 ```cpp
-#define NEEDFUL_CPP_ENHANCED  1
-#include <cassert>
+#include <assert.h>
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_OPTION_SHORTHANDS  1
 #include "needful.h"
 
 int main() {
     int value = 42;
     Need(int*) ptr = &value;
-    assert(*ptr == 42);       // safe to dereference; guaranteed non-null
-    int* raw = ptr;           // implicit conversion back to T* works
+    assert(*ptr == 42);  // safe to dereference; guaranteed non-null
+    int* raw = ptr;  // implicit conversion back to T* works
     assert(raw == &value);
     return 0;
 }
@@ -79,13 +83,16 @@ int main() {
 ```cpp
 // MATCH-ERROR-TEXT: deleted                                   <- GCC/Clang
 // MATCH-ERROR-TEXT: attempting to reference a deleted function  <- MSVC
-#define NEEDFUL_CPP_ENHANCED  1
-#include <cassert>
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_OPTION_SHORTHANDS  1
 #include "needful.h"
 
 int main() {
     Need(int*) ptr = nullptr;  // ERROR: NeedWrapper(nullptr_t) is deleted
-    (void)ptr;
+    NEEDFUL_UNUSED(ptr);
     return 0;
 }
 ```
@@ -96,15 +103,18 @@ int main() {
 ```cpp
 // MATCH-ERROR-TEXT: deleted                                   <- GCC/Clang
 // MATCH-ERROR-TEXT: attempting to reference a deleted function  <- MSVC
-#define NEEDFUL_CPP_ENHANCED  1
-#include <cassert>
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_OPTION_SHORTHANDS  1
 #include "needful.h"
 
 int main() {
     int value = 42;
     Need(int*) ptr = &value;
     bool b = ptr;  // ERROR: operator bool() is deleted; use the pointer directly
-    (void)b;
+    NEEDFUL_UNUSED(b);
     return 0;
 }
 ```
@@ -116,8 +126,12 @@ subset of the nullable type's domain.
 
 <!-- doctest: positive-test -->
 ```cpp
-#define NEEDFUL_CPP_ENHANCED  1
-#include <cassert>
+#include <assert.h>
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_OPTION_SHORTHANDS  1
 #include "needful.h"
 
 static int* last_seen = nullptr;
@@ -145,8 +159,11 @@ null, so the compiler rejects the implicit narrowing.
 ```cpp
 // MATCH-ERROR-TEXT: could not convert
 // MATCH-ERROR-TEXT: no known conversion
-#define NEEDFUL_CPP_ENHANCED  1
-#include <cassert>
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_OPTION_SHORTHANDS  1
 #include "needful.h"
 
 void accepts_need(Need(int*) p) { (void)p; }
@@ -154,7 +171,7 @@ void accepts_need(Need(int*) p) { (void)p; }
 int main() {
     int value = 42;
     Option(int*) maybe_ptr = &value;
-    accepts_need(maybe_ptr);  // ERROR: Option(int*) does not implicitly convert to Need(int*)
+    accepts_need(maybe_ptr);  // ERROR: Option(int*) won't convert to Need(int*)
     return 0;
 }
 ```

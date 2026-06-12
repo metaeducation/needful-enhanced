@@ -13,10 +13,14 @@
 // needful.h in the include path.
 //
 
-#define NEEDFUL_CPP_ENHANCED  1
-#include <cassert>  // must include before needful.h when using enhancements
+#include <assert.h>
 #include <cstring>
+
+#define NEEDFUL_CPP_ENHANCED  1
+#define NEEDFUL_CONTRA_SHORTHANDS  1
 #include "needful.h"
+
+#define STATIC_ASSERT  NEEDFUL_STATIC_ASSERT
 
 #include <type_traits>
 

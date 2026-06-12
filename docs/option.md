@@ -84,8 +84,12 @@ boolean or `Result(T)`.
 
 <!-- doctest: positive-test -->
 ```cpp
-#define NEEDFUL_CPP_ENHANCED  1
-#include <cassert>
+#include <assert.h>
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_OPTION_SHORTHANDS  1
 #include "needful.h"
 
 int main() {
@@ -107,8 +111,11 @@ int main() {
 ```cpp
 // MATCH-ERROR-TEXT: cannot convert        <- GCC, MSVC
 // MATCH-ERROR-TEXT: no viable conversion  <- Clang
-#define NEEDFUL_CPP_ENHANCED  1
-#include <cassert>
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_OPTION_SHORTHANDS  1
 #include "needful.h"
 
 int main() {
@@ -125,8 +132,11 @@ int main() {
 ```cpp
 // MATCH-ERROR-TEXT: cannot convert        <- GCC, MSVC
 // MATCH-ERROR-TEXT: no viable conversion  <- Clang
-#define NEEDFUL_CPP_ENHANCED  1
-#include <cassert>
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_OPTION_SHORTHANDS  1
 #include "needful.h"
 
 int main() {
