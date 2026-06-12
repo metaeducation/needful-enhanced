@@ -139,17 +139,25 @@ readable.
 
 Recommended setup:
 
-- Treat `downcast` and `nocast` as type names so unary `*` keeps cast-like
-  spacing in expression contexts, instead of looking like multiplication.
-- Exclude `xxx/include/needful.h` from formatting if that file is vendored
-  and should remain upstream-identical.
+- Treat Needful operator-like tokens as type names so unary `*` keeps
+  cast-like spacing in expression contexts, instead of looking like
+  multiplication.
+- If you use `downcast cast(...)->member`, include `cast` in the same list so
+  clang-format does not split the arrow spacing.
+- Keep this list narrow (operator-like Needful tokens only). Avoid adding
+  ordinary function names globally.
+- For one-off expressions that still confuse the formatter, parenthesize the
+  operand explicitly, e.g. `downcast (foo(...)->member)`.
+- Exclude `needful.h` from formatting if that file is vendored and should
+  remain upstream-identical.
 
 Example `.clang-format` fragment:
 
 ```yaml
 TypeNames:
-  - downcast
   - nocast
+  - downcast
+  - raw_downcast
 ```
 
 Example `.clang-format-ignore` fragment:

@@ -272,3 +272,29 @@ struct is_function_pointer<Ret (*)(Args...)> : std::true_type {};
 
 template<typename T>  // T is ignored, just here to make it a template
 struct AlwaysFalse : std::false_type {};  // for SFINAE static_assert [2]
+
+
+//=//// IMPLICIT CAST VIA VOID ////////////////////////////////////////////=//
+//
+// C++ doesn't allow templated cast operators that participate in implicit
+// conversion chains, so getting a Base* out of a SinkWrapper<Derived> inside
+// a template constructor requires a two-step void* round-trip:
+//
+//    this->p = c_cast(T*, c_cast(void*, u));
+//
+// Step 1: (void*)u fires the implicit operator Derived*() then converts
+// Derived* -> void*, preserving correct base-subobject pointer arithmetic.
+// Step 2: (T*)(void*) converts void* to Base*, which is safe here.
+//
+// Direct static_cast<Base*>(wrapper) would invoke the templated explicit
+// operator U*() which uses reinterpret_cast -- semantically wrong for
+// inheritance relationships even if it produces the same address.
+//
+// Full explanation: https://needful.metaeducation.com/internals/template-cast-operator
+//
+// Because c_cast() may not be defined in all contexts where this idiom is
+// needed, this is defined as its own macro.  If it turns out to be useful for
+// those writing needful-powered enhancements, it may become public facing.
+//
+
+#define needful_implicit_cast(T,expr)  ((T)(void*)(expr))

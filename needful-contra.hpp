@@ -56,22 +56,6 @@
 //
 //       { dont(Corrupt_If_Needful(p)); }  // may be zero in global scope
 //
-// C. C++ doesn't allow templated cast operators that participate in implicit
-//    conversion chains, so getting a Base* out of a SinkWrapper<Derived>
-//    inside a template constructor requires a two-step void* round-trip:
-//
-//        this->p = c_cast(T*, c_cast(void*, u));
-//
-//    Step 1: (void*)u fires the implicit operator Derived*() then converts
-//    Derived* -> void*, preserving correct base-subobject pointer arithmetic.
-//    Step 2: (T*)(void*) converts void* to Base*, which is safe here.
-//
-//    Direct static_cast<Base*>(wrapper) would invoke the templated
-//    explicit operator U*() which uses reinterpret_cast -- semantically
-//    wrong for inheritance relationships even if it produces the same address.
-//
-//    Full explanation: https://needful.metaeducation.com/internals/template-cast-operator
-//
 
 
 //=//// BASIC CONTRAVARIANT LAYOUT TRAIT (no safety checks) ///////////////=//
@@ -219,7 +203,7 @@ struct ContraWrapper {
 
     template<typename U, IfContravariant<U, T>* = nullptr>
     ContraWrapper(const U& u) {
-        this->p = c_cast(T*, c_cast(void*, u));  // cast workaround [C]
+        this->p = needful_implicit_cast(T*, u);
     }
 
     template<typename U, IfContravariant<SinkWrapper<U>, T>* = nullptr>
@@ -242,7 +226,7 @@ struct ContraWrapper {
 
     template<typename U, IfContravariant<U, T>* = nullptr>
     ContraWrapper& operator=(const U& u) {
-        this->p = c_cast(T*, c_cast(void*, u));  // [C]
+        this->p = needful_implicit_cast(T*, u);
         return *this;
     }
 
@@ -338,7 +322,7 @@ struct SinkWrapper {
 
     template<typename U, IfContravariant<U, T>* = nullptr>
     SinkWrapper(const U& u) {
-        this->p = c_cast(T*, c_cast(void*, u));  // cast workaround [C]
+        this->p = needful_implicit_cast(T*, u);
         this->corruption_pending = (this->p != nullptr);
     }
 
@@ -372,7 +356,7 @@ struct SinkWrapper {
 
     template<typename U, IfContravariant<U, T>* = nullptr>
     SinkWrapper& operator=(const U& u) {  // `=` allowed [4]
-        this->p = c_cast(T*, c_cast(void*, u));  // [C]
+        this->p = needful_implicit_cast(T*, u);
         this->corruption_pending = (this->p != nullptr);  // corrupt
         return *this;
     }

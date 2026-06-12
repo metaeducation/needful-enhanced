@@ -38,7 +38,7 @@
 //
 
 
-//=//// c_cast(): XTREME CAST (AKA WHAT PARENTHESES WOULD DO) /////////////=//
+//=//// c_cast(): C-STYLE CAST (AKA WHAT PARENTHESES WOULD DO) ////////////=//
 //
 // Unhookable cast which does not offer any validation hooks.  Use e.g. when
 // casting a fresh allocation to avoid triggering validation of uninitialized

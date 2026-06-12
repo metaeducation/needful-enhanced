@@ -364,7 +364,7 @@ struct ExactWrapper {
         >,
         IfExactType<U>* = nullptr
     >
-    ExactWrapper(U* u) : p {c_cast(TP, u)}
+    ExactWrapper(U* u) : p {needful_c_cast(TP, u)}
         {}
 
     template<
