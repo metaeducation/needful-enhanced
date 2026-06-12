@@ -20,6 +20,11 @@ C++11, and those same constructs light up with compile-time type enforcement
 that catches real bugs. Your C code stays C. The C++ compiler just *checks*
 it harder.
 
+From a security perspective, pitching Needful to your organization should be
+a no-brainer.  Whether you make your release builds with C or C++, if you
+aren't using NEEDFUL_CPP_ENHANCED *you are running zero additional code*.  And
+doing enhanced builds now and again gives static analysis that finds real bugs.
+
 ---
 
 ## Getting Started
