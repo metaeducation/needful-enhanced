@@ -104,6 +104,8 @@ before downcasting:
 ```cpp
 template<typename F>
 struct CastHook<const F*, const Float*> {
+    static const bool legal = false;  // by default, only allow up/down casts
+
     static void Validate_Bits(const F* p) {
         if (not p)
             return;  // null is allowed; nothing to validate
@@ -114,6 +116,11 @@ struct CastHook<const F*, const Float*> {
 
 Hooks fire only when `NEEDFUL_CAST_CALLS_HOOKS` is defined (typically in debug
 builds); release builds see zero overhead.
+
+The `legal` flag gives you a place to add template logic on what's allowed
+to convert.  So can extend the allowed type conversions by filtering `F`
+with `<type_traits>` tools.  This gives you granular control to enable or
+prohibit casting combinatorics.
 
 ### Null pointer casts and the hook
 
