@@ -478,6 +478,18 @@ Hookable_Cast_Helper(const From& from) {
 //    the body is that CastHook dispatch uses `decay_t` for arrays (to get
 //    the pointer type) vs. `needful_unwrapped_if_wrapped_type` otherwise.
 //
+// 2. When a pointer is held in a const member (e.g. inside DowncastHolder's
+//    `operator To() const`), accessing it through `this` adds top-level
+//    const to the pointer itself: `T*` becomes `T* const`.  CastHook
+//    specializations are all written as `CastHook<const F*, const T*>` -- the
+//    "pointer-to-const" pattern.  If we passed `T* const` through to
+//    needful_constify_t directly, it would produce `const T* const` (via the
+//    `ConstifyHelper<T* const>` specialization), which does NOT match `const
+//    F*` in any partial specialization, falling through to the default no-op
+//    hook.  Stripping the pointer's own const first (remove_const_t) ensures
+//    `T* const` normalizes to `T*` before constify produces `const T*`, which
+//    matches the specializations as intended.
+//
 template<
     typename To,
     typename FromRef,
@@ -506,7 +518,7 @@ Hookable_Cast_Helper(FromRef&& from)  // && is why helper is a function! [A]
     using HookFrom = conditional_t<  // arrays must decay [1]
         std::is_array<From>::value,
         decay_t<From>,
-        From
+        remove_const_t<From>  // strip T* const -> T* so constify -> const T* [2]
     >;
     using ConstFrom = needful_constify_t(HookFrom);
     static_assert(
