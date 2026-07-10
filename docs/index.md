@@ -14,11 +14,12 @@ Needful is a [single-file, header-only library][needful-repo] that brings
 comment annotations to C codebases, with zero runtime cost and no tools beyond
 the compiler you already have.
 
-The key trick: every Needful construct compiles as a **transparent no-op in
+The key trick: most Needful constructs compile as a **transparent no-op in
 C**. Flip one switch (`#define NEEDFUL_CPP_ENHANCED  1`) and build as
-C++11, and those same constructs light up with compile-time type enforcement
-that catches real bugs. Your C code stays C. The C++ compiler just *checks*
-it harder.
+C++11 (or even better, C++17!)  Those same constructs light up with
+compile-time type enforcement that catches real bugs.
+
+Your C code stays C. The C++ compiler just *checks* it harder.
 
 From a security perspective, pitching Needful to your organization should be
 a no-brainer.  Whether you make your release builds with C or C++, if you
@@ -33,12 +34,12 @@ doing enhanced builds now and again gives static analysis that finds real bugs.
 `#include` it. All macros expand to trivial C - your build won't even notice.
 
 **Step 2.** When ready, add the [`needful-enhanced/`][needful-enhanced-repo]
-enhancement files alongside `needful.h` and
-`#define NEEDFUL_CPP_ENHANCED  1`. Build as C++11 or later. Every macro grows
-teeth: type mismatches become compile errors.
+enhancement files alongside `needful.h`. *(Put this directory in your
+.gitignore, don't commit it.)*  `#define NEEDFUL_CPP_ENHANCED  1` and build as
+C++11 or later.  The macros grow teeth: type mismatches become compile errors.
 
 **Step 3.** Run both modes in CI: C build for production, C++ build to catch
-bugs. No code changes needed between them.
+bugs. No code changes needed between them!
 
 ---
 
