@@ -232,6 +232,35 @@ assignment-safe conversions and mirrors source constness onto `T`.
 If you use clang-format with Needful syntax, see the
 [clang-format FAQ note](/faq#clang-format-needful).
 
+## `m_cast` for Mutability
+
+`m_cast()` is friendlier than C++'s `const_cast<>` in that you can use it to
+cast away constness along with casting to any needful_upcast()-able type.
+So you can do things like:
+
+```cpp
+const Derived* d = ...;
+Base* b = m_cast(Base*, d);
+```
+
+If using NEEDFUL_CPP_ENHANCED, the mutable cast can work on "wrapped"
+types as well, removing constness through the wrapper.  See the enhanced
+feature `NEEDFUL_DECLARE_WRAPPED_FIELD()` for more details.
+
+## `i_cast` vs `ii_cast`
+
+needful_integer_cast() has been honed to slow down build times about as
+little as possible, while having zero runtime cost even in unoptimized builds
+(an important property one seeks for something as fundamental as an integer
+cast).  But it's still slow--enough so that replacing all integer casts with
+i_cast() in one codebase made it take 2x as long to compile.
+
+So day-to-day dev builds should probably leave i_cast() as a macro for the
+plain c_cast().  However if you're using wrapper classes needful_integer_cast()
+can actually be zero cost in debug builds where a C cast would not be; so
+judicious use of ii_cast() on hot paths in extracting integers from wrappers
+can be a good idea.
+
 ## Related
 
 - [nocast](/nocast) — bridge `void*` and enum zero without a cast
