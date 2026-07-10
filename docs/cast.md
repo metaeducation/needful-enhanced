@@ -319,7 +319,7 @@ typedef struct BaseStruct Base;
   typedef Base Derived;  // Derived identical to Base if not enhanced
 #endif
 
-STATIC_ASSERT(sizeof(Base) == sizeof(Derived), "same layout required");
+NEEDFUL_STATIC_ASSERT(sizeof(Base) == sizeof(Derived));  // same layout
 
 int main() {
     const Base* cb = nullptr;
@@ -349,7 +349,7 @@ typedef struct BaseStruct Base;
   typedef Base Derived;  // Derived identical to Base if not enhanced
 #endif
 
-STATIC_ASSERT(sizeof(Base) == sizeof(Derived), "same layout required");
+NEEDFUL_STATIC_ASSERT(sizeof(Base) == sizeof(Derived));  // same layout
 
 int main() {
     Base* b = nullptr;
@@ -385,7 +385,7 @@ typedef struct BaseStruct Base;
   typedef Base Derived;  // Derived identical to Base if not enhanced
 #endif
 
-STATIC_ASSERT(sizeof(Base) == sizeof(Derived), "same layout required");
+NEEDFUL_STATIC_ASSERT(sizeof(Base) == sizeof(Derived));  // same layout
 
 int main() {
     const Base* cb = nullptr;

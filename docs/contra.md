@@ -186,7 +186,7 @@ typedef struct BaseStruct Base;
   typedef Base Derived;  // Derived identical to Base if not enhanced
 #endif
 
-STATIC_ASSERT(sizeof(Base) == sizeof(Derived), "same layout required");
+STATIC_ASSERT(sizeof(Base) == sizeof(Derived));  // same layout
 
 void init_derived(Sink(Derived) out) {
     Derived* p = out;
@@ -224,7 +224,7 @@ struct Base { int bits; };
   typedef Base Derived;  // Derived identical to Base if not enhanced
 #endif
 
-STATIC_ASSERT(sizeof(Base) == sizeof(Derived), "same layout");
+STATIC_ASSERT(sizeof(Base) == sizeof(Derived));  // same layout
 
 void write_base(Sink(Base) out) {
     Base* p = out;
