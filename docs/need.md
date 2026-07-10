@@ -44,6 +44,9 @@ Use `Need(T*)` on any function parameter or return type where null is a
 contract violation, not just an unusual case. It documents the invariant and,
 in C++ builds, enforces it.
 
+While compile-time checks are the primary purpose, runtime checks can also be
+enabled to catch nulls or zeroes passed to a Need(T) parameter.
+
 ## Related
 
 - [`Option(T)`](/option) — the nullable counterpart; `unwrap` an `Option`
