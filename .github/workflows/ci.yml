@@ -3,18 +3,19 @@
 #
 #=============================================================================#
 #
-# Runs needful-enhanced tests against needful.h fetched from Ren-C master.
+# Runs needful-enhanced tests against needful.h fetched from its repository.
 #
 # Positive tests (tests/positive/) are compiled as executables and run;
 # they must exit 0.  Negative tests (tests/negative/) are fed directly to
 # the compiler and must FAIL to compile (enforced via CTest WILL_FAIL).
 #
-# needful.h is fetched from Ren-C master at the start of each job and
+# needful.h is fetched from its repository at the start of each job and
 # placed one directory above the repo checkout, which is where the
 # CMakeLists.txt expects to find it by default.
 #
 # The raw GitHub URL for needful.h is:
-# https://raw.githubusercontent.com/metaeducation/ren-c/master/src/include/needful.h
+#
+#   https://raw.githubusercontent.com/metaeducation/needful/main/needful.h
 #
 
 name: needful-enhanced CI
@@ -86,11 +87,11 @@ jobs:
     # needful.h lives one level above the needful-enhanced repo checkout.
     # dirname strips the last path component: .../needful-enhanced => .../
     #
-    - name: Fetch needful.h from Ren-C master
+    - name: Fetch needful.h from its repository
       run: |
         NEEDFUL_H_DIR="$(dirname "$GITHUB_WORKSPACE")"
         curl -fL \
-          "https://raw.githubusercontent.com/metaeducation/ren-c/master/src/include/needful.h" \
+          "https://raw.githubusercontent.com/metaeducation/needful/main/needful.h" \
           -o "$NEEDFUL_H_DIR/needful.h"
         echo "Fetched needful.h to $NEEDFUL_H_DIR/needful.h"
         echo "NEEDFUL_H_DIR=$NEEDFUL_H_DIR" >> "$GITHUB_ENV"
