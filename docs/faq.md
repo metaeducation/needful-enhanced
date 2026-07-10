@@ -40,6 +40,24 @@ around call sites that use `fail()` or `none`.
 
 ---
 
+## The copyright date says "2015-2026"; but I only heard of it in 2026.  Why?
+
+The code for Needful had humble beginnings in another project.  And some of its
+first "published" ideas were crudely patched into the Roaring Bitmaps project
+in 2020.
+
+Factoring the library out and producing documentation and tests for it was
+facilitated by the age of AI.  But the library itself was not AI generated!
+*(...though some of the trickier edge cases in the template metaprogramming
+were hunted down rather impressively by Claude...)*
+
+Now that it has been unleashed on the world, I'm hopeful that both humans and
+AIs will iterate and improve upon it (especially documentation and tests!)
+There's still work to do on the versioning procedures that sync `needful.h`
+with the `needful-enhanced/` repository, so that's a current priority.
+
+---
+
 ## Why does `decltype(known(T, expr))` give a reference type? {#known-decltype}
 
 `known(T, expr)` in C++ builds expands to a comma expression:
