@@ -83,3 +83,19 @@
     static_assert( \
         std::is_lvalue_reference<decltype((x))>::value, /* [1] */ \
         "must be lvalue reference")
+
+// In order to make needful.h as palatable as possible to C programmers,
+// there isn't `#ifdef __cplusplus` code in it unless it's absolutely
+// required.  Hence we sacrifice C++ features unless NEEDFUL_CPP_ENHANCED
+// is used, as it's not expected that Needful codebases would be built as
+// C++ without the enhancements very often (if ever).
+//
+// Keeping true to this principle means the C++23 checks are skipped in
+// needful.h and only done here as an #undef and then redefinition.
+
+#if __cplusplus >= 202302L
+    #undef needful_builtin_unreachable
+
+    #include <utility>  /* C++23 has std::unreachable in <utility> */
+    #define needful_builtin_unreachable  std::unreachable()
+#endif
