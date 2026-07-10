@@ -41,8 +41,8 @@ These go inside function bodies:
 | `possibly(cond)` | This *might* be true | `cond` must be bool-convertible |
 | `definitely(cond)` | This is *always* true (not worth asserting at runtime) | `cond` must be bool-convertible |
 | `impossible(cond)` | This can *never* be true | `cond` must be bool-convertible |
-| `unnecessary(expr)` | This code exists but is not needed | `expr` must be valid |
-| `dont(expr)` | Do not do this; here's what you'd write if you did | `expr` must be valid |
+| `unnecessary(expr)` | This code would be redundant or pointless here | `expr` must be valid |
+| `dont(expr)` | You might think you need to do this, but it's wrong! | `expr` must be valid |
 | `cant(expr)` | Would like to do this; current limitations prevent it | `expr` must be valid |
 | `heeded(expr)` | This looks stray but its side effect is intentional | expression is evaluated |
 
@@ -72,14 +72,14 @@ STATIC_FAIL(some_identifier_message);     // always fails (marks unreachable pat
 ## Example: Self-Documenting Loop
 
 ```c
-int* find_nonzero(int* arr, int len) {
-    for (int i = 0; i < len; ++i) {
-        possibly(arr[i] == 0);          // some elements may be zero
-        if (arr[i] != 0)
-            return &arr[i];
+uint32_t calculate_sum_weirdly(uint8_t* arr, int len) {
+    uint32_t sum = 0;
+    while (len > 0) {
+        possibly(arr[len - 1] == 0);    // some elements may not change sum
+        sum += arr[--len];
     }
-    impossible(len > 0);                // we checked every element
-    return nullptr;
+    definitely(len == 0);               // we decremented past 0
+    return sum;
 }
 ```
 
