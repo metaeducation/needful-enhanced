@@ -52,10 +52,74 @@ Derived* d = downcast base_ptr;   // base -> derived (trust the programmer)
 
 `raw_downcast` is the unhooked version, suitable to use on fresh allocations.
 
+## `needful_struct_0` — Generic Struct Zero
+
+While `needful_nocast_0` handles scalars, pointers, and enums, C does not
+allow anonymous braces `{ 0 }` to be used as a raw expression in a `return`
+statement; they are only valid during variable initialization.
+
+`needful_struct_0` bridges this gap. In C++ it leverages a templated conversion
+operator to guarantee recursive zero-initialization of trivial aggregates.
+In C, it expands to a layout compatible with variable initializers:
+
+```c
+// Valid initialization in both C and C++
+MyStruct state = needful_struct_0;
+```
+
+Note: To return a zeroed struct from a function in plain C, a compound literal
+specifying the type name is mandatory (e.g., return (MyStruct){ 0 };). For this
+reason, core mechanics like `needful_unreachable_struct(T)` require you to
+pass the type name explicitly to satisfy C's strict return constraints.
+
 ## Related
 
 - [`cast()` family](/cast) — for casts between known types
 - [FAQ: Why does Needful disable the int-conversion warning?](/faq#int-conversion-warning)
+
+## Why not `#define needful_nocast_0 {}` in C++?
+
+Because `{}` means value-initialization, and that is not what this macro is
+for. For fundamental types it yields zero; for class types it calls the default
+constructor.  That makes the macro depend on the target type's construction
+rules instead of on a simple, generic none/zero conversion.
+
+Needful keeps those things separate. `Option(T)` locals should behave like
+C locals: no forced zeroing, no hidden initialization, no fake safety.
+`needful_nocast_0` exists only for the cases where you explicitly need a
+universal sentinel that can stand in for 0, nullptr, or a disengaged state.
+
+Also, `{}` is too slippery in C++.  It can mean value-initialization, aggregate
+initialization, list initialization, constructor selection, or just "the
+compiler will figure it out," depending on context.  That makes it a poor fit
+for a macro whose job is to mean one very specific thing: produce a generic
+none/zero sentinel.
+
+Nocast0Struct is explicit and unambiguous. It says exactly what it is, it
+routes through the intended conversion machinery, and it avoids all the snakey
+little special cases attached to `{}`. That keeps `needful_nocast_0` readable
+in templates, macros, and overload-heavy code, where brace syntax can be
+surprisingly indirect.
+
+So the rule is simple: `{}` is a constructor syntax, not a semantic sentinel.
+`Nocast0Struct` is the sentinel.
+
+## `nocast` implementation notes
+
+`nocast` is one of the few Needful constructs that needs a distinct definition
+in C++ from C, even when you're not using NEEDFUL_CPP_ENHANCED.  Hence there
+is conditional code on defined(__cplusplus) even in `needful.h`.
+
+1. NocastConvert: two cases need special handling.  `static_cast` already
+   handles (void* -> T*), (int -> enum), and same-type conversions.  The
+   exception: (int -> T*) must substitute nullptr (C++ forbids implicit
+   int-to-pointer conversion, even for literal 0).  Also, pointer-to-pointer
+   casts (e.g. Derived** -> Base**) fail with static_cast because C++ doesn't
+   support covariant multi-level pointer conversions; a C-style cast replicates
+   C's behavior.
+
+2. The choice of `+` as the operator to use is intentional due to wanting
+   something with lower precedence than `%` (used in Result and Optional)
 
 ---
 
