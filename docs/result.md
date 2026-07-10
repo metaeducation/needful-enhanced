@@ -61,6 +61,24 @@ Result(int) Other_Func(void) {
 | `rescue (expr)` | Evaluate `expr` and return the failure (or null if none) |
 | `panic(...)` | Abort immediately; never returns |
 
+A quick and dirty way to write `return failed;` and not have to come up with
+an error might be useful in some codebases.  We don't try to define that here,
+because it's open ended as to what you'd use for your error value type.
+
+In order for these macros to work, they need to be able to test and clear
+the global error state...as well as a flag as to whether the failure is
+divergent or not.  Hence you have to define:
+
+    ErrorType* Needful_Test_And_Clear_Failure()
+    ErrorType* Needful_Get_Failure()
+    void Needful_Set_Failure(ErrorType* error)
+    void Needful_Panic_Abruptly()
+    void Needful_Assert_Not_Failing()  // avoids assert() dependency
+
+These can be functions or macros with the same signature.  They should use
+thread-local state if they're to work in multi-threaded code.
+
+
 ## The `except` Syntax
 
 The most ergonomic pattern — `except` attaches naturally to an expression and
@@ -77,6 +95,14 @@ int result = Some_Func(30) except (Error* e) {
 
 This is standard C99. `except` expands into a `for` loop that runs exactly
 once, scoping the error variable to the block.
+
+It bears some explanation that the trick to get except() to be able to take an
+else() clause involves a for loop that runs exactly once.  It accomplishes
+this using the C99 feature allowing you do declare multiple variables scoped
+to a for loop *if* they are of the same type.  If we assume your error type is
+a pointer, then we can declare both the error variable and a dummy pointer
+`_once` in the loop, and use a pointer increment to ensure the loop only runs
+once.  :-)
 
 ### How the scoping trick works
 
