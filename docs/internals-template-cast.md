@@ -1,7 +1,7 @@
 ---
 layout: default
 title: "Internals: The Template Cast Operator Problem"
-nav_order: 20
+nav_order: 70
 permalink: /internals/template-cast-operator
 ---
 

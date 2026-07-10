@@ -1,7 +1,7 @@
 ---
 layout: default
 title: cast() Family
-nav_order: 5
+nav_order: 6
 permalink: /cast
 ---
 
