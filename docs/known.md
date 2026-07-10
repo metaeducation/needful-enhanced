@@ -36,6 +36,12 @@ Three reasons:
 
 ## Lenient vs. Rigid
 
+The lenient form of known_cast() is quite useful for writing polymorphic
+macros which are const-in => const-out and mutable-in => mutable-out.  This
+tends to be more useful than wanting to enforce that only mutable pointers
+can be passed into a macro (the bulk of macros are reading operations, anyway).
+So lenient defaults the short name `known_cast()`.
+
 | Variant | Behavior |
 |---|---|
 | `lenient_known(T, expr)` | Accepts `const T` when `T` is specified; passes const through |
