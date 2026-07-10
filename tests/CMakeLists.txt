@@ -151,7 +151,7 @@ if(MSVC)
             PARENT_SCOPE)
     endfunction()
 else()
-    set(NEEDFUL_CPP_STD_FLAG "-std=c++11")
+    set(NEEDFUL_CPP_STD_FLAG "-std=c++17")  # want NEEDFUL_NODISCARD in C++17
     set(NEEDFUL_INCLUDE_FLAG "-I")
     set(NEEDFUL_DEFINE_FLAG  "-DNEEDUL_CPP_ENHANCEMENTS=1")
     function(needful_output_flag test_name out_var)
