@@ -185,7 +185,34 @@ template<typename X>  // Option carries engaged/disengaged semantics [8]
 struct IsWrapperSemantic<OptionWrapper<X>> : std::true_type {};
 
 
-//=/// UNWRAP HOOK FOR Optional(T) ////////////////////////////////////////=//
+//=//// FALLIBLE WRAPPER //////////////////////////////////////////////////=//
+//
+// Unfortunately, we can't simply do:
+//
+//    #define NeedfulFallible(T)  NEEDFUL_NODISCARD NeedfulOption(T)
+//
+// That's because the [[nodiscard]] attribute can only be in particular places
+// in function declarations, and it can't be on local variables.  So we have
+// to have a separate FallibleWrapper class that puts the [[nodiscard]] in
+// the right place.
+//
+
+template <typename T>
+struct NEEDFUL_NODISCARD FallibleWrapper : public needful::OptionWrapper<T> {
+    using needful::OptionWrapper<T>::OptionWrapper;  // inherit constructors
+};
+
+#undef NeedfulFallible
+#define NeedfulFallible(T)  needful::FallibleWrapper<T>
+
+#undef needful_unwrap_fallible
+#define needful_unwrap_fallible  needful_unwrap
+
+#undef needful_infallible
+#define needful_infallible  needful_unwrap_fallible
+
+
+//=//// UNWRAP HOOK FOR Optional(T) ///////////////////////////////////////=//
 //
 // Use `unwrap` when you're sure that an optional contains a value (typically
 // known by doing a conditional check):
@@ -240,6 +267,37 @@ T operator+(  // lower precedence than % [2]
 ){
     return option.o;
 }
+
+
+//=/// POSTFIX OPTION EXTRACTOR ///////////////////////////////////////////=//
+//
+// This is used by the lightweight Fallible(T) wrapper over Option(T) that
+// accomplishes some of what Result(T) can do if all you're interested in
+// is null results.
+//
+
+struct OptionExtractor {};
+
+template<typename T>
+inline T operator%(  // % high postfix precedence desired [1]
+    const OptionWrapper<T>& option,
+    OptionExtractor
+){
+    return option.o;
+}
+
+template<typename T>
+inline T* operator%(  // % high postfix precedence desired [1]
+    T* pointer,
+    OptionExtractor
+){
+    return pointer;
+}
+static constexpr OptionExtractor g_option_extractor{};
+
+#undef needful_postfix_extract_option
+#define needful_postfix_extract_option \
+    /* ; <-- ERROR? DON'T PUT SEMICOLON! [2] */ % needful::g_option_extractor
 
 
 //=/// BLOCK `needed` ON OptionWrapper ////////////////////////////////////=//

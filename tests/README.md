@@ -139,7 +139,8 @@ The constructs and their current test coverage:
 
 | Construct | Positive | Negative |
 |-----------|----------|----------|
-| `Option(T)` | test-needful-option.cpp | docs/option.md (2 blocks) |
+| `Option(T)` | test-needful-option.cpp | docs/option.md |
+| `Fallible(T)` | — | docs/fallible.md |
 | Casts (`cast`, `m_cast`, etc.) | test-needful-casts.cpp | docs/cast.md |
 | Const metaprogramming | test-needful-const.cpp | — |
 | `Need(T)` | test-needful-need.cpp | docs/need.md |

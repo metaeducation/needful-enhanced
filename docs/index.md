@@ -48,6 +48,7 @@ bugs. No code changes needed between them.
 |---|---|
 | [`Need(T)`](/need) | Non-null/non-zero type; blocks boolean coercion |
 | [`Option(T)`](/option) | Rust-like optional with same size as `T` |
+| [`Fallible(T)`](/fallible) | Implicitly `[[nodiscard]]` variant of Option(T) |
 | [`Result(T)`](/result) | Multiplexed error + return value; auto-propagation via `trap` |
 | [`cast()` family](/cast) | Visible, hookable, semantically-named casts |
 | [`Contra(T)` / `Sink(T)` / `Init(T)`](/contra) | Contravariant output parameter markers |

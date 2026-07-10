@@ -11,6 +11,7 @@ built with Jekyll and the [just-the-docs](https://just-the-docs.com) theme.
 | `setup.md` | `/setup` | Installing needful-enhanced, enabling `NEEDFUL_CPP_ENHANCED` |
 | `need.md` | `/need` | `Need(T)` — non-null/non-zero type |
 | `option.md` | `/option` | `Option(T)` — Rust-like optional |
+| `fallible.md` | `/fallible` | `Fallible(T)` — an implicitly `[[nodiscard]]` Option(T) |
 | `result.md` | `/result` | `Result(T)` — cooperative error propagation |
 | `cast.md` | `/cast` | Cast family: `cast`, `m_cast`, `raw_cast`, etc. |
 | `contra.md` | `/contra` | `Contra(T)` / `Sink(T)` / `Init(T)` — contravariant output parameters |
