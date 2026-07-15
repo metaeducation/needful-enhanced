@@ -100,7 +100,7 @@ uint32_t calculate_sum_weirdly(uint8_t* arr, int len) {
 #ifdef __cplusplus
   #define NEEDFUL_CPP_ENHANCED  1
 #endif
-#define NEEDFUL_COMMMENT_SHORTHANDS  1
+#define NEEDFUL_COMMENT_SHORTHANDS  1
 #include "needful.h"
 
 int find_first_nonzero(int* arr, int len) {
