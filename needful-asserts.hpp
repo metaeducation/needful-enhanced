@@ -84,10 +84,6 @@
         std::is_lvalue_reference<decltype((x))>::value, /* [1] */ \
         "must be lvalue reference")
 
-#undef NEEDFUL_STATIC_IGNORE
-#define NEEDFUL_STATIC_IGNORE(expr) \
-    NEEDFUL_STATIC_ASSERT_DECLTYPE_VALID(expr)
-
 
 // In order to make needful.h as palatable as possible to C programmers,
 // there isn't `#ifdef __cplusplus` code in it unless it's absolutely
