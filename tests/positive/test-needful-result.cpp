@@ -11,9 +11,16 @@
 #include <stdlib.h>
 
 #define NEEDFUL_CPP_ENHANCED  1
-#define NEEDFUL_RESULT_SHORTHANDS  1
 #define NEEDFUL_DECLARE_RESULT_HOOKS 1
 #include "needful.h"
+
+#define Result  NeedfulResult
+#define fail     needful_make_failure
+#define trap     needful_return_if_failed
+#define require  needful_abort_if_failed
+#define assume   needful_assert_not_failed
+#define except   needful_catch_if_failed
+#define rescue   needful_extract_failure
 
 #define STATIC_ASSERT  NEEDFUL_STATIC_ASSERT
 

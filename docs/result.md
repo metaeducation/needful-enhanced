@@ -18,7 +18,7 @@ Instead of this:
 ```c
 Error* Some_Func(int* result, int x) {
     if (x < 304)
-        return fail("the value is too small");
+        return make_failure("the value is too small");
     *result = x + 20;
     return nullptr;
 }
@@ -36,29 +36,33 @@ You write this:
 ```c
 Result(int) Some_Func(int x) {
     if (x < 304)
-        return fail("the value is too small");
+        return make_failure("the value is too small");
     return x + 20;
 }
 
 Result(int) Other_Func(void) {
-    trap (int y = Some_Func(1000));
+    return_if_failed (
+      int y = Some_Func(1000)
+    );
     assert(y == 1020);
 
-    trap (int z = Some_Func(10));   // auto-propagates on error
+    return_if_failed (
+      int z = Some_Func(10);   // auto-propagates on error
+    );
     return z;
 }
 ```
 
 ## Error Handling Vocabulary
 
-| Macro | Meaning |
-|---|---|
-| `return fail(...)` | Return a failure, storing the error in thread-local state |
-| `trap (stmt)` | Execute `stmt`; if it failed, propagate the failure upward |
-| `require (stmt)` | Like `trap`, but panics rather than propagating |
-| `assume (stmt)` | Execute `stmt`; assert no failure occurred (debug) |
-| `except (Error* e) { }` | Catch a failure into a scoped variable |
-| `rescue (expr)` | Evaluate `expr` and return the failure (or null if none) |
+| Operation | Meaning |
+|---|---|---|
+| `return make_failure(...)` | Return a failure, storing the error in thread-local state |
+| `return_if_failed (stmt)` | Execute `stmt`; if it failed, propagate the failure upward |
+| `abort_if_failed (stmt)` | Like above, but panics rather than propagating |
+| `assert_not_failed (stmt)` | Execute `stmt`; assert no failure occurred (debug) |
+| `catch_if_failed (Error* e) { }` | Catch a failure into a scoped variable |
+| `extract_failure (expr)` | Evaluate `expr` and return the failure (or null if none) |
 | `panic(...)` | Abort immediately; never returns |
 
 A quick and dirty way to write `return failed;` and not have to come up with
@@ -79,13 +83,14 @@ These can be functions or macros with the same signature.  They should use
 thread-local state if they're to work in multi-threaded code.
 
 
-## The `except` Syntax
+## The `catch_if_failed` Syntax
 
-The most ergonomic pattern — `except` attaches naturally to an expression and
-allows an `else` clause:
+The most ergonomic pattern — `needful_catch_if_failed` (shorthand:
+`catch_if_failed`) — attaches naturally to an expression and allows an
+`else` clause:
 
 ```c
-int result = Some_Func(30) except (Error* e) {
+int result = Some_Func(30) catch_if_failed (Error* e) {
     printf("caught: %s\n", e->message);
     result = -1;
 } else {
@@ -93,8 +98,38 @@ int result = Some_Func(30) except (Error* e) {
 }
 ```
 
-This is standard C99. `except` expands into a `for` loop that runs exactly
-once, scoping the error variable to the block.
+This is standard C99. `needful_catch_if_failed` expands into a `for` loop that
+runs exactly once, scoping the error variable to the block.
+
+## Defining Project-Specific Aliases
+
+`NEEDFUL_RESULT_SHORTHANDS` strips the `needful_` prefix, giving names like
+`make_failure`, `return_if_failed`, `catch_if_failed`, etc. These are
+readable and unambiguous without being keyword-like.
+
+If your project wants to go further and use keyword-style names, define
+them yourself in a project header after including `needful.h`.  Here are some
+possible choices:
+
+
+```c
+#define fail     needful_make_failure
+#define trap     needful_return_if_failed
+#define require  needful_abort_if_failed
+#define assume   needful_assert_not_failed
+#define except   needful_catch_if_failed
+#define rescue   needful_extract_failure
+```
+
+For `Fallible(T)` the same approach applies:
+
+```c
+#define return_if_null   needful_return_if_nullptr
+#define abort_if_null    needful_abort_if_nullptr
+#define tolerate_null    needful_tolerate_if_nullptr
+```
+
+Needful intentionally does not define keyword-grabbing names itself.
 
 It bears some explanation that the trick to get except() to be able to take an
 else() clause involves a for loop that runs exactly once.  It accomplishes
@@ -150,14 +185,14 @@ including `needful.h` to get a built-in `const char*`-based implementation:
 ## `Result(None)` — Fallible Functions With No Return Value
 
 C does not allow `return value;` in a `void`-returning function, which means
-`Result(void)` can't work: you can't write `return fail(...)` because there's
+`Result(void)` can't work: you can't write `return needful_make_failure(...)` because there's
 nothing legal to return. `None` is a unit type defined precisely to fill this
 gap:
 
 ```c
 Result(None) Do_Something(void) {
     if (some_condition)
-        return fail("something went wrong");
+        return needful_make_failure("something went wrong");
     return none;  // success: return the unit value
 }
 ```
@@ -173,13 +208,13 @@ checks that you handled the result rather than silently discarding it.
 ## Related
 
 - [`Option(T)`](/option) — nullable values without an error
-- [FAQ: Why does `fail(...)` disable the int-conversion warning?](/faq#int-conversion-warning)
+- [FAQ: Why does `needful_make_failure(...)` disable the int-conversion warning?](/faq#int-conversion-warning)
 
 ---
 
 ## Compile-Time Tests
 
-### Basic `trap` / `fail` / `assume` usage
+### Basic `return_if_failed` / `make_failure` / `assert_not_failed` usage
 
 <!-- doctest: positive-test -->
 ```cpp
@@ -194,20 +229,22 @@ checks that you handled the result rather than silently discarding it.
 
 Result(int) double_if_positive(int x) {
     if (x < 0)
-        return fail("negative input");
+        return make_failure("negative input");
     return x * 2;
 }
 
 Result(int) run(void) {
-    trap (int a = double_if_positive(10));
+    return_if_failed (
+      int a = double_if_positive(10)
+    );
     assert(a == 20);
-    trap (int b = double_if_positive(5));
+    return_if_failed (int b = double_if_positive(5));
     assert(b == 10);
     return 42;
 }
 
 int main() {
-    assume (run());
+    assert_not_failed (run());
     return 0;
 }
 ```
@@ -227,9 +264,11 @@ int main() {
 #define NEEDFUL_DECLARE_RESULT_HOOKS  1  // use some simple default hooks
 #include "needful.h"
 
+#define fail  make_failure  // project-local keyword-style alias
+
 Result(int) compute(int x) {
     if (x < 0)
-        return fail("negative");
+        return fail ("negative");
     return x * 2;
 }
 
