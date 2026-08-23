@@ -203,20 +203,82 @@ propagation, and the runtime assertions — but not one compile-time check.
 | C — any compiler, any standard | ✗ | ✗ | ✗ |
 | C++ — no enhancement | ✗ | ✗ | ✗ |
 | C++ — `NEEDFUL_CPP_ENHANCED`, C++11/14 | ✗ | ✗ | ✅ |
+| C++ — enhanced, C++11/14 + `NEEDFUL_PRECPP17_NODISCARD` | ✅ | ✅ | ✅ |
 | C++ — `NEEDFUL_CPP_ENHANCED`, **C++17+** | ✅ | ✅ | ✅ |
 
 The first two rows are why Needful's pitch is *"C for production, C++ for
 stronger checks"* rather than *"C is enough"*. If you never run a checked C++
 build, `Result(T)` is documentation with a propagation mechanism attached.
 
+### Why `Result(T)` can't borrow `Fallible(T)`'s C-mode trick {#no-c-mustuse}
+
+[`Fallible(T)`](/fallible#enforcement) *does* get checking in a plain C build,
+by carrying `__attribute__((warn_unused_result))` on its return type. The fair
+question is why `Result(T)` does not do the same.
+
+It comes down to what survives the preprocessor. `return_if_failed (stmt)`
+expands `stmt` followed by `needful_postfix_extract_result`, and that token is
+where the two builds part company:
+
+```c
+/* C++ enhanced */  side_effect(ok) % needful::g_result_extractor;
+/* plain C      */  side_effect(ok);
+```
+
+Under enhancement the extractor is `operator%`, so the returned wrapper is
+genuinely consumed — which is exactly how the `[[nodiscard]]` on
+`ResultWrapper` gets discharged by ordinary code. In C the extractor expands to
+nothing, leaving a bare expression statement. Annotating `Result(T)` in C would
+therefore make the compiler object to Needful's *own correct code* — concretely
+to [`Result(None)`](#result-none) calls, where no assignment consumes the value
+either:
+
+```c
+return_if_failed (Do_Something());     /* would warn: nothing consumes it */
+return_if_failed (int v = Compute());  /* fine -- consumed by the initializer */
+```
+
+Nor can the C extractor simply be given a body. It has to be a postfix token
+that is valid both after a bare call *and* inside a declaration's initializer,
+while preserving the value's type — including when `T` is a struct. That is
+precisely what `operator%` provides in C++, and C has no equivalent.
+
+A `(void)` cast is not a way out either. It does suppress C23's
+`[[nodiscard]]`, but GCC's `warn_unused_result` deliberately ignores one — and
+GCC/Clang is the configuration that would otherwise deliver this coverage,
+since it offers the attribute at every C standard. The escape hatch exists only
+where it is not needed.
+
+**There is consequently no `ResultVar(T)`.** `FallibleVar(T)` exists because
+`Fallible(T)`'s annotation is legal only on a function's return type, so locals
+and parameters need an unannotated spelling. `Result(T)` carries no
+declaration-position annotation in either build mode — under enhancement the
+`[[nodiscard]]` rides on the wrapper class — so every position is already legal
+and there is nothing to work around.
+
 The C++11/14 row is the trap. `ResultWrapper` and `Result0Struct` are both
-declared `NEEDFUL_NODISCARD`, which has no spelling before C++17 and quietly
-becomes nothing — so the build still refuses to let a `Result(T)` decay into a
-`T`, but stops noticing when you drop one entirely, or when you write
+declared `NEEDFUL_NODISCARD`, which has no *standard* spelling before C++17 and
+quietly becomes nothing — so the build still refuses to let a `Result(T)` decay
+into a `T`, but stops noticing when you drop one entirely, or when you write
 `make_failure(...)` and forget the `return`. That last one is the mistake the
 `[[nodiscard]]` on `Result0Struct` exists to catch, and it is easy to make
 because `panic(...)` sits right beside it, takes an error, and is *not* used
-with `return`. **Run the enhanced build at C++17 or higher.**
+with `return`.
+
+**Run the enhanced build at C++17 or higher** if you can. If you are pinned
+below it, `-DNEEDFUL_PRECPP17_NODISCARD=1` recovers the whole set. Compilers
+accept `[[nodiscard]]` earlier than the standard obliges them to; the switch
+takes them up on it, and suppresses the `-Wc++17-extensions` complaint that GCC
+and Clang raise under `-Wpedantic` so such a build stays usable.
+
+It is opt-in, and applies to every compiler at once rather than switching
+itself on wherever it happens to work — a configuration where MSVC rejects code
+that GCC accepts is precisely the divergence Needful exists to avoid.
+
+Note that for MSVC this closes the gap completely: `/std:c++11` is not a real
+option there (it is an unrecognized flag, silently ignored), so C++14 is the
+floor with or without a `/std:` switch — and C++14 with the switch was measured
+to fire every check in the C++17 row.
 
 ### Warnings must be errors
 

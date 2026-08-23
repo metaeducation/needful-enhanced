@@ -42,10 +42,22 @@
 #elif defined(_MSC_VER) && _MSVC_LANG >= 201703L
     #undef NEEDFUL_NODISCARD
     #define NEEDFUL_NODISCARD  [[nodiscard]]  // the C++17 way (best!)
+#elif NEEDFUL_PRECPP17_NODISCARD  // opt-in below C++17 [3]
+    #undef NEEDFUL_NODISCARD
+    #define NEEDFUL_NODISCARD  [[nodiscard]]
 #else
     // leave NEEDFUL_NODISCARD as a no-op [2]
 
 #endif
+
+// 3. [2] above explains why the GNU/SAL spellings were rejected: they do
+//    nothing on a class, which is the position that matters here.  That
+//    conclusion still holds, but it is not the end of the story, because
+//    compilers accept the *standard* attribute earlier than the standard
+//    requires.  NEEDFUL_PRECPP17_NODISCARD opts into that, and needful.h
+//    emits the pragma that keeps -Wpedantic quiet about it.  Without this,
+//    a checked C++11 build enforces the type separation but not the must-use
+//    property -- see the enforcement tables in %docs/result.md.
 
 // 1. We use __VA_ARGS__ here to avoid the need for double-parenthesization
 //    at the callsite, e.g. STATIC_ASSERT((std::is_same<T, U>::value)), which

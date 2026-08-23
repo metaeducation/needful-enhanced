@@ -109,16 +109,21 @@ standard, and — critically — on whether you turned warnings into errors.
 | C++ — no enhancement, GCC/Clang | ✅ | ✅ | — |
 | C++ — no enhancement, MSVC C++17+ | ✅ | ✅ | — |
 | C++ — `NEEDFUL_CPP_ENHANCED`, C++11/14 | ✗ | n/a | ✅ |
+| C++ — enhanced, C++11/14 + `NEEDFUL_PRECPP17_NODISCARD` | ✅ | n/a | ✅ |
 | C++ — `NEEDFUL_CPP_ENHANCED`, **C++17+** | ✅ | n/a | ✅ |
 
 Three things in that table are worth stopping on.
 
 **The enhanced build is not strictly stronger.** At C++11/14 it enforces the
 type separation but *not* the must-use property, because `NEEDFUL_NODISCARD`
-has no spelling before C++17 — so a plain C build under GCC catches a dropped
-`Fallible(T)` that the checked C++11 build lets through. If you run the
-enhanced build in CI, run it at **C++17 or higher**, or you have turned off a
-guarantee you had for free.
+has no *standard* spelling before C++17 — so a plain C build under GCC catches
+a dropped `Fallible(T)` that the checked C++11 build lets through. If you run
+the enhanced build in CI, run it at **C++17 or higher**, or set
+`-DNEEDFUL_PRECPP17_NODISCARD=1`, which takes compilers up on accepting
+`[[nodiscard]]` earlier than required and silences the resulting
+`-Wc++17-extensions` pedantry. See
+[the discussion in `Result(T)`](/result#no-c-mustuse) — the switch is shared by
+both constructs. Otherwise you have turned off a guarantee you had for free.
 
 **Position checking does not apply under enhancement**, and does not need to:
 there, `[[nodiscard]]` rides on the wrapper class rather than the declaration,
