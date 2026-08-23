@@ -211,5 +211,25 @@ template<typename T>
 void Unused_Helper(T& ref)  // mutable references... we can corrupt
   { Corrupt_If_Needful(ref); }
 
-#undef UNUSED
-#define UNUSED(expr)  needful::Unused_Helper(expr)
+// Redefine the PREFIXED macro, not the shorthand.  Two reasons, and needful.h
+// already assumes this is how it works:
+//
+// 1. `UNUSED` is an optional cosmetic alias.  needful.h only defines it when
+//    NEEDFUL_USAGE_SHORTHANDS is on, and even then guards with `#if
+//    !defined(UNUSED)` so a project that already has its own `UNUSED` keeps
+//    it.  Doing an unguarded `#undef UNUSED` here threw that away: it
+//    destroyed a caller's macro, and conjured up a `UNUSED` even for projects
+//    that deliberately left the shorthands off.
+//
+// 2. Redefining only the alias meant needful.h's own internal NEEDFUL_UNUSED()
+//    calls never gained the teeth -- while %needful.h's comment on
+//    NEEDFUL_USED/NEEDFUL_UNUSED said they did, and needful-casts.hpp worked
+//    around a call to Unused_Helper that could not actually happen.  Both of
+//    those are now true statements.
+//
+// Redefining NEEDFUL_UNUSED gets the shorthand for free, since `UNUSED`
+// expands to `NEEDFUL_UNUSED` at the point of use, not at the point of
+// definition.
+
+#undef NEEDFUL_UNUSED
+#define NEEDFUL_UNUSED(...)  needful::Unused_Helper(__VA_ARGS__)
