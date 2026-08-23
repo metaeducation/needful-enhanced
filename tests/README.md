@@ -188,7 +188,7 @@ The constructs and their current test coverage:
 | Construct | Positive | Negative |
 |-----------|----------|----------|
 | `Option(T)` | test-needful-option.cpp | docs/option.md |
-| `Fallible(T)` | — | docs/fallible.md |
+| `Fallible(T)` / `*_none` vocabulary | c/test-needful-c-sweep.c, docs/fallible.md | docs/fallible.md |
 | Casts (`cast`, `m_cast`, etc.) | test-needful-casts.cpp | docs/cast.md |
 | Const metaprogramming | test-needful-const.cpp | — |
 | `Need(T)` | test-needful-need.cpp | docs/need.md |

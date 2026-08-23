@@ -59,7 +59,7 @@ Result(int) Other_Func(void) {
 |---|---|---|
 | `return make_failure(...)` | Return a failure, storing the error in thread-local state |
 | `return_if_failed (stmt)` | Execute `stmt`; if it failed, propagate the failure upward |
-| `abort_if_failed (stmt)` | Like above, but panics rather than propagating |
+| `panic_if_failed (stmt)` | Like above, but panics rather than propagating |
 | `assert_not_failed (stmt)` | Execute `stmt`; assert no failure occurred (debug) |
 | `catch_if_failed (Error* e) { }` | Catch a failure into a scoped variable |
 | `extract_failure (expr)` | Evaluate `expr` and return the failure (or null if none) |
@@ -69,9 +69,8 @@ A quick and dirty way to write `return failed;` and not have to come up with
 an error might be useful in some codebases.  We don't try to define that here,
 because it's open ended as to what you'd use for your error value type.
 
-In order for these macros to work, they need to be able to test and clear
-the global error state...as well as a flag as to whether the failure is
-divergent or not.  Hence you have to define:
+In order for these macros to work, they need to be able to test and clear the
+global error state.  Hence you have to define:
 
     ErrorType* Needful_Test_And_Clear_Failure()
     ErrorType* Needful_Get_Failure()
@@ -115,7 +114,7 @@ possible choices:
 ```c
 #define fail     needful_make_failure
 #define trap     needful_return_if_failed
-#define require  needful_abort_if_failed
+#define require  needful_panic_if_failed
 #define assume   needful_assert_not_failed
 #define except   needful_catch_if_failed
 #define rescue   needful_extract_failure
@@ -124,12 +123,41 @@ possible choices:
 For `Fallible(T)` the same approach applies:
 
 ```c
-#define return_if_null   needful_return_if_nullptr
-#define abort_if_null    needful_abort_if_nullptr
-#define tolerate_null    needful_tolerate_if_nullptr
+#define maybe      needful_return_if_none
+#define demand     needful_abort_if_none
+#define whatever   needful_tolerate_none
 ```
 
 Needful intentionally does not define keyword-grabbing names itself.
+
+## Relationship to `Fallible(T)` {#fallible-relationship}
+
+The two vocabularies are deliberately parallel:
+
+| intent | `Result(T)` | `Fallible(T)` |
+|---|---|---|
+| signal it | `return make_failure(e)` | `return none` |
+| propagate it | `return_if_failed (stmt)` | `return_if_none (stmt)` |
+| die on it | `panic_if_failed (stmt)` | `abort_if_none (stmt)` |
+| assert impossible | `assert_not_failed (stmt)` | `assert_not_none (stmt)` |
+| handle it | `catch_if_failed (decl) { }` | — plain `if` |
+| deliberately ignore | — see `extract_failure` | `tolerate_none (stmt)` |
+
+The gaps are real rather than missing work. `Fallible(T)` needs no `catch`
+because there is no error payload to catch — the absence *is* the information.
+`Result(T)` needs no `tolerate` because `extract_failure` already reads and
+clears the state.
+
+Note that `panic_if_failed` is not called `abort_if_failed`, tempting as the
+symmetry would be. A failure carries an error object, so it is handed to
+`Needful_Panic_Abruptly()` to be reported before the process ends. A disengaged
+`Option` has nothing to report, so `abort_if_none` can only call
+`NEEDFUL_ABORT()`. A shared `abort_` prefix would promise a shared exit path
+that does not exist.
+
+**The two families do not interoperate**, and cannot be merged into one.
+See [the FAQ](/faq#result-fallible-unification) — this comes up more than once,
+and the reason is more interesting than "nobody got around to it."
 
 It bears some explanation that the trick to get except() to be able to take an
 else() clause involves a for loop that runs exactly once.  It accomplishes

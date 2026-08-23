@@ -32,7 +32,7 @@ internally by `Option(T)` and `Result(T)` as a sentinel:
 
 ```c
 Option(int*)   p = needful_nocast_0;   // same as none / nullptr
-Result(int)    r = needful_nocast_0;   // used internally by fail(...)
+Result(int)    r = needful_nocast_0;   // used internally by make_failure()
 ```
 
 > Note: Unlike `nocast`, there is **no unprefixed shorthand** for `nocast_0`.

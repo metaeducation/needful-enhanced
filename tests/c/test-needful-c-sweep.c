@@ -141,24 +141,52 @@ int catches_success(void) {
 }
 
 
-/*=== nullptr-reactive ===================================================*/
+/*=== none-reactive ======================================================*/
 
-Option(int*) uses_return_if_nullptr(int yes) {
+Option(int*) uses_return_if_none(int yes) {
     int* p;
-    return_if_nullptr (p = fallible_ptr(yes));
+    return_if_none (p = fallible_ptr(yes));
     return p;
 }
 
 int* uses_tolerate(int yes) {
     int* p;
-    tolerate_if_nullptr (p = fallible_ptr(yes));
+    tolerate_none (p = fallible_ptr(yes));
     return p;
 }
 
-int* uses_abort_if_nullptr(void) {
+int* uses_abort_if_none(void) {
     int* p;
-    abort_if_nullptr (p = fallible_ptr(1));  /* non-null: must not abort */
+    abort_if_none (p = fallible_ptr(1));  /* engaged: must not abort */
     return p;
+}
+
+int* uses_assert_not_none(void) {
+    int* p;
+    assert_not_none (p = fallible_ptr(1));  /* must run p= even under NDEBUG */
+    return p;
+}
+
+int* uses_infallible(void) {
+    return infallible fallible_ptr(1);  /* expression-position discharge */
+}
+
+/* The none vocabulary must work on a Fallible(T) whose T is not a pointer.
+** This is the case the old *_if_nullptr spelling could not express: an enum
+** compared against (void*)0 is a constraint violation, and needful.h's own
+** -Wint-conversion suppression meant GCC/Clang stayed silent about it in C
+** while the C++ enhanced build hard-errored.
+*/
+typedef enum { SWEEP_NONE_0 = 0, SWEEP_RED = 1 } SweepColor;
+
+Fallible(SweepColor) fallible_enum(int yes) {
+    return yes ? SWEEP_RED : SWEEP_NONE_0;
+}
+
+Option(SweepColor) uses_return_if_none_enum(int yes) {
+    SweepColor c;
+    return_if_none (c = fallible_enum(yes));
+    return c;
 }
 
 
@@ -307,10 +335,26 @@ int main(void) {
     assert_not_failed (int* rp = result_pointer(1));
     CHECK(rp == &g_value);
 
-    CHECK(uses_return_if_nullptr(1) == &g_value);
-    CHECK(uses_return_if_nullptr(0) == nullptr);
+    CHECK(uses_return_if_none(1) == &g_value);
+    CHECK(uses_return_if_none(0) == nullptr);
     CHECK(uses_tolerate(0) == nullptr);
-    CHECK(uses_abort_if_nullptr() == &g_value);
+    CHECK(uses_abort_if_none() == &g_value);
+    CHECK(uses_assert_not_none() == &g_value);
+    CHECK(uses_infallible() == &g_value);
+
+    CHECK(is_none(fallible_ptr(0)));
+    CHECK(! is_none(fallible_ptr(1)));
+
+    CHECK(uses_return_if_none_enum(1) == SWEEP_RED);
+    CHECK(uses_return_if_none_enum(0) == SWEEP_NONE_0);
+    CHECK(is_none(fallible_enum(0)));
+    CHECK(! is_none(fallible_enum(1)));
+
+    /* `none` is readable, not only writable */
+    CHECK(fallible_ptr(0) == none);
+    CHECK(fallible_ptr(1) != none);
+    CHECK(fallible_enum(0) == none);
+    CHECK(fallible_enum(1) != none);
 
     printf("test-needful-c-sweep: %d checks passed\n", g_checks);
     return 0;

@@ -165,6 +165,65 @@ template<typename L, typename R>
 bool operator!=(L left, const OptionWrapper<R>& right)
   { return left != right.o; }
 
+  //=//// COMPARISON AGAINST `none` ///////////////////////////////////////=//
+
+  // `none` needs to be readable as well as writable.  Without these it is a
+  // write-only token -- you could say `return none` but not `if (x == none)`
+  // -- which leaves the vocabulary half-finished.  The none-reactive macros
+  // in %needful.h test with this.
+  //
+  // 1. These must be spelled out for NoneStruct specifically, not left to the
+  //    generic `operator==(const OptionWrapper<L>&, R)` above.  That one
+  //    happily deduces R = NoneStruct and then fails inside its own body on
+  //    `left.o == NoneStruct`.  Being more specialized, these beat it in
+  //    partial ordering.
+  //
+  // 2. The unwrapped overload covers the raw T left behind once the `%`
+  //    extractor has run, as well as ordinary pointers and enums.  It is
+  //    constrained to bool-convertible types so that it cannot match a
+  //    Result(T) (never "none"), and so that a Need(T) -- whose bool coercion
+  //    is deliberately blocked -- does not quietly compare equal to none.
+  //
+  //    A FallibleWrapper<T> binds here rather than to [1], since identity
+  //    beats a derived-to-base conversion.  Both spell the same answer, so
+  //    the resolution is unambiguous either way.
+
+template<typename L>  // more specialized than (OptionWrapper<L>&, R) [1]
+bool operator==(const OptionWrapper<L>& left, NoneStruct)
+  { return not left.o; }
+
+template<typename R>
+bool operator==(NoneStruct, const OptionWrapper<R>& right)
+  { return not right.o; }
+
+template<typename L>
+bool operator!=(const OptionWrapper<L>& left, NoneStruct)
+  { return not not left.o; }
+
+template<typename R>
+bool operator!=(NoneStruct, const OptionWrapper<R>& right)
+  { return not not right.o; }
+
+template<typename T, typename =  // raw T, e.g. after the extractor [2]
+    enable_if_t<needful_is_explicitly_convertible_v(T, bool)>>
+bool operator==(const T& value, NoneStruct)
+  { return not value; }
+
+template<typename T, typename =
+    enable_if_t<needful_is_explicitly_convertible_v(T, bool)>>
+bool operator==(NoneStruct, const T& value)
+  { return not value; }
+
+template<typename T, typename =
+    enable_if_t<needful_is_explicitly_convertible_v(T, bool)>>
+bool operator!=(const T& value, NoneStruct)
+  { return not not value; }
+
+template<typename T, typename =
+    enable_if_t<needful_is_explicitly_convertible_v(T, bool)>>
+bool operator!=(NoneStruct, const T& value)
+  { return not not value; }
+
   //=//// CORRUPTION HELPER ///////////////////////////////////////////////=//
 
   // See %needful-corruption.h for motivation and explanation.
@@ -205,11 +264,20 @@ struct NEEDFUL_NODISCARD FallibleWrapper : public needful::OptionWrapper<T> {
 #undef NeedfulFallible
 #define NeedfulFallible(T)  needful::FallibleWrapper<T>
 
-#undef needful_unwrap_fallible
-#define needful_unwrap_fallible  needful_unwrap
+// `infallible` is the expression-position discharge for a Fallible(T): it
+// asserts the value is engaged and hands back the raw T.
+//
+// It is the same operation as `unwrap`, which also binds here (deduction to a
+// base class of the argument is allowed, and FallibleWrapper derives from
+// OptionWrapper).  The separate spelling exists because it names the claim
+// being made at the call site -- `p = infallible Try_Alloc(n)` asserts this
+// particular call cannot fail, which is more pointed than "unwrap it".
+//
+// There used to also be `unwrap_fallible`, a third spelling of the same
+// thing.  It was never used in a doc, test, or example, and is gone.
 
 #undef needful_infallible
-#define needful_infallible  needful_unwrap_fallible
+#define needful_infallible  needful_unwrap
 
 
 //=//// UNWRAP HOOK FOR Optional(T) ///////////////////////////////////////=//
