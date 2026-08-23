@@ -11,103 +11,115 @@
 //
 // https://en.wikipedia.org/wiki/MIT_License/
 //
-//=//// fail() ////////////////////////////////////////////////////////////=//
+//=//// THE Result(T) VOCABULARY //////////////////////////////////////////=//
 //
-// Sets the global error state (`g_failure`) to the error pointer `p` and
-// returns NEEDFUL_RESULT_0 from the current function, propagating the
-// error up the call stack. This is for cooperative error signaling, and can
-// be caught by except()...see panic() for divergent errors.
+// Seven macros make up the vocabulary.  Needful spells each one out in full
+// -- `needful_return_if_failed`, and `return_if_failed` if you opt into the
+// NEEDFUL_RESULT_SHORTHANDS group -- and never claims a bare keyword like
+// `trap` or `fail` for itself.  Projects that want keyword-style names define
+// them locally; %docs/result.md suggests a set.
 //
-//      if (bad_condition)
-//          return fail (Error_Bad_Thing());
+// (An earlier draft of this file documented such a set -- fail, trap, require,
+// assume, except, rescue -- as though it were the library's own, alongside a
+// `g_divergent` flag separating recoverable failures from abrupt ones.  None
+// of that shipped.  There is one error state and one kind of failure.)
 //
-//=//// panic() //////////////////////////////////////////////////////////=//
+// The whole mechanism rests on hooks the client supplies: Needful_Get_Failure,
+// Needful_Set_Failure, Needful_Test_And_Clear_Failure, Needful_Panic_Abruptly
+// and Needful_Assert_Not_Failing.  Define NEEDFUL_DECLARE_RESULT_HOOKS in
+// exactly one translation unit for a stock single-threaded implementation, or
+// write your own over thread-local storage.
 //
-// Like `return fail`, but for non-cooperative, abrupt errors that should not
-// be handled by normal except() handling or trap, but only propagated until
-// they are ultimately `rescue`'d.  Sets the error state, marks the
-// divergent flag, and returns NEEDFUL_RESULT_0.
+//=//// make_failure(...) /////////////////////////////////////////////////=//
+//
+// Sets the global error state and evaluates to NEEDFUL_RESULT_0, which is
+// constructible as the T of any Result(T).  It is not a statement: you return
+// it, and Result0Struct is [[nodiscard]] so that forgetting the `return` is
+// caught rather than silently setting an error and falling through.
+//
+//     if (bad_condition)
+//         return make_failure (Error_Bad_Thing());
+//
+//=//// panic(...) ////////////////////////////////////////////////////////=//
+//
+// For conditions no caller should be asked to handle.  Reports the error and
+// ends the process; it does not propagate and cannot be caught.  Unlike
+// make_failure() this IS a statement, and is not used with `return`.
 //
 //     if (catastrophic_condition)
 //         panic (Error_Catastrophe());
 //
-//=//// trap(expr) ////////////////////////////////////////////////////////=//
+//=//// return_if_failed(stmt) ////////////////////////////////////////////=//
 //
-// Evaluates `expr`, which should return a Result-like wrapper. If no error
-// occurs, the result is extracted and execution continues. If an error is
-// present in the global error state (`g_failure`), the current function
-// returns a special zero value (NEEDFUL_RESULT_0), propagating the
-// error up the call stack. This is analogous to Rust's `?` operator.
+// Runs `stmt`, which should call something returning a Result(T).  If no
+// failure was signaled, the result is extracted and execution continues.  If
+// one was, the current function returns NEEDFUL_RESULT_0, propagating it up
+// the call stack.  This is the analogue of Rust's `?` operator, and it is why
+// the enclosing function must itself return a Result(T).
 //
 //     Result(int) foo() {
-//         trap (bar());
-//         // ... code continues if no error ...
+//         return_if_failed (int x = bar());
+//         // ... code continues, with x, only if no failure ...
 //     }
 //
-//=//// require(expr) /////////////////////////////////////////////////////=//
+//=//// panic_if_failed(stmt) /////////////////////////////////////////////=//
 //
-// Like `trap`, but if an error is detected, it also sets the divergent flag
-// (`g_divergent = true`) before returning `NEEDFUL_RESULT_0`. Used
-// when a function must not continue after a failed operation, and signals
-// that the error is not recoverable in the current context.  It means that
-// constructs like except() will propagate the error vs. handle it.
+// Like return_if_failed(), but turns a failure into a panic instead of
+// propagating it: the error is handed to Needful_Panic_Abruptly() to be
+// reported, and the process ends.  For call sites where a failure means the
+// program's assumptions are already broken.
 //
-//    require (bar());
-//    // ... code continues only if no error ...
+//     panic_if_failed (bar());
+//     // ... code continues only if no failure ...
 //
-//=//// assume() //////////////////////////////////////////////////////////=//
+// (It is deliberately not called abort_if_failed(), which would suggest it
+// shares an exit path with the none-reactive family's abort_if_none().  It
+// does not -- a failure carries an error object worth reporting first.)
 //
-// Optimized case for when you have inside knowledge that a Result()-bearing
-// function call will not fail.  Needed to do compile-time unwrapping of
-// the result container class.
+//=//// assert_not_failed(stmt) ///////////////////////////////////////////=//
 //
-//    assume (bar());
-//    // ... code always continues ...
+// For when you have inside knowledge that this particular call cannot fail.
+// Runs `stmt` and asserts no failure was signaled.  The assertion compiles
+// away in release builds; the statement itself always runs.
 //
+//     assert_not_failed (bar());
+//     // ... code always continues ...
 //
-//=//// ...expr... except (decl) {...} ////////////////////////////////////=//
+//=//// ...expr... catch_if_failed (decl) {...} ///////////////////////////=//
 //
-// Used after function calls that may have propagated a non-divergent error.
-// If an error was propagated, `except` allows handling it.  This leverages
-// a tricky standard C feature of for-loop constructs being able to scope
-// declarations...`decl` is assigned the error and the error state is
-// cleared before running the loop body just once.
-//
-// Examples:
+// Attaches to a call that may have signaled a failure, and handles it.  This
+// leans on a standard C feature: a `for` loop can scope declarations, so
+// `decl` is assigned the error and the state cleared before the body runs
+// exactly once.  Because it expands to a `for`, an `else` clause attaches to
+// it naturally, giving a success branch.
 //
 //     Result(int) foo() {
-//       bar() except(Error* err) {
+//         bar() catch_if_failed (Error* err) {
 //             // handle error in err
 //         }
-//         // ... code continues if no error ...
+//         // ... code continues if no failure ...
 //     }
 //
 //     Result(int) foo() {
 //         Option(Error*) err;
-//         bar() except(err) {
+//         bar() catch_if_failed (err) {
 //             // handle error in err
 //         }
-//         // code common to erroring and non erroring case
+//         // code common to the failing and non-failing case
 //         if (err)
-//             fail (unwrap err);  // manual propagation
-//         // ... code continues if no error ...
+//             return make_failure (unwrap err);  // manual propagation
+//         // ... code continues if no failure ...
 //     }
 //
-//=//// rescue (expr) (decl) {...} ////////////////////////////////////////=//
+//=//// extract_failure(expr) /////////////////////////////////////////////=//
 //
-// Rescuing divergent failures uses a different syntax than except().
+// Evaluates `expr`, then reads and clears the failure state, handing it back
+// as a value.  Use it when you want the error as data rather than as control
+// flow -- logging it, or deciding among several recoveries.
 //
-//     rescue (
-//         target = Some_Result_Bearing_Function(args)
-//     ) (Error* e) {
-//         // handle error in e
-//     }
-//
-// You should generally avoid handling divergent errors.  Experience has
-// borne out that trying to handle generic exceptions from deep in stacks you
-// don't understand is a nigh-impossible power to wield wisely.  Only very
-// special cases (language REPLs, for example) should try to do this kind
-// of recovery.
+//     Error* e = extract_failure (Some_Result_Bearing_Function(args));
+//     if (e)
+//         Log_And_Continue(e);
 //
 //=/////////////////////////////////////////////////////////////////////////=//
 //
@@ -121,12 +133,13 @@
 //                ResultWrapper<T, E> /* function definition */
 //
 //    This way when you write `Result(T,E) Some_Func(...) {...}` you have
-//    awareness of the return error type inside the body for `trap()` to use.
+//    awareness of the return error type inside the body, for propagation
+//    macros like return_if_failed() to use.
 //
-//    But it doesn't solve the issue for `except()` which has to telegraph
-//    the error type of the called function out of an expression that has to
-//    be parenthesized, which is impossible.  And that definition of Result
-//    can't work in both a prototype and a definition, because it uses a
+//    But it doesn't solve the issue for catch_if_failed(), which has to
+//    telegraph the error type of the called function out of an expression
+//    that has to be parenthesized -- impossible.  And that definition of
+//    Result can't work in both a prototype and a definition, because it uses a
 //    default template parameter that can only be defined once.  Also, if
 //    you try to add inline like `INLINE Result(T, E) Some_Func(...) {...}`
 //    that can't work because you can't put INLINE before the `template<>`
@@ -134,8 +147,7 @@
 //    FURTHERMORE... there are limits to the ability to handle errors in a
 //    polymorphic way that works in both C and C++.  C++ has inheritance and
 //    that's the only way to beat strict aliasing, while C can use common
-//    leading substructures which violate strict aliasing in C++.  Also, a
-//    divergent error has to be handled via a superclass of some kind.
+//    leading substructures which violate strict aliasing in C++.
 //
 //    AND FINALLY... Needful arose specifically for implementing Rebol, and
 //    unlike Rust, Rebol's own error handling lacks a notion of statically
@@ -154,9 +166,9 @@
 // controlled through a special type.
 //
 // 1. The main purpose of permissive zero is to be the polymorphic return
-//    value of `fail(...)` used in `return fail (...)` that is able to make
-//    the T in any Result(T) type.  Making it [[nodiscard]] helps catch
-//    cases where someone omits the `return`, which would be a mistake
+//    value of `make_failure(...)`, used as `return make_failure(...)`, which
+//    is able to make the T in any Result(T) type.  Making it [[nodiscard]]
+//    helps catch cases where someone omits the `return`, a mistake
 //    (easy to make, as `panic (...)` looks similar and takes an error but
 //    is *not* used with return.)
 //
@@ -180,7 +192,7 @@ struct NEEDFUL_NODISCARD Result0Struct {  // [[nodiscard]] is good [1]
 //    for anything that is a Result(T) in the case of a failure.  But rather
 //    than allow Result to be constructed from any integer in the C++
 //    checked build, it's narrowly constructible from Result0Struct,
-//    which is what `return fail(...)` returns.
+//    which is what `return make_failure(...)` returns.
 //
 
 // IsResultWrapper is used in ResultWrapper's own SFINAE (to prevent
@@ -256,18 +268,22 @@ struct IsWrapperSemantic<ResultWrapper<X>> : std::true_type {};
 //
 // 1. The choice of % for the result extractor has the goal of being able
 //    to extract the result before it would get picked up by things like
-//    `nocast` or `maybe` or `unwrap`, which use << at lower-precedence:
+//    `nocast` or `opt` or `unwrap`, which are prefix operators built on
+//    `operator+` -- deliberately lower precedence than `%`:
 //
-//       trap (Foo* foo = opt Some_Function())
+//       return_if_failed (Foo* foo = opt Some_Function())
 //
 //    This expands to:
 //
-//       Foo* foo = maybe_helper << Some_Function() % result_extractor;
-//       /* more expansion of trap macro */
+//       Foo* foo = g_opt_helper + Some_Function() % g_result_extractor;
+//       /* more expansion of the return_if_failed macro */
+//
+//    The `%` binds first, peeling the ResultWrapper off, and only then does
+//    the `+` see a plain Option(Foo*) to take the raw value out of.
 //
 // 2. The error is a bit opaque if you write:
 //
-//        trap (
+//        return_if_failed (
 //           Some_Function();
 //        );
 //

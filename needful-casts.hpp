@@ -542,9 +542,9 @@ Hookable_Cast_Helper(FromRef&& from)  // && is why helper is a function! [A]
 // raw type—their wrapping is part of the data's contract.  Cast must not
 // silently strip them.  Instead, the inner value is cast and re-wrapped in
 // the same template: `cast(Stump*, Result(Stub*))` -> `Result(Stump*)`.
-// This is essential for patterns like `require(cast(T, result_expr))` where
-// the Result wrapper must survive for `%` extraction, and for Option where
-// engaged/disengaged state must be preserved.
+// This is essential for patterns like `panic_if_failed(cast(T, result_expr))`
+// where the Result wrapper must survive for `%` extraction, and for Option
+// where engaged/disengaged state must be preserved.
 //
 template<
     typename To,
@@ -736,9 +736,9 @@ struct UpcastHelper {
 //    the reverse conversion is legal, that's what's allowed.
 //
 // 3. By making DowncastHolder [[nodiscard]], it's safe to use with things
-//    like trap() and except():
+//    like return_if_failed() and catch_if_failed():
 //
-//       trap (Derived* derived = downcast Get_Base_Ptr());
+//       return_if_failed (Derived* derived = downcast Get_Base_Ptr());
 //
 // 4. See remarks in Option(T) about why + is used here to combine better
 //    with the % used by Result(T) extraction, and why << is avoided due to

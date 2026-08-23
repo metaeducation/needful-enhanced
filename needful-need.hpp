@@ -185,14 +185,14 @@ struct NeedfulVoidWaypointSafe<NeedWrapper<T>> : std::true_type {};
 //    But interoperability with Result(T) means that postfix extraction of
 //    results should ideally be higher precedence than opt or unwrap:
 //
-//       trap(Foo* foo = unwrap Some_Api())
+//       return_if_failed(Foo* foo = unwrap Some_Api())
 //
 //    We have this expand out into:
 //
-//       Foo* foo = needful::g_unwrap_helper + Some_Api() % result_extractor;
-//       /* more expansion of trap macro */
+//       Foo* foo = needful::g_unwrap_helper + Some_Api() % g_result_extractor;
+//       /* more expansion of the return_if_failed macro */
 //
-//    If the result extractor wasn't higher precedence, maybe_helper would
+//    If the result extractor were not higher precedence, g_unwrap_helper would
 //    get a Result(Option(T)) and have to re-wrap that as a Result(T), which
 //    makes wasteful extra objects.  It's also semantically questionable: the
 //    result is conceptually on the "outside", and should extract first.
