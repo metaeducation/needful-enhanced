@@ -110,6 +110,26 @@ add_needful_smoke_test("smoke-enhanced-missing" "missing")
 add_needful_smoke_test("smoke-enhanced-mismatched-version" "mismatched")
 
 
+#=[ HEADER INTEGRITY ]========================================================
+#
+# needful.h is hand-copied from where it is authored to the repository that
+# publishes it, and a shared-folder copy once produced a file of exactly the
+# right length whose tail was NUL padding.  Because the length matched, it was
+# committed, served, and only noticed as several hundred lines of compiler
+# "null character ignored" warnings.  See run-header-integrity.cmake.
+#
+# Registered first so a mangled header is reported as one clear line rather
+# than as fallout in every other test.
+
+add_test(
+    NAME header-integrity
+    COMMAND
+        "${CMAKE_COMMAND}"
+        -DNEEDFUL_H_DIR=${NEEDFUL_H_DIR}
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/run-header-integrity.cmake"
+)
+
+
 #=[ C BUILD TESTS ]===========================================================
 #
 # Every other test here compiles as C++ with NEEDFUL_CPP_ENHANCED=1.  These

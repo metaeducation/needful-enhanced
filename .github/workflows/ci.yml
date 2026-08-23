@@ -101,6 +101,21 @@ jobs:
         echo "NEEDFUL_H_DIR=$NEEDFUL_H_DIR" >> "$GITHUB_ENV"
 
 
+    # needful.h is hand-copied into the repository that publishes it, and a
+    # shared-folder copy once produced a file of exactly the right length whose
+    # tail was NUL padding.  The length matched, so it was committed and served,
+    # and the only symptom was hundreds of "null character ignored" warnings
+    # from a compiler that otherwise carried on.
+    #
+    # Checking here -- before anything is configured or compiled -- turns that
+    # into one legible failure instead of a wall of warnings.
+    #
+    - name: Verify Fetched needful.h Is Intact
+      run: |
+        cmake -DNEEDFUL_H_DIR="$NEEDFUL_H_DIR" \
+          -P tests/run-header-integrity.cmake
+
+
   #====# TOOLCHAIN SETUP #=====================================================#
 
     # By default you can't call MSVC from the command line; this action sets
