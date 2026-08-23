@@ -149,6 +149,17 @@ bool operator!=(L left, const NeedWrapper<R>& right)
   { return left != right.n; }
 
 
+// Vouch NeedWrapper<T> safe for needful_void_waypoint_cast (see
+// NeedfulVoidWaypointSafe in needful-utilities.hpp): its implicit
+// `operator T()`, implicit `operator ExactWrapper<...>()`, and templated
+// explicit `operator U()` all just hand back the same underlying field `n`
+// (via static_cast, with no side effects), so it doesn't matter which one a
+// (void*) cast actually picks -- they're all value-preserving views of `n`.
+//
+template<typename T>
+struct NeedfulVoidWaypointSafe<NeedWrapper<T>> : std::true_type {};
+
+
 //=/// UNWRAP HELPER CLASS (LEGAL ON Need(), NOT JUST Option()) ///////////=//
 //
 // To avoid requiring parentheses and give a "keyword" look to the `unwrap`

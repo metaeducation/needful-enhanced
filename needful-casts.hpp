@@ -686,9 +686,10 @@ struct RigidCastAsserter {
 
 //=//// upcast(): CAST THAT WOULD BE SAFE FOR PLAIN ASSIGNMENT ///////////=//
 //
-// Upcast behaves like what would also be called an "implicit cast", which
-// is anything that would be safe if done through a normal assignment.  It's
-// just a nicer, shorter name than implicit_cast())!
+// Upcast behaves like assignment/copy-init conversion: anything that would
+// be safe through a normal assignment.  The name emphasizes conversion
+// direction (up the hierarchy / along an implicit path), not a generic
+// "cast anything" escape hatch.
 //
 // No checking is needed (none would have been done for an assignment).
 //

@@ -156,7 +156,6 @@ where the wrapper guarantees safe writes.
 ## Related
 
 - [`Need(T)`](/need) — non-null pointers (orthogonal concern)
-- [Internals: The Template Cast Operator Problem](/internals/template-cast-operator) — why `SinkWrapper` constructors use `c_cast(T*, c_cast(void*, u))`
 
 ---
 

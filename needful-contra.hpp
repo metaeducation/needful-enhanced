@@ -203,7 +203,8 @@ struct ContraWrapper {
 
     template<typename U, IfContravariant<U, T>* = nullptr>
     ContraWrapper(const U& u) {
-        this->p = needful_implicit_cast(T*, u);
+        // Preserve wrapper conversion semantics on downcast path.
+        this->p = needful_void_waypoint_cast(T*, u);
     }
 
     template<typename U, IfContravariant<SinkWrapper<U>, T>* = nullptr>
@@ -226,7 +227,8 @@ struct ContraWrapper {
 
     template<typename U, IfContravariant<U, T>* = nullptr>
     ContraWrapper& operator=(const U& u) {
-        this->p = needful_implicit_cast(T*, u);
+        // Preserve wrapper conversion semantics on downcast path.
+        this->p = needful_void_waypoint_cast(T*, u);
         return *this;
     }
 
@@ -247,6 +249,14 @@ struct ContraWrapper {
 
     T* operator->() const { return p; }
 };
+
+// Vouch ContraWrapper safe for needful_void_waypoint_cast (see
+// NeedfulVoidWaypointSafe in needful-utilities.hpp): neither conversion
+// operator above has a side effect, so it doesn't matter which one a
+// (void*) cast actually picks -- both just return `p`.
+//
+template<typename TP>
+struct NeedfulVoidWaypointSafe<ContraWrapper<TP>> : std::true_type {};
 
 
 //=//// SINK() WRAPPER FOR OUTPUT PARAMETERS //////////////////////////////=//
@@ -322,7 +332,8 @@ struct SinkWrapper {
 
     template<typename U, IfContravariant<U, T>* = nullptr>
     SinkWrapper(const U& u) {
-        this->p = needful_implicit_cast(T*, u);
+        // Preserve wrapper conversion semantics on downcast path.
+        this->p = needful_void_waypoint_cast(T*, u);
         this->corruption_pending = (this->p != nullptr);
     }
 
@@ -356,7 +367,8 @@ struct SinkWrapper {
 
     template<typename U, IfContravariant<U, T>* = nullptr>
     SinkWrapper& operator=(const U& u) {  // `=` allowed [4]
-        this->p = needful_implicit_cast(T*, u);
+        // Preserve wrapper conversion semantics on downcast path.
+        this->p = needful_void_waypoint_cast(T*, u);
         this->corruption_pending = (this->p != nullptr);  // corrupt
         return *this;
     }
@@ -393,6 +405,14 @@ struct SinkWrapper {
             Corrupt_If_Needful(*p);  // corrupt pointed-to item
     }
 };
+
+// Vouch SinkWrapper safe for needful_void_waypoint_cast (see
+// NeedfulVoidWaypointSafe in needful-utilities.hpp): both conversion
+// operators above run the identical corruption-poisoning side effect, so
+// it doesn't matter which one a (void*) cast actually picks.
+//
+template<typename TP>
+struct NeedfulVoidWaypointSafe<SinkWrapper<TP>> : std::true_type {};
 
 
 //=//// HOOK TO CORRUPT *POINTER ITSELF* INSIDE SINK(T) ///////////////////=//
@@ -505,3 +525,11 @@ struct InitWrapper : ContraWrapper<TP> {
         return *this;
     }
 };
+
+// Vouch InitWrapper safe for needful_void_waypoint_cast (see
+// NeedfulVoidWaypointSafe in needful-utilities.hpp): InitWrapper doesn't
+// define its own conversion operators, it inherits ContraWrapper's
+// (side-effect-free) pair unchanged -- same safety argument applies.
+//
+template<typename TP>
+struct NeedfulVoidWaypointSafe<InitWrapper<TP>> : std::true_type {};

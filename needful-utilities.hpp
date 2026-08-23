@@ -140,6 +140,9 @@ template<typename T>  // C++14
 using remove_const_t = typename std::remove_const<T>::type;
 
 template<typename T>  // C++14
+using remove_cv_t = typename std::remove_cv<T>::type;
+
+template<typename T>  // C++14
 using remove_pointer_t = typename std::remove_pointer<T>::type;
 
 template<typename T>  // C++14
@@ -274,27 +277,117 @@ template<typename T>  // T is ignored, just here to make it a template
 struct AlwaysFalse : std::false_type {};  // for SFINAE static_assert [2]
 
 
-//=//// IMPLICIT CAST VIA VOID ////////////////////////////////////////////=//
+//=//// VOID WAYPOINT: SOLICIT IMPLICIT CONVERSION, THEN REINTERPRET /////=//
 //
-// C++ doesn't allow templated cast operators that participate in implicit
-// conversion chains, so getting a Base* out of a SinkWrapper<Derived> inside
-// a template constructor requires a two-step void* round-trip:
+// For the general, non-Needful-specific writeup of this idiom -- including
+// why it's a *different* fix than the "implicit_cast<T>() via non-deduced
+// context" trick, and when each one applies -- see:
 //
-//    this->p = c_cast(T*, c_cast(void*, u));
+//   https://ae1020.github.io/implicit-cast-vs-waypoint-cast/
 //
-// Step 1: (void*)u fires the implicit operator Derived*() then converts
-// Derived* -> void*, preserving correct base-subobject pointer arithmetic.
-// Step 2: (T*)(void*) converts void* to Base*, which is safe here.
+// (That article calls this the "void waypoint", hence the macro's name --
+// the `_cast` suffix flags it as a cast, alongside c_cast/m_cast/etc.)
 //
-// Direct static_cast<Base*>(wrapper) would invoke the templated explicit
-// operator U*() which uses reinterpret_cast -- semantically wrong for
-// inheritance relationships even if it produces the same address.
+// ContraWrapper/SinkWrapper constructors are templates that accept any U
+// certified compatible by IsContravariant -- U is a BASE-typed pointer or
+// wrapper (Sink/Init deliberately accept less-constrained BASE classes as
+// input; see IsContravariant/IsSameLayoutBase in needful-contra.hpp).  We
+// need the more-constrained T* (e.g. Derived*) out of it:
 //
-// Full explanation: https://needful.metaeducation.com/internals/template-cast-operator
+//    this->p = needful_void_waypoint_cast(T*, u);
+//
+// This is a downcast (Base* -> Derived*), which is *never* implicit in
+// C++ -- there's no standard or user-defined conversion the compiler will
+// pick on its own, whether U is a raw pointer or a wrapper class.  That
+// rules out fixing this with the non-deduced-context `implicit_cast<T>()`
+// trick used elsewhere for the opposite (upcast) problem: forcing
+// copy-initialization doesn't help when there's no implicit conversion to
+// force in the first place -- it just fails to compile.
+//
+// So a direct static_cast<T*>(u) is used instead... except when U is a
+// wrapper whose implicit `operator U*()` has a side effect that must run
+// (e.g. SinkWrapper's corruption-poisoning, see [1]).  A direct cast
+// performs direct-initialization, which happily calls a *templated explicit*
+// `operator X*()` if the wrapper has one -- skipping the implicit operator,
+// and its side effect, entirely.  needful_void_waypoint_cast(T,expr) is:
+//
+//    (T*)(void*)u
+//
+// Step 1, (void*)u, converts u to void*.  For a raw pointer U this is a
+// trivial pointer-to-void conversion, with nothing to go wrong.
+//
+// For a wrapper U, it's tempting to think (void*)u *solicits* whatever
+// implicit `operator X*()` the wrapper has, because "implicit beats
+// explicit."  That's not actually how the standard ranks conversion-function
+// candidates for direct-initialization -- explicitness only decides whether
+// a candidate is in the set at all, not how candidates are ranked once
+// they're in it.  If the wrapper *also* has a templated `explicit operator
+// U*()` (as ContraWrapper/SinkWrapper do, for generic coercion), deducing
+// U=void gives that operator an exact-match (Identity) return type of
+// void*, which beats the implicit operator's return type needing an extra
+// standard conversion to reach void* (ranked Conversion).  So (void*)u can
+// silently call the *explicit* operator instead of the implicit one --
+// see the linked article's "Case 2" for the full mechanics, confirmed by
+// compiling a minimal reproduction.
+//
+// This macro does NOT protect against that on its own.  It only guarantees
+// safety for U types it's been vouched safe for, via NeedfulVoidWaypointSafe
+// below -- see that trait for what "safe" means and how ContraWrapper /
+// SinkWrapper / InitWrapper satisfy it today.
+//
+// Step 2, (T*)(void* value), is a bare *reinterpretation* of the address --
+// not a conversion the type system endorses.  This is safe here -- in both
+// directions, regardless of how many bases are in the hierarchy --
+// specifically *because* IsSameLayoutBase requires both classes to be
+// `std::is_standard_layout` with identical `sizeof`.  C++'s standard-layout
+// rules only allow ONE class anywhere in the hierarchy to have non-static
+// data members; combined with equal sizeof (no fields added in derivation),
+// that pins the data-holding base at offset 0 by construction.  There is no
+// valid Needful-layout-compatible hierarchy where this reinterpret would
+// need an offset adjustment it doesn't get -- but that's a fact this macro
+// leans on, not one it checks itself.
 //
 // Because c_cast() may not be defined in all contexts where this idiom is
-// needed, this is defined as its own macro.  If it turns out to be useful for
-// those writing needful-powered enhancements, it may become public facing.
+// needed, this is defined as its own macro.  If it turns out to be useful
+// for those writing needful-powered enhancements, it may become public
+// facing.
+//
+// 1. See SinkWrapper's `corruption_pending` handling in needful-contra.hpp.
 //
 
-#define needful_implicit_cast(T,expr)  ((T)(void*)(expr))
+//=//// VOID WAYPOINT SAFETY WHITELIST /////////////////////////////////=//
+//
+// Whether step 1 above lands on the implicit or the explicit-template
+// operator is not something the compiler's overload resolution rules
+// let us detect generically from T alone -- and whether that even matters
+// depends on what the two operators *do*, which is a semantic fact about
+// U's authors, not something visible in its type.  So rather than try to
+// prove step 1 safe for any possible U, class types have to opt in here,
+// vouching that it doesn't matter which operator (void*)u actually calls
+// -- either because neither has a side effect, or because both run the
+// same one.
+//
+// Raw pointers need no entry: they have no conversion operators to race in
+// the first place, so they're safe unconditionally.
+//
+// ContraWrapper/SinkWrapper/InitWrapper (needful-contra.hpp) specialize
+// this to true_type, each with a comment justifying why their specific
+// pair of conversion operators is safe to conflate this way.
+//
+template<typename T>
+struct NeedfulVoidWaypointSafe : std::is_pointer<T> {};
+
+template<typename T>
+struct NeedfulVoidWaypointSafeChecker {
+    static_assert(
+        NeedfulVoidWaypointSafe<T>::value,
+        "needful_void_waypoint_cast(): T not vouched safe (see"
+        " NeedfulVoidWaypointSafe in needful-utilities.hpp)"
+    );
+};
+
+#define needful_void_waypoint_cast(T,expr) \
+    (NEEDFUL_DUMMY_INSTANCE(needful::NeedfulVoidWaypointSafeChecker< \
+        needful::remove_cv_t< \
+            needful::remove_reference_t<decltype(expr)>>>), \
+    (T)(void*)(expr))
