@@ -91,29 +91,69 @@ jobs:
     # needful.h lives one level above the needful-enhanced repo checkout.
     # dirname strips the last path component: .../needful-enhanced => .../
     #
-    - name: Fetch needful.h from its repository
+    # Fetched through the API rather than raw.githubusercontent.com.  The raw
+    # host sits behind a Varnish cache with `Cache-Control: max-age=300`, so
+    # pushing needful.h and running this workflow inside that five-minute window
+    # serves the *previous* copy with no sign anything is stale -- the byte count
+    # and the HTTP 200 both look perfectly normal.  (This is not hypothetical; it
+    # cost a confusing CI failure.)
+    #
+    # The API is not a cure, only an improvement: it is also cached, at
+    # `max-age=60`.  A five-fold smaller window, but still a window -- which is
+    # why the retry below is the part actually doing the work.
+    #
+    # Its ETag is the git blob SHA of what was served, so logging it makes a
+    # stale fetch diagnosable after the fact:  compare against
+    # `git hash-object needful.h` in the needful repo.
+    #
+    # (github.token only raises the rate limit -- the repository is public, but
+    # unauthenticated API calls share a 60/hour budget across all of Actions.)
+    #
+    # The fetched file is then checked for NUL bytes before anything is
+    # configured or compiled.  needful.h is hand-copied into the repository that
+    # publishes it, and a shared-folder copy once produced a file of exactly the
+    # right length whose tail was NUL padding -- committed and served without
+    # complaint, surfacing only as hundreds of "null character ignored" warnings
+    # from a compiler that otherwise carried on.  See run-header-integrity.cmake.
+    #
+    # A failed check is retried rather than fatal on the first attempt: if the
+    # cause is a stale intermediary rather than a damaged commit, waiting is the
+    # cure.  A genuinely damaged upstream still fails, just a few minutes later.
+    #
+    - name: Fetch And Verify needful.h
       run: |
         NEEDFUL_H_DIR="$(dirname "$GITHUB_WORKSPACE")"
-        curl -fL \
-          "https://raw.githubusercontent.com/metaeducation/needful/main/needful.h" \
-          -o "$NEEDFUL_H_DIR/needful.h"
-        echo "Fetched needful.h to $NEEDFUL_H_DIR/needful.h"
-        echo "NEEDFUL_H_DIR=$NEEDFUL_H_DIR" >> "$GITHUB_ENV"
+        DEST="$NEEDFUL_H_DIR/needful.h"
+        API="https://api.github.com/repos/metaeducation/needful/contents/needful.h?ref=main"
 
+        HDRS="$(mktemp)"  # not $RUNNER_TEMP: on Windows that is a \-separated path
 
-    # needful.h is hand-copied into the repository that publishes it, and a
-    # shared-folder copy once produced a file of exactly the right length whose
-    # tail was NUL padding.  The length matched, so it was committed and served,
-    # and the only symptom was hundreds of "null character ignored" warnings
-    # from a compiler that otherwise carried on.
-    #
-    # Checking here -- before anything is configured or compiled -- turns that
-    # into one legible failure instead of a wall of warnings.
-    #
-    - name: Verify Fetched needful.h Is Intact
-      run: |
-        cmake -DNEEDFUL_H_DIR="$NEEDFUL_H_DIR" \
-          -P tests/run-header-integrity.cmake
+        for attempt in 1 2 3 4; do
+          curl -fsSL -D "$HDRS" \
+            -H "Accept: application/vnd.github.raw" \
+            -H "Authorization: Bearer ${{ github.token }}" \
+            -H "Cache-Control: no-cache" \
+            "$API" -o "$DEST"
+
+          BLOB="$(grep -i '^etag:' "$HDRS" | tr -d '\r' | sed 's/.*"\(.*\)"/\1/')"
+          echo "Attempt $attempt: $(wc -c < "$DEST") bytes, blob SHA ${BLOB:-unknown}"
+
+          if cmake -DNEEDFUL_H_DIR="$NEEDFUL_H_DIR" \
+                   -P tests/run-header-integrity.cmake; then
+            echo "NEEDFUL_H_DIR=$NEEDFUL_H_DIR" >> "$GITHUB_ENV"
+            exit 0
+          fi
+
+          if [ "$attempt" -eq 4 ]; then
+            echo "::error::needful.h failed its integrity check on every attempt."
+            echo "::error::This looks like a damaged commit upstream, not a stale cache."
+            exit 1
+          fi
+
+          echo "::warning::needful.h failed its integrity check (attempt $attempt of 4)."
+          echo "::warning::Retrying in 120s in case an intermediary is serving a stale copy."
+          sleep 120
+        done
 
 
   #====# TOOLCHAIN SETUP #=====================================================#
