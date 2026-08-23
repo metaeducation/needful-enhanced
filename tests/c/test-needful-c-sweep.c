@@ -189,6 +189,49 @@ Option(SweepColor) uses_return_if_none_enum(int yes) {
     return c;
 }
 
+/* Fallible(T) carries a must-use annotation, which is only legal on a
+** function's return type.  `static` is the case that decides whether the
+** annotation can lead the declaration: the GNU spelling may sit anywhere
+** among the declaration specifiers, while C23's [[nodiscard]] must come
+** first, so `static Fallible(int*) f(void)` is a syntax error under a
+** C23-only compiler.  That is why NEEDFUL_MUSTUSE prefers __attribute__
+** where both are available, and this exercises the combination.
+*/
+#if defined(NEEDFUL_FALLIBLE_C23_MUSTUSE) && NEEDFUL_FALLIBLE_C23_MUSTUSE
+    /* The documented cost of the C23-only path, reproduced here rather than
+    ** described: `static` cannot precede an attribute that must lead the
+    ** declaration, and no reordering rescues it.  Drop the `static`.
+    */
+    Fallible(int*) static_fallible_ptr(int yes) {
+        return yes ? &g_value : nullptr;
+    }
+#else
+    static Fallible(int*) static_fallible_ptr(int yes) {
+        return yes ? &g_value : nullptr;
+    }
+#endif
+
+/* FallibleVar(T) is the annotation-free spelling, for the positions where
+** Fallible(T) is deliberately illegal.  Same type, different legality.
+*/
+FallibleVar(int*) g_fallible_slot;
+
+struct FallibleHolder {
+    FallibleVar(int*) field;
+};
+
+static int* takes_fallible_param(FallibleVar(int*) p) {
+    return needful_opt p;
+}
+
+int* uses_fallible_var(int yes) {
+    FallibleVar(int*) held = static_fallible_ptr(yes);
+    struct FallibleHolder holder;
+    holder.field = held;
+    g_fallible_slot = held;
+    return takes_fallible_param(holder.field);
+}
+
 
 /*=== Sink(T) / Init(T) / Contra(T) / Exact(T) ===========================*/
 
@@ -355,6 +398,10 @@ int main(void) {
     CHECK(fallible_ptr(1) != none);
     CHECK(fallible_enum(0) == none);
     CHECK(fallible_enum(1) != none);
+
+    CHECK(static_fallible_ptr(1) == &g_value);
+    CHECK(uses_fallible_var(1) == &g_value);
+    CHECK(uses_fallible_var(0) == nullptr);
 
     printf("test-needful-c-sweep: %d checks passed\n", g_checks);
     return 0;

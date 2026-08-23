@@ -186,6 +186,54 @@ for (Error* e = Needful_Get_Failure(), *_once = nullptr; !_once; ++_once)
 loop body exactly like a normal `if` block — while the `if`/`else`
 structure leaves the `else` clause free for the success case.
 
+## Which builds actually check this {#enforcement}
+
+**`Result(T)` is enforced only by the C++ enhanced build.** This is a sharper
+statement than the equivalent one for [`Fallible(T)`](/fallible#enforcement),
+and it is the single most important thing to know before adopting it.
+
+In C, `Result(T)` is `#define NeedfulResult(T) T` and `NEEDFUL_RESULT_0` is
+plain `0`. There is no annotation that could help, because the guarantees are
+about a *wrapper type* rather than about a function's return value, and C has
+no way to express that. So a pure-C build gives you the vocabulary, the
+propagation, and the runtime assertions — but not one compile-time check.
+
+| build | must extract the result | `return` not forgotten on `make_failure` | won't decay to `T` |
+|---|---|---|---|
+| C — any compiler, any standard | ✗ | ✗ | ✗ |
+| C++ — no enhancement | ✗ | ✗ | ✗ |
+| C++ — `NEEDFUL_CPP_ENHANCED`, C++11/14 | ✗ | ✗ | ✅ |
+| C++ — `NEEDFUL_CPP_ENHANCED`, **C++17+** | ✅ | ✅ | ✅ |
+
+The first two rows are why Needful's pitch is *"C for production, C++ for
+stronger checks"* rather than *"C is enough"*. If you never run a checked C++
+build, `Result(T)` is documentation with a propagation mechanism attached.
+
+The C++11/14 row is the trap. `ResultWrapper` and `Result0Struct` are both
+declared `NEEDFUL_NODISCARD`, which has no spelling before C++17 and quietly
+becomes nothing — so the build still refuses to let a `Result(T)` decay into a
+`T`, but stops noticing when you drop one entirely, or when you write
+`make_failure(...)` and forget the `return`. That last one is the mistake the
+`[[nodiscard]]` on `Result0Struct` exists to catch, and it is easy to make
+because `panic(...)` sits right beside it, takes an error, and is *not* used
+with `return`. **Run the enhanced build at C++17 or higher.**
+
+### Warnings must be errors
+
+The C++17 checks arrive as **warnings**. Without escalation they are log noise,
+not enforcement:
+
+| toolchain | minimum to see it | to make it fail |
+|---|---|---|
+| GCC / Clang | on by default (`-Wunused-result`) | `-Werror`, or `-Werror=unused-result` |
+| MSVC | `/W1` (C4834) | `/WX`, or `/we4834` |
+
+MSVC needs no `/Zc:__cplusplus`; the C++17 detection reads `_MSVC_LANG`.
+
+The one check that fails a build on its own is the type separation — refusing
+to convert a `Result(T)` to a `T` is a hard error, and it holds all the way
+down to C++11.
+
 ## Setup: Result Hooks
 
 `Result(T)` needs to know how to store, retrieve, and clear the thread-local

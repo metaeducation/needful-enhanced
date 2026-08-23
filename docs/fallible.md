@@ -42,6 +42,110 @@ return_if_none (
 int* bypassed = Find_Node_Checked("target");
 ```
 
+## `Fallible(T)` is for return types; `FallibleVar(T)` is for everything else
+
+```c
+Fallible(int*) Find_Node(const char* name);      // return type
+
+FallibleVar(int*) cached;                        // local, parameter, member
+static int* Use(FallibleVar(int*) node) { ... }
+```
+
+They are **the same type**. They differ only in which declaration positions
+they are legal in, and only in C.
+
+The reason is how the must-use annotation behaves. In C, `Fallible(T)` carries
+one — `__attribute__((warn_unused_result))`, or C23's `[[nodiscard]]` — and an
+annotation that means "this function's result must be used" is only meaningful
+on a function. Applied anywhere else, the compiler objects:
+
+| position | what happens |
+|---|---|
+| return type | accepted — the intended use |
+| local, global, parameter, struct member | diagnosed (warning; an error under `-Werror` / `/WX`) |
+| `typedef`, cast | hard error |
+
+That is a **feature**, not an obstacle. It means `Fallible(T)` polices its own
+position for free: a value that must be checked cannot be quietly parked in a
+struct field where nothing will ever check it. But legitimate locals and
+parameters do exist — a helper that receives one, a cached result — and they
+need a spelling with no annotation on it. That is `FallibleVar(T)`.
+
+Under `NEEDFUL_CPP_ENHANCED` there is nothing to omit: `[[nodiscard]]` rides on
+the wrapper class rather than on the declaration, so no position is special and
+both spellings expand identically. Keeping both defined in every mode is what
+lets one source file compile as C, as C++, and as checked C++.
+
+### The `static` restriction
+
+`__attribute__` may appear anywhere among a declaration's specifiers.
+`[[nodiscard]]` must come *first*. So on a compiler offering only the C23
+spelling, this is a syntax error:
+
+```c
+static Fallible(int*) helper(void);   // ERROR under the C23-only path
+```
+
+and no reordering rescues it — `Fallible(int*) static helper(void)` fails too.
+Needful therefore prefers the GNU spelling wherever it exists (GCC and Clang
+offer it at *every* C standard, no C23 needed), and leaves the C23-only path
+**opt-in** behind `NEEDFUL_FALLIBLE_C23_MUSTUSE`. A compiler upgrade should not
+spring a hard error on every `static` helper in a codebase.
+
+If you enable it, drop the `static` from fallible-returning functions, or give
+them internal linkage another way.
+
+## Which builds actually check this {#enforcement}
+
+`Fallible(T)` makes three separate promises, and **no single configuration
+delivers all three.** Which ones you get depends on the compiler, the language
+standard, and — critically — on whether you turned warnings into errors.
+
+| build | must-use | position | won't decay to `T` |
+|---|---|---|---|
+| C — GCC/Clang, **any** standard | ✅ | ✅ | — |
+| C — MSVC `/std:c11`, `c17` | ✗ | ✗ | — |
+| C — C23 + `NEEDFUL_FALLIBLE_C23_MUSTUSE` | ✅ | ✅ | — |
+| C++ — no enhancement, GCC/Clang | ✅ | ✅ | — |
+| C++ — no enhancement, MSVC C++17+ | ✅ | ✅ | — |
+| C++ — `NEEDFUL_CPP_ENHANCED`, C++11/14 | ✗ | n/a | ✅ |
+| C++ — `NEEDFUL_CPP_ENHANCED`, **C++17+** | ✅ | n/a | ✅ |
+
+Three things in that table are worth stopping on.
+
+**The enhanced build is not strictly stronger.** At C++11/14 it enforces the
+type separation but *not* the must-use property, because `NEEDFUL_NODISCARD`
+has no spelling before C++17 — so a plain C build under GCC catches a dropped
+`Fallible(T)` that the checked C++11 build lets through. If you run the
+enhanced build in CI, run it at **C++17 or higher**, or you have turned off a
+guarantee you had for free.
+
+**Position checking does not apply under enhancement**, and does not need to:
+there, `[[nodiscard]]` rides on the wrapper class rather than the declaration,
+so `Fallible(T)` and `FallibleVar(T)` are the same type and every position is
+legal. The positional discipline is a C-build property.
+
+**MSVC in C mode below C23 checks nothing at all.** `_Check_return_` looks like
+it should help and does not — it is a SAL annotation, inert outside `/analyze`.
+If MSVC-C is your only build, the enhanced C++ build is where your enforcement
+has to come from.
+
+### Warnings must be errors
+
+Almost everything above arrives as a **warning**. A build that does not
+escalate warnings gets a diagnostic scrolled past in a log, not enforcement:
+
+| toolchain | minimum to see it | to make it fail |
+|---|---|---|
+| GCC / Clang | on by default (`-Wunused-result`, `-Wattributes`) | `-Werror`, or `-Werror=unused-result -Werror=attributes` |
+| MSVC | `/W1` for C4834 (discard), `/W3` for C4869 (position) | `/WX`, or `/we4834 /we4869` |
+
+The two hard errors — `Fallible(T)` in a `typedef` or a cast — are the only
+diagnostics here that fail a build on their own.
+
+MSVC needs no `/Zc:__cplusplus`: the C++17 detection reads `_MSVC_LANG`
+directly.
+
 ## Discharge Vocabulary
 
 Because `Fallible(T)` carries an implicit must-use constraint, you cannot reach

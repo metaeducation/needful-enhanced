@@ -49,7 +49,7 @@ bugs. No code changes needed between them!
 |---|---|
 | [`Need(T)`](/need) | Non-null/non-zero type; blocks boolean coercion |
 | [`Option(T)`](/option) | Rust-like optional with same size as `T` |
-| [`Fallible(T)`](/fallible) | Must-use Option(T); discharge with the `*_none` vocabulary |
+| [`Fallible(T)`](/fallible) | Must-use Option(T) for return types; `FallibleVar(T)` elsewhere |
 | [`Result(T)`](/result) | Multiplexed error + return value; auto-propagation via `return_if_failed` |
 | [`cast()` family](/cast) | Visible, hookable, semantically-named casts |
 | [`Contra(T)` / `Sink(T)` / `Init(T)`](/contra) | Contravariant output parameter markers |

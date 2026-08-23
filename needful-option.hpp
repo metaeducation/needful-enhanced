@@ -264,6 +264,19 @@ struct NEEDFUL_NODISCARD FallibleWrapper : public needful::OptionWrapper<T> {
 #undef NeedfulFallible
 #define NeedfulFallible(T)  needful::FallibleWrapper<T>
 
+// In C the two spellings differ: Fallible(T) carries a must-use annotation
+// that is only legal on a function's return type, and FallibleVar(T) omits it
+// so locals, parameters and members have something legal to say.
+//
+// Here there is nothing to omit.  [[nodiscard]] rides on the wrapper class
+// rather than on the declaration, so no declaration position is special and
+// both spellings are the same type.  Keeping FallibleVar(T) defined (rather
+// than leaving it to the C fallback) is what lets one source file compile in
+// all three modes.
+
+#undef NeedfulFallibleVar
+#define NeedfulFallibleVar(T)  needful::FallibleWrapper<T>
+
   //=//// FallibleWrapper MUST REPEAT OptionWrapper'S TRAITS //////////////=//
   //
   // Deriving inherits constructors.  It does NOT inherit trait
