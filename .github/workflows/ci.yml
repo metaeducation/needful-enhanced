@@ -257,6 +257,18 @@ jobs:
     #
     # Pass --extra-dir to also check any negative doctests extracted from docs/.
     #
+    # Run at both language levels.  They check different things, and running
+    # only one leaves a real hole either way:
+    #
+    #   c++11  is the documented floor, so the rejections Needful promises
+    #          (Option won't decay to T, Need blocks bool, ...) must hold there.
+    #
+    #   c++17  is where NEEDFUL_NODISCARD becomes [[nodiscard]].  Below it, the
+    #          must-use property of Fallible(T) does not exist at all -- so its
+    #          negative test declares `// REQUIRES-STD: c++17` and is skipped,
+    #          not failed, on the c++11 pass.  Without a c++17 pass it would
+    #          simply never be checked.
+    #
     - name: Verify Negative Tests Failed For The Right Reason
       working-directory: tests
       run: |
@@ -264,4 +276,10 @@ jobs:
         if [ -d doctest-extracted/negative ]; then
           EXTRA_ARGS="--extra-dir doctest-extracted/negative"
         fi
-        python run-negative-tests.py --match-error-text --needful-dir "$NEEDFUL_H_DIR" $EXTRA_ARGS
+        for std in c++11 c++17; do
+          echo "=============== negative tests at -std=$std ==============="
+          python run-negative-tests.py \
+            --match-error-text \
+            --std "$std" \
+            --needful-dir "$NEEDFUL_H_DIR" $EXTRA_ARGS
+        done

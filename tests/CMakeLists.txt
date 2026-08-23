@@ -208,8 +208,23 @@ endforeach()
 # errors, and MATCH-ERROR-TEXT still confirms each failed for its own reason.
 # The headers themselves are warning-clean at /W4 /WX and -Wall -Wextra.
 #
+# Both branches below must name the SAME language level.  They did not once:
+# GCC/Clang were raised to c++17 so that NEEDFUL_NODISCARD would exist, while
+# MSVC stayed at c++14, where it expands to nothing.  The negative doctest for
+# Fallible(T)'s must-use property therefore compiled cleanly under MSVC and
+# failed its WILL_FAIL gate -- a test that could never have passed on that
+# compiler.  It went unnoticed only because the MSVC CI row was silently
+# running GCC until the build matrix was corrected.
+#
+# Running these at the c++11 floor instead is not the fix: below c++17 the
+# must-use guarantee genuinely does not exist, so the test would be asserting
+# something untrue.  Floor coverage comes from run-negative-tests.py, which CI
+# runs at both c++11 and c++17 and which honors each test's `REQUIRES-STD`
+# marker by skipping rather than failing.  CTest registration does not read
+# that marker, which is exactly why the two branches have to agree here.
+#
 if(MSVC)
-    set(NEEDFUL_CPP_STD_FLAG "/std:c++14")  # MSVC has no /std:c++11; c++14 is minimum explicit
+    set(NEEDFUL_CPP_STD_FLAG "/std:c++17")  # must match the else() branch
     set(NEEDFUL_INCLUDE_FLAG "/I")
     set(NEEDFUL_WERROR_FLAG  "/WX")
     set(NEEDFUL_DEFINE_FLAG  "/DNEEDFUL_CPP_ENHANCED=1")
@@ -219,7 +234,7 @@ if(MSVC)
             PARENT_SCOPE)
     endfunction()
 else()
-    set(NEEDFUL_CPP_STD_FLAG "-std=c++17")  # want NEEDFUL_NODISCARD in C++17
+    set(NEEDFUL_CPP_STD_FLAG "-std=c++17")  # must match the if(MSVC) branch
     set(NEEDFUL_INCLUDE_FLAG "-I")
     set(NEEDFUL_WERROR_FLAG  "-Werror")
     set(NEEDFUL_DEFINE_FLAG  "-DNEEDFUL_CPP_ENHANCED=1")

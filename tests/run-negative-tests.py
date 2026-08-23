@@ -67,6 +67,39 @@ def read_expected_errors(source: Path):
     return phrases
 
 
+# Ordering for `// REQUIRES-STD:`.  Spelled out rather than compared
+# numerically, because the two-digit suffixes do not sort: "98" is C++98, which
+# is *older* than "11".  Anything not listed maps to 0, which means "unknown".
+#
+_STD_YEARS = {
+    '98': 1998, '03': 2003, '11': 2011, '14': 2014,
+    '17': 2017, '20': 2020, '23': 2023, '26': 2026,
+}
+
+
+def std_year(std):
+    """'c++17' -> 2017, 'gnu++11' -> 2011, anything unrecognized -> 0."""
+    m = re.search(r'(\d+)$', std or '')
+    return _STD_YEARS.get(m.group(1), 0) if m else 0
+
+
+def read_required_std(source: Path):
+    """Return the `// REQUIRES-STD: <std>` value from a test, or None.
+
+    Some guarantees only exist above a given language level -- Fallible(T)'s
+    must-use property needs [[nodiscard]], so it is unenforced before C++17 and
+    its negative test cannot fail there.  Such a test declares its floor, and
+    is skipped (not failed) when run below it.
+    """
+    pattern = re.compile(r'//\s*REQUIRES-STD:\s*(\S+)')
+    with open(source, encoding='utf-8') as f:
+        for line in f:
+            m = pattern.search(line)
+            if m:
+                return m.group(1).strip()
+    return None
+
+
 def compile_file(compiler, std_flag, defines, includes, source, tmpdir):
     """Compile source; return (exit_code, stderr_text).
 
@@ -147,9 +180,22 @@ def main():
     passed = 0
     failed = 0
     warned = 0
+    skipped = 0
 
     with tempfile.TemporaryDirectory() as tmpdir:
         for test in tests:
+            # Skip, don't fail, a test whose guarantee does not exist at this
+            # language level.  Only skip when BOTH levels are recognized: if
+            # either is unknown, run the test and let the result speak.
+            required = read_required_std(test)
+            need_year = std_year(required)
+            have_year = std_year(args.std)
+            if required and need_year and have_year and need_year > have_year:
+                print(f"  SKIP  {test.name}"
+                      f"  (needs -std={required}, running -std={args.std})")
+                skipped += 1
+                continue
+
             expected_phrases = read_expected_errors(test)
             exit_code, output = compile_file(
                 compiler=compiler,
@@ -194,7 +240,10 @@ def main():
     print()
     if warned:
         print(f"  ({warned} test(s) lack MATCH-ERROR-TEXT comments; use --match-error-text to require them)")
-    print(f"Results: {passed} passed, {failed} failed")
+    if skipped:
+        print(f"  ({skipped} test(s) skipped as above their REQUIRES-STD floor;"
+              f" run with a higher --std to include them)")
+    print(f"Results: {passed} passed, {failed} failed, {skipped} skipped")
     sys.exit(1 if failed else 0)
 
 

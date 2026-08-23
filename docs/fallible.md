@@ -135,13 +135,22 @@ int main() {
 
 <!-- doctest: negative-test -->
 ```cpp
+// REQUIRES-STD: c++17
+//
 // MATCH-ERROR-TEXT: nodiscard               <- all three
 // MATCH-ERROR-TEXT: ignoring return value   <- GCC, Clang
 // MATCH-ERROR-TEXT: discarding return value <- MSVC (C4834)
 //
-// NOTE: [[nodiscard]] is a *warning*, not an error.  This test only fails to
-// compile because the negative-test harness builds with warnings-as-errors
-// (-Werror / /WX).  See tests/CMakeLists.txt.
+// NOTE: this test needs TWO things that are easy to miss.
+//
+// 1. C++17.  NEEDFUL_NODISCARD is a no-op before then, because [[nodiscard]]
+//    does not exist -- so below C++17 the must-use property of Fallible(T)
+//    genuinely is not enforced, and this test cannot fail.  Hence
+//    REQUIRES-STD above, which makes the harness skip rather than misreport.
+//
+// 2. Warnings-as-errors.  [[nodiscard]] produces a *warning*; the compiler
+//    still exits 0.  The negative-test harness builds with -Werror / /WX so
+//    that discarding a value is an actual failure.  See tests/CMakeLists.txt.
 
 #ifdef __cplusplus
   #define NEEDFUL_CPP_ENHANCED  1
