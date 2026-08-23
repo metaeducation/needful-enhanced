@@ -201,13 +201,13 @@ struct NeedfulVoidWaypointSafe<NeedWrapper<T>> : std::true_type {};
 //    cleanly. `<<` would trigger "overloaded shift vs comparison" warnings.
 //
 
-struct UnwrapHelper {};
-constexpr UnwrapHelper g_unwrap_helper = {};
-
-#undef needful_unwrap
-#define needful_unwrap \
-    needful::g_unwrap_helper +  // lower precedence than % [1]
-
+// UnwrapHelper itself now lives in %needful-wrapping.hpp, which is included
+// unconditionally.  It used to be declared here, which made `unwrap` on an
+// Option(T) silently depend on NEEDFUL_NEED_USES_WRAPPER -- turning Need's
+// wrapper off broke Option with "UnwrapHelper: undeclared identifier", from
+// a file the user had not disabled.  `unwrap` is shared vocabulary, so it
+// belongs with the shared wrapper machinery; only the NeedWrapper overload
+// below is Need's business.
 
 template<typename T>
 T operator+(  // lower precedence than % [1]

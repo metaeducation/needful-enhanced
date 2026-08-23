@@ -293,3 +293,26 @@ struct IsBasicType {
 
 #define NEEDFUL_EXTRACT_INNER(InnerType, wrapper) \
     reinterpret_cast<const InnerType&>(wrapper)
+
+
+//=//// `unwrap` KEYWORD HELPER ///////////////////////////////////////////=//
+//
+// `unwrap` is spelled as a prefix "keyword" by making it the left operand of
+// operator+, so `unwrap foo` parses as `g_unwrap_helper + foo`.  See the
+// precedence discussion in %needful-need.hpp for why `+` and `%` are the
+// operators chosen.
+//
+// Only the shared tag type lives here.  The overloads live with the types
+// they unwrap: NeedWrapper's in %needful-need.hpp, OptionWrapper's in
+// %needful-option.hpp.  It has to be here rather than in either of those,
+// because both supply an overload and either file may be switched off
+// independently -- declaring it in the Need file made `unwrap` on an
+// Option(T) depend on NEEDFUL_NEED_USES_WRAPPER, which is not a real
+// relationship, and broke the build from a file the user had not disabled.
+
+struct UnwrapHelper {};
+constexpr UnwrapHelper g_unwrap_helper = {};
+
+#undef needful_unwrap
+#define needful_unwrap \
+    needful::g_unwrap_helper +  // lower precedence than %

@@ -309,8 +309,11 @@ struct IsOptionWrapper<FallibleWrapper<X>> : std::true_type {};
 template<typename X>  // else cast() strips the wrapper, and the nodiscard [2]
 struct IsWrapperSemantic<FallibleWrapper<X>> : std::true_type {};
 
-template<typename T, typename Target>  // may be disengaged: no storage [1]
-struct IsContravariant<FallibleWrapper<T>, Target, true> : std::false_type {};
+#if NEEDFUL_CONTRAS_USE_WRAPPER  // no Sinks to block if contras are off
+    template<typename T, typename Target>  // may be disengaged: no storage [1]
+    struct IsContravariant<FallibleWrapper<T>, Target, true>
+        : std::false_type {};
+#endif
 
 #if NEEDFUL_USES_CORRUPT_HELPER
     template<typename T>
@@ -431,17 +434,27 @@ static constexpr OptionExtractor g_option_extractor{};
 // try to use `needed` on an Option(T), it's a compile-time error.  This makes
 // `needed` a useful building block for macros that reject optional types.
 //
-template<typename T>
-T operator+(
-    NeededHelper,
-    const OptionWrapper<T>&
-){
-    static_assert(
-        sizeof(T) != sizeof(T),  // dependent false
-        "cannot use `needed` on an Option(T) -- use `opt` or `unwrap` instead"
-    );
-    return *static_cast<T*>(nullptr);  // unreachable
-}
+// Guarded for the same reason as the IsContravariant specialization above:
+// this overload exists only to produce a good error, and `needed` is Need's
+// own vocabulary.  With NEEDFUL_NEED_USES_WRAPPER off, `needful_needed` is a
+// no-op macro and there is no NeededHelper type to overload on, so naming it
+// here made Option(T) fail to compile over a keyword that was not in play.
+// (`unwrap` is different -- it is shared vocabulary, so its helper moved to
+// %needful-wrapping.hpp rather than being conditionalized.)
+//
+#if NEEDFUL_NEED_USES_WRAPPER
+    template<typename T>
+    T operator+(
+        NeededHelper,
+        const OptionWrapper<T>&
+    ){
+        static_assert(
+            sizeof(T) != sizeof(T),  // dependent false
+            "cannot use `needed` on an Option(T) -- use `opt` or `unwrap`"
+        );
+        return *static_cast<T*>(nullptr);  // unreachable
+    }
+#endif
 
 
 //=/// BLOCK OptionWrapper() CONTRAVARIANCE ///////////////////////////////=//
@@ -453,5 +466,15 @@ T operator+(
 //
 // We specialize IsContravariant directly to always return false.
 //
-template<typename T, typename Target>
-struct IsContravariant<OptionWrapper<T>, Target, true> : std::false_type {};
+// Guarded on the contra wrapper being enabled: this trait exists only to
+// refuse a conversion that cannot be attempted at all when there are no
+// Sink/Init/Contra wrappers to convert to.  Unguarded, it made Option(T)
+// require NEEDFUL_CONTRAS_USE_WRAPPER -- not because Option needs anything
+// from contras, but because a specialization cannot name a template that
+// was never declared.
+//
+#if NEEDFUL_CONTRAS_USE_WRAPPER
+    template<typename T, typename Target>
+    struct IsContravariant<OptionWrapper<T>, Target, true>
+        : std::false_type {};
+#endif
