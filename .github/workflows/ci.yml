@@ -49,24 +49,28 @@ jobs:
           - os: ubuntu-latest
             label: linux-gcc
             cxx: g++
+            cc: gcc
             cmake-generator: Unix Makefiles
             msvc: false
 
           - os: ubuntu-latest
             label: linux-clang
             cxx: clang++
+            cc: clang
             cmake-generator: Unix Makefiles
             msvc: false
 
           - os: macos-latest
             label: macos-clang
             cxx: clang++
+            cc: clang
             cmake-generator: Unix Makefiles
             msvc: false
 
           - os: windows-2022
             label: windows-msvc
             cxx: cl
+            cc: cl
             cmake-generator: NMake Makefiles
             msvc: true
 
@@ -132,8 +136,9 @@ jobs:
       run: |
         cmake -B build \
           -G "${{ matrix.cmake-generator }}" \
+          -DCMAKE_C_COMPILER="${{ matrix.cc }}" \
           -DCMAKE_CXX_COMPILER="${{ matrix.cxx }}" \
-          -DNEEDUL_H_DIR="$NEEDFUL_H_DIR"
+          -DNEEDFUL_H_DIR="$NEEDFUL_H_DIR"
 
 
     # Positive tests are compiled to binaries here; negative tests are
@@ -152,11 +157,48 @@ jobs:
       run: ctest --test-dir build -V --output-on-failure
 
 
-    # Run the Python negative-test driver in --strict mode.  This adds the
-    # EXPECT-ERROR phrase check that CTest's WILL_FAIL cannot do: it verifies
-    # that each negative test failed for the *right* reason, not due to a
-    # typo in the test file.  Any test lacking an EXPECT-ERROR comment is
-    # also a hard failure in strict mode.
+    # CTest above builds tests/c/ at whatever C standard CMake picked.  This
+    # step sweeps the standards explicitly, because the whole point of the C
+    # tests is that needful.h stays portable C -- and a single standard can
+    # hide, say, a C99 compound literal that C89 rejects.
+    #
+    # -Werror is deliberately NOT set yet.  Turn it on once the GCC/Clang
+    # output is confirmed clean; MSVC /W4 already is.
+    #
+    - name: Compile As C At Several Standards
+      if: '!matrix.msvc'
+      working-directory: tests
+      run: |
+        for std in c99 c11 c17; do
+          echo "=== -std=$std ==="
+          ${{ matrix.cc }} -std=$std -Wall -Wextra -Wpedantic \
+            -I "$NEEDFUL_H_DIR" \
+            c/test-needful-c-sweep.c -o "/tmp/c-sweep-$std"
+          "/tmp/c-sweep-$std"
+        done
+
+
+    # Same idea for MSVC, whose C standard flags differ.  /W4 is MSVC's
+    # equivalent of -Wall -Wextra; /TC forces C even for a .c file.
+    #
+    - name: Compile As C At Several Standards (MSVC)
+      if: matrix.msvc
+      working-directory: tests
+      run: |
+        for std in c11 c17; do
+          echo "=== /std:$std ==="
+          cl //nologo //TC //std:$std //W4 \
+            //I"$(cygpath -w "$NEEDFUL_H_DIR")" \
+            //Fe:"c-sweep-$std.exe" c/test-needful-c-sweep.c
+          "./c-sweep-$std.exe"
+        done
+
+
+    # Run the Python negative-test driver with error-phrase verification.
+    # This adds the MATCH-ERROR-TEXT check that CTest's WILL_FAIL cannot do:
+    # it verifies that each negative test failed for the *right* reason, not
+    # because of a typo in the test file.  With --match-error-text, any test
+    # lacking a MATCH-ERROR-TEXT comment is also a hard failure.
     #
     # Pass --extra-dir to also check any negative doctests extracted from docs/.
     #

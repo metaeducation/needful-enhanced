@@ -104,10 +104,17 @@ set(SOURCE_TEXT "")
 if(ENABLE_ENHANCED)
     string(APPEND SOURCE_TEXT "#define NEEDFUL_CPP_ENHANCED  1\n")
 endif()
+# Deliberately uses the NeedfulOption() long name rather than the Option()
+# shorthand.  Shorthands are opt-in (NEEDFUL_DEFINE_ALL_SHORTHANDS defaults to
+# 0), so the long name is what a first-time consumer gets from a bare
+# #include -- which is exactly the configuration a smoke test should verify.
+# This file used bare Option(int) until the no-shorthands default landed, at
+# which point the standalone and matching smoke tests silently began failing.
+#
 string(APPEND SOURCE_TEXT
     "#include \"needful.h\"\n"
     "int main() {\n"
-    "    Option(int) value = 42;\n"
+    "    NeedfulOption(int) value = 42;\n"
     "    return value == 42 ? 0 : 1;\n"
     "}\n"
 )

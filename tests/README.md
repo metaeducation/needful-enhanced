@@ -6,7 +6,29 @@ Needful's primary value is compile-time enforcement — most of what it promises
 is that certain things **will not compile**, not that they produce a particular
 runtime value.  This shapes the whole structure of the test suite.
 
-Tests are split into two fundamentally different categories:
+Tests are split into three categories:
+
+
+### C Build Tests (`c/`)
+
+Everything else in this suite compiles as C++ with `NEEDFUL_CPP_ENHANCED=1`.
+These compile `needful.h` as **plain C**, with no enhancement layer at all —
+which is the mode that actually ships.
+
+`test-needful-c-sweep.c` names every public macro at least once in a single C
+translation unit and runs the ones with runtime behavior.  It is deliberately
+breadth-first: the C definitions are transparent by design, so the interesting
+failure mode is "this macro does not compile as C at all," which a sweep
+catches and a targeted test does not.
+
+`test-corrupt-assert-fires.c` is a **must-abort** test, registered `WILL_FAIL`.
+It asserts that a clean variable is corrupt, which has to fail.  The failure
+direction of an assertion cannot be checked from inside a process that is
+supposed to exit 0, so it needs its own binary.
+
+CI additionally compiles the sweep at `-std=c99`, `c11`, and `c17` with
+`-Wall -Wextra -Wpedantic`, because a single standard can hide a portability
+problem (a C99 compound literal, say, that C89 rejects).
 
 
 ### Positive Tests (`positive/`)
@@ -35,11 +57,19 @@ isolation clean: a crash or assertion failure in one test does not mask
 failures in another.
 
 
-### Negative Tests (`negative/`)
+### Negative Tests (in `docs/*.md`)
 
-Source files that **must fail to compile** with `NEEDFUL_CPP_ENHANCED=1`.
-Each file contains exactly one construct that needful should reject.  The test
+Source blocks that **must fail to compile** with `NEEDFUL_CPP_ENHANCED=1`.
+Each contains exactly one construct that needful should reject.  The test
 passes when the compiler exits non-zero.
+
+These live in the documentation, not in a `negative/` directory — see
+[Docs-as-Tests](#docs-as-tests) below.  `tests/negative/` is still wired up in
+`CMakeLists.txt` and `run-negative-tests.py` as an escape hatch for a case that
+genuinely cannot be expressed as a doc example, but it is empty and the docs
+are the intended home.  **A negative test placed there must define
+`NEEDFUL_CPP_ENHANCED` in its own source**, exactly as the doc blocks do; do
+not rely on the build system to supply it.
 
 A critical discipline: a negative test that fails due to a **typo or
 unrelated syntax error** is indistinguishable from one that fails for the
@@ -144,12 +174,14 @@ The constructs and their current test coverage:
 | Casts (`cast`, `m_cast`, etc.) | test-needful-casts.cpp | docs/cast.md |
 | Const metaprogramming | test-needful-const.cpp | — |
 | `Need(T)` | test-needful-need.cpp | docs/need.md |
-| `Result(T)` / `trap` / `except` / `assume` / `rescue` | test-needful-result.cpp | docs/result.md |
+| `Result(T)` / `return_if_failed` / `catch_if_failed` | test-needful-result.cpp | docs/result.md |
 | `known(T, expr)` / `rigid_known` / `known_any` | test-needful-known.cpp | docs/known.md |
 | `Sink` / `Init` / `Contra` | test-needful-contra.cpp | docs/contra.md |
 | `nocast` / `nocast_0` | test-needful-nocast.cpp | — |
 | Commentary macros (`possibly`, `dont`, etc.) | test-needful-comments.cpp | docs/comments.md |
-| Corruption / `NEEDFUL_DOES_CORRUPTIONS` | — | — |
+| Corruption / `NEEDFUL_DOES_CORRUPTIONS` | c/test-needful-c-sweep.c | c/test-corrupt-assert-fires.c |
+| `unreachable` family / `dead_end` | c/test-needful-c-sweep.c | — |
+| Plain-C build of every macro | c/test-needful-c-sweep.c | — |
 
 
 ## Installation Smoke Tests
@@ -192,7 +224,7 @@ python run-negative-tests.py --match-error-text
 
 **Pointing at a non-default `needful.h` location:**
 ```sh
-cmake -B build -DNEEDUL_H_DIR=/path/to/dir/containing/needful.h
+cmake -B build -DNEEDFUL_H_DIR=/path/to/dir/containing/needful.h
 # or
 NEEDFUL_H_DIR=/path/to/dir python run-negative-tests.py
 ```

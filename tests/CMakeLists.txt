@@ -11,14 +11,17 @@
 #   cmake -B build && cmake --build build && ctest --test-dir build -V
 #
 # To point at a needful.h that is not in the default location:
-#   cmake -B build -DNEEDUL_H_DIR=/path/to/dir/containing/needful.h
+#   cmake -B build -DNEEDFUL_H_DIR=/path/to/dir/containing/needful.h
 #
 
 cmake_minimum_required(VERSION 3.14)
-project(needful_tests CXX)
+project(needful_tests C CXX)  # C too: needful.h must build as plain C
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
 
 set(NEEDFUL_H_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../.."
     CACHE PATH "Path to directory containing needful.h")
@@ -26,7 +29,7 @@ set(NEEDFUL_H_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../.."
 if(NOT EXISTS "${NEEDFUL_H_DIR}/needful.h")
     message(FATAL_ERROR
         "needful.h not found at '${NEEDFUL_H_DIR}/needful.h'.\n"
-        "Set -DNEEDUL_H_DIR=<path> to the directory containing needful.h."
+        "Set -DNEEDFUL_H_DIR=<path> to the directory containing needful.h."
     )
 endif()
 
@@ -40,7 +43,7 @@ message(STATUS "Using needful.h from: ${NEEDFUL_H_DIR}")
 # CMake configure time so the generated files are present before compilation.
 #
 # To skip extraction (e.g. when iterating on test code only), pass:
-#   cmake -B build -DNEEDUL_EXTRACT_DOCTESTS=OFF
+#   cmake -B build -DNEEDFUL_EXTRACT_DOCTESTS=OFF
 
 option(NEEDFUL_EXTRACT_DOCTESTS "Extract tests embedded in docs/*.md" ON)
 
@@ -107,6 +110,34 @@ add_needful_smoke_test("smoke-enhanced-missing" "missing")
 add_needful_smoke_test("smoke-enhanced-mismatched-version" "mismatched")
 
 
+#=[ C BUILD TESTS ]===========================================================
+#
+# Every other test here compiles as C++ with NEEDFUL_CPP_ENHANCED=1.  These
+# compile needful.h as plain C, with no enhancement layer at all -- which is
+# the mode that actually ships, and the half of the promise that was
+# previously unverified.
+#
+# * test-needful-c-sweep names every public macro once and runs the ones with
+#   runtime behavior.  Must build and exit 0.
+#
+# * test-corrupt-assert-fires is a "must abort" test: it asserts that a clean
+#   variable is corrupt, which has to fail.  Registered WILL_FAIL, so a zero
+#   exit is a test failure.  Guards a regression where the assertion could
+#   never fire at all.
+
+add_executable(test-needful-c-sweep c/test-needful-c-sweep.c)
+target_include_directories(test-needful-c-sweep PRIVATE "${NEEDFUL_H_DIR}")
+add_test(NAME test-needful-c-sweep COMMAND test-needful-c-sweep)
+
+add_executable(test-corrupt-assert-fires c/test-corrupt-assert-fires.c)
+target_include_directories(test-corrupt-assert-fires PRIVATE "${NEEDFUL_H_DIR}")
+add_test(NAME test-corrupt-assert-fires COMMAND test-corrupt-assert-fires)
+set_tests_properties(test-corrupt-assert-fires PROPERTIES
+    WILL_FAIL TRUE
+    TIMEOUT 30  # a must-abort test that hangs means a dialog got through
+)
+
+
 #=[ POSITIVE TESTS ]==========================================================
 #
 # Compiled as normal targets; the resulting binary is run by CTest and must
@@ -144,7 +175,7 @@ endforeach()
 if(MSVC)
     set(NEEDFUL_CPP_STD_FLAG "/std:c++14")  # MSVC has no /std:c++11; c++14 is minimum explicit
     set(NEEDFUL_INCLUDE_FLAG "/I")
-    set(NEEDFUL_DEFINE_FLAG  "/DNEEDUL_CPP_ENHANCEMENTS=1")
+    set(NEEDFUL_DEFINE_FLAG  "/DNEEDFUL_CPP_ENHANCED=1")
     function(needful_output_flag test_name out_var)
         set(${out_var}
             "/Fe:${CMAKE_CURRENT_BINARY_DIR}/neg-${test_name}.exe"
@@ -153,7 +184,7 @@ if(MSVC)
 else()
     set(NEEDFUL_CPP_STD_FLAG "-std=c++17")  # want NEEDFUL_NODISCARD in C++17
     set(NEEDFUL_INCLUDE_FLAG "-I")
-    set(NEEDFUL_DEFINE_FLAG  "-DNEEDUL_CPP_ENHANCEMENTS=1")
+    set(NEEDFUL_DEFINE_FLAG  "-DNEEDFUL_CPP_ENHANCED=1")
     function(needful_output_flag test_name out_var)
         set(${out_var}
             "-o" "${CMAKE_CURRENT_BINARY_DIR}/neg-${test_name}"
