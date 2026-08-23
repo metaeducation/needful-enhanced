@@ -84,6 +84,26 @@ void test_sink_type_properties() {
 
     // Sink(T) is distinct from T*
     STATIC_ASSERT(not std::is_same<Sink(Base), Base*>::value);
+
+    // A maybe-disengaged wrapper must never reach a Sink(T): there may be no
+    // storage to write through.  Option(T*) has always been refused here.
+    //
+    // Fallible(T*) must be refused for the identical reason, and this needs
+    // its own assertion because it does not follow from Option's.  Deriving
+    // FallibleWrapper from OptionWrapper inherits constructors but NOT trait
+    // specializations, so this once answered `true` via the generic template.
+    // It failed to compile anyway, but by accident -- SinkWrapper's converting
+    // constructor was selected and then died on an unrelated static_assert
+    // about void waypoint safety, one trait away from being accepted outright.
+    //
+    STATIC_ASSERT(not (needful::IsContravariant<NeedfulOption(Base*), Base>::value));
+    STATIC_ASSERT(not (needful::IsContravariant<NeedfulFallible(Base*), Base>::value));
+
+    // The same inheritance gap silently unwrapped Fallible(T) in cast(), which
+    // would discard the [[nodiscard]] that is the entire point of the type.
+    //
+    STATIC_ASSERT((needful::IsWrapperSemantic<NeedfulOption(Base*)>::value));
+    STATIC_ASSERT((needful::IsWrapperSemantic<NeedfulFallible(Base*)>::value));
 }
 
 

@@ -264,6 +264,50 @@ struct NEEDFUL_NODISCARD FallibleWrapper : public needful::OptionWrapper<T> {
 #undef NeedfulFallible
 #define NeedfulFallible(T)  needful::FallibleWrapper<T>
 
+  //=//// FallibleWrapper MUST REPEAT OptionWrapper'S TRAITS //////////////=//
+  //
+  // Deriving inherits constructors.  It does NOT inherit trait
+  // specializations: `IsWrapperSemantic<OptionWrapper<X>>` is a specialization
+  // for that exact template, and FallibleWrapper<X> is a different type that
+  // merely has it as a base.  Every trait OptionWrapper claims has to be
+  // claimed again here, and forgetting one fails silently in the permissive
+  // direction -- the generic template answers `false`, and the property just
+  // quietly does not hold for Fallible(T).
+  //
+  // Two of these were missing, with consequences worth naming:
+  //
+  // 1. Without the IsContravariant specialization, Fallible(T*) could be
+  //    passed where a Sink(T) was expected.  Option(T*) is refused there on
+  //    purpose -- it may be disengaged, so there may be no storage to write
+  //    through -- and Fallible(T) is an Option(T) that is *more* insistent
+  //    about being checked, so it must be refused at least as firmly.  It was
+  //    not: SinkWrapper's converting constructor was selected, and the build
+  //    only broke later, deep inside an unrelated static_assert about void
+  //    waypoint safety.  Accidental rejection with a confusing message, one
+  //    trait change away from being accepted outright.
+  //
+  // 2. Without IsWrapperSemantic, cast() treats Fallible(T) as a plain type
+  //    and unwraps it rather than re-wrapping the result, so casting a
+  //    Fallible(T) quietly discards the [[nodiscard]] that is its whole point.
+
+template<typename X>
+struct IsOptionWrapper<FallibleWrapper<X>> : std::true_type {};
+
+template<typename X>  // else cast() strips the wrapper, and the nodiscard [2]
+struct IsWrapperSemantic<FallibleWrapper<X>> : std::true_type {};
+
+template<typename T, typename Target>  // may be disengaged: no storage [1]
+struct IsContravariant<FallibleWrapper<T>, Target, true> : std::false_type {};
+
+#if NEEDFUL_USES_CORRUPT_HELPER
+    template<typename T>
+    struct CorruptHelper<FallibleWrapper<T>> {
+      static void corrupt(FallibleWrapper<T>& fallible) {
+        Corrupt_If_Needful(fallible.o);
+      }
+    };
+#endif
+
 // `infallible` is the expression-position discharge for a Fallible(T): it
 // asserts the value is engaged and hands back the raw T.
 //
