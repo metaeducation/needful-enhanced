@@ -21,10 +21,28 @@ breadth-first: the C definitions are transparent by design, so the interesting
 failure mode is "this macro does not compile as C at all," which a sweep
 catches and a targeted test does not.
 
-`test-corrupt-assert-fires.c` is a **must-abort** test, registered `WILL_FAIL`.
-It asserts that a clean variable is corrupt, which has to fail.  The failure
-direction of an assertion cannot be checked from inside a process that is
-supposed to exit 0, so it needs its own binary.
+`test-corrupt-assert-fires.c` is a **must-abort** test: it asserts that a clean
+variable is corrupt, which has to fail.  The failure direction of an assertion
+cannot be checked from inside a process that is supposed to exit 0, so it needs
+its own binary.
+
+It reports success by catching its own `SIGABRT` and exiting 0, and is
+registered as an ordinary test.  `WILL_FAIL` is **not** used, and is worth
+understanding as a trap: it inverts a non-zero exit *code* and does not cover
+abnormal termination — CMake's own docs note that "system-level test failures
+such as segmentation faults or heap errors will still fail the test even if
+`WILL_FAIL` is true."  A POSIX `abort()` raises `SIGABRT`, which CTest records
+as "Subprocess aborted" regardless.  A `WILL_FAIL` version of this test passed
+on Windows and failed on Linux, because `_set_abort_behavior()` turns Windows
+`abort()` into a plain exit-code return that `WILL_FAIL` *can* invert.
+
+The file also `#undef`s `NDEBUG`, since it *is* the assertion under test — a
+Release build would otherwise compile the check away and report the very
+regression it guards against.
+
+Any future must-abort test should follow the same pattern rather than reaching
+for `WILL_FAIL`.  (`WILL_FAIL` remains correct for the negative *compile*
+tests, where the compiler really does return a non-zero exit code.)
 
 CI additionally compiles the sweep at `-std=c99`, `c11`, and `c17` with
 `-Wall -Wextra -Wpedantic`, because a single standard can hide a portability

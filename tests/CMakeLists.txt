@@ -141,9 +141,15 @@ add_test(
 #   runtime behavior.  Must build and exit 0.
 #
 # * test-corrupt-assert-fires is a "must abort" test: it asserts that a clean
-#   variable is corrupt, which has to fail.  Registered WILL_FAIL, so a zero
-#   exit is a test failure.  Guards a regression where the assertion could
-#   never fire at all.
+#   variable is corrupt, which has to fail.  Guards a regression where the
+#   assertion could never fire at all.
+#
+#   Deliberately NOT registered WILL_FAIL.  That property inverts a non-zero
+#   exit *code* and does not cover abnormal termination -- a POSIX abort()
+#   raises SIGABRT, which CTest reports as "Subprocess aborted" regardless.
+#   (A WILL_FAIL version of this passed on Windows and failed on Linux, because
+#   _set_abort_behavior() makes Windows abort() return a plain exit code.)
+#   The test catches its own SIGABRT and exits 0, so it is an ordinary test.
 
 add_executable(test-needful-c-sweep c/test-needful-c-sweep.c)
 target_include_directories(test-needful-c-sweep PRIVATE "${NEEDFUL_H_DIR}")
@@ -153,7 +159,6 @@ add_executable(test-corrupt-assert-fires c/test-corrupt-assert-fires.c)
 target_include_directories(test-corrupt-assert-fires PRIVATE "${NEEDFUL_H_DIR}")
 add_test(NAME test-corrupt-assert-fires COMMAND test-corrupt-assert-fires)
 set_tests_properties(test-corrupt-assert-fires PROPERTIES
-    WILL_FAIL TRUE
     TIMEOUT 30  # a must-abort test that hangs means a dialog got through
 )
 
