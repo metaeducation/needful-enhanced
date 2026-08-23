@@ -85,8 +85,13 @@
         "declaration type must be valid")
 
 
-#undef NEEDFUL_STATIC_FAIL
-#define NEEDFUL_STATIC_FAIL(msg)  static_assert(0, #msg)
+// NEEDFUL_STATIC_FAIL takes a string literal in every mode (see %needful.h).
+// This used to stringify its argument with `#msg`, which meant a caller had
+// to pass a bare identifier to get a sensible message here and a string to
+// get one in C -- mutually exclusive.  needful.h's C++ branch already does
+// the right thing, so there is nothing left to override; kept as an explicit
+// no-op note so the next reader does not re-add the stringify.
+
 
 // 1. Double-parentheses needed to force reference qualifiers for decltype.
 
