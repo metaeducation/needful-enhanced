@@ -159,14 +159,6 @@ that does not exist.
 See [the FAQ](/faq#result-fallible-unification) — this comes up more than once,
 and the reason is more interesting than "nobody got around to it."
 
-It bears some explanation that the trick to get except() to be able to take an
-else() clause involves a for loop that runs exactly once.  It accomplishes
-this using the C99 feature allowing you do declare multiple variables scoped
-to a for loop *if* they are of the same type.  If we assume your error type is
-a pointer, then we can declare both the error variable and a dummy pointer
-`_once` in the loop, and use a pointer increment to ensure the loop only runs
-once.  :-)
-
 ### How the scoping trick works
 
 C99 allows a `for` loop to declare multiple variables in its init clause *if
@@ -344,6 +336,8 @@ checks that you handled the result rather than silently discarding it.
 > `None` is Needful's practical workaround.
 
 ## Related
+
+- [Operator Precedence](/precedence) — why the `Result` call must come last in the statement
 
 - [`Option(T)`](/option) — nullable values without an error
 - [FAQ: Why does `needful_make_failure(...)` disable the int-conversion warning?](/faq#int-conversion-warning)
