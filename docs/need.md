@@ -162,6 +162,7 @@ null, so the compiler rejects the implicit narrowing.
 ```cpp
 // MATCH-ERROR-TEXT: could not convert
 // MATCH-ERROR-TEXT: no known conversion
+// MATCH-ERROR-TEXT: cannot convert argument 1 from 'needful::OptionWrapper   <- MSVC
 
 #ifdef __cplusplus
   #define NEEDFUL_CPP_ENHANCED  1

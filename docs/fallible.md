@@ -102,17 +102,30 @@ NeedfulFallible(int*) get_data(bool success) {
     return &payload;
 }
 
+// `return_if_nullptr` expands to `return needful_none;`, so it may only be
+// used inside a function whose return type accepts `none` -- an Option(T) or
+// a Result(None).  It is NOT usable in main(), or in any int-returning
+// function: `none` is a distinct type in checked builds, not a plain zero.
+//
+NeedfulOption(int*) fetch_or_none(bool success) {
+    int* value;
+    return_if_nullptr (value = get_data(success));  // early-out on nullptr
+    return value;
+}
+
 int main() {
     int* value = nullptr;
 
-    // 1. Test tolerate path
-    tolerate_if_nullptr(value = get_data(false));
+    // 1. tolerate path: dropping the null state here is deliberate
+    tolerate_if_nullptr (value = get_data(false));
     assert(value == nullptr);
 
-    // 2. Test successful extraction path
-    return_if_nullptr(value = get_data(true));
-    assert(value != nullptr);
-    assert(*value == 42);
+    // 2. early-return path, exercised through an Option-returning function
+    assert(fetch_or_none(false) == nullptr);
+
+    NeedfulOption(int*) got = fetch_or_none(true);
+    assert(got != nullptr);
+    assert(*(needful_unwrap got) == 42);
 
     return 0;
 }
@@ -122,8 +135,13 @@ int main() {
 
 <!-- doctest: negative-test -->
 ```cpp
-// MATCH-ERROR-TEXT: nodiscard              <- Clang, GCC
-// MATCH-ERROR-TEXT: ignoring return value  <- MSVC
+// MATCH-ERROR-TEXT: nodiscard               <- all three
+// MATCH-ERROR-TEXT: ignoring return value   <- GCC, Clang
+// MATCH-ERROR-TEXT: discarding return value <- MSVC (C4834)
+//
+// NOTE: [[nodiscard]] is a *warning*, not an error.  This test only fails to
+// compile because the negative-test harness builds with warnings-as-errors
+// (-Werror / /WX).  See tests/CMakeLists.txt.
 
 #ifdef __cplusplus
   #define NEEDFUL_CPP_ENHANCED  1

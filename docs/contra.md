@@ -185,7 +185,7 @@ typedef struct BaseStruct Base;
   typedef Base Derived;  // Derived identical to Base if not enhanced
 #endif
 
-STATIC_ASSERT(sizeof(Base) == sizeof(Derived));  // same layout
+NEEDFUL_STATIC_ASSERT(sizeof(Base) == sizeof(Derived));  // same layout
 
 void init_derived(Sink(Derived) out) {
     Derived* p = out;
@@ -209,9 +209,13 @@ Even though `Derived` adds no fields (same sizeof), it is a *subtype* of
 ```cpp
 // MATCH-ERROR-TEXT: could not convert                    <- GCC
 // MATCH-ERROR-TEXT: no matching function                 <- GCC alternate
-// MATCH-ERROR-TEXT: no instance of overloaded function   <- MSVC
+// MATCH-ERROR-TEXT: no instance of overloaded function   <- MSVC alternate
 // MATCH-ERROR-TEXT: no viable constructor                <- Clang
-#define NEEDFUL_CPP_ENHANCED  1
+// MATCH-ERROR-TEXT: cannot convert argument 1 from 'Derived *'   <- MSVC
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_CONTRA_SHORTHANDS  1
 #include <cassert>
 #include "needful.h"
 
@@ -223,7 +227,7 @@ struct Base { int bits; };
   typedef Base Derived;  // Derived identical to Base if not enhanced
 #endif
 
-STATIC_ASSERT(sizeof(Base) == sizeof(Derived));  // same layout
+NEEDFUL_STATIC_ASSERT(sizeof(Base) == sizeof(Derived));  // same layout
 
 void write_base(Sink(Base) out) {
     Base* p = out;

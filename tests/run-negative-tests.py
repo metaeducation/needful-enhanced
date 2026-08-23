@@ -68,11 +68,21 @@ def read_expected_errors(source: Path):
 
 
 def compile_file(compiler, std_flag, defines, includes, source, tmpdir):
-    """Compile source; return (exit_code, stderr_text)."""
+    """Compile source; return (exit_code, stderr_text).
+
+    Built with -Werror, matching tests/CMakeLists.txt.  Some of what Needful
+    promises to reject is rejected by *warning* rather than by error --
+    [[nodiscard]] most clearly: discarding a Fallible(T) warns and then exits
+    0.  Without -Werror those tests could never fail, so they could never pass,
+    and the guarantee would go unverified.  The headers are warning-clean, so
+    this does not make other tests fail for spurious reasons, and the
+    MATCH-ERROR-TEXT check still confirms each failed for its own reason.
+    """
     outfile = os.path.join(tmpdir, Path(source).stem + '.out')
     cmd = (
         [compiler]
         + [std_flag]
+        + ['-Werror']
         + [f'-D{d}' for d in defines]
         + [f'-I{i}' for i in includes]
         + [str(source), '-o', outfile]

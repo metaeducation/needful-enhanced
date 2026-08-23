@@ -192,9 +192,21 @@ endforeach()
 # MSVC uses /Fe: for the output file; everyone else uses -o.  We write the
 # (never-reached) output into the binary dir so parallel runs don't collide.
 
+# Negative tests build with warnings-as-errors.  Some of what Needful promises
+# to reject is rejected by *warning* rather than by error -- [[nodiscard]] is
+# the clear case: discarding a Fallible(T) produces GCC/Clang
+# "ignoring return value" or MSVC C4834 "discarding return value", and the
+# compiler then exits 0.  Without -Werror those tests can never fail, so they
+# can never pass their WILL_FAIL gate, and the guarantee goes unverified.
+#
+# This is safe for the other negative tests: they already fail with hard
+# errors, and MATCH-ERROR-TEXT still confirms each failed for its own reason.
+# The headers themselves are warning-clean at /W4 /WX and -Wall -Wextra.
+#
 if(MSVC)
     set(NEEDFUL_CPP_STD_FLAG "/std:c++14")  # MSVC has no /std:c++11; c++14 is minimum explicit
     set(NEEDFUL_INCLUDE_FLAG "/I")
+    set(NEEDFUL_WERROR_FLAG  "/WX")
     set(NEEDFUL_DEFINE_FLAG  "/DNEEDFUL_CPP_ENHANCED=1")
     function(needful_output_flag test_name out_var)
         set(${out_var}
@@ -204,6 +216,7 @@ if(MSVC)
 else()
     set(NEEDFUL_CPP_STD_FLAG "-std=c++17")  # want NEEDFUL_NODISCARD in C++17
     set(NEEDFUL_INCLUDE_FLAG "-I")
+    set(NEEDFUL_WERROR_FLAG  "-Werror")
     set(NEEDFUL_DEFINE_FLAG  "-DNEEDFUL_CPP_ENHANCED=1")
     function(needful_output_flag test_name out_var)
         set(${out_var}
@@ -233,6 +246,7 @@ foreach(test_name ${NEGATIVE_TESTS})
         COMMAND
             "${CMAKE_CXX_COMPILER}"
             "${NEEDFUL_CPP_STD_FLAG}"
+            "${NEEDFUL_WERROR_FLAG}"
             "${NEEDFUL_DEFINE_FLAG}"
             "${NEEDFUL_INCLUDE_FLAG}${NEEDFUL_H_DIR}"
             "${CMAKE_CURRENT_SOURCE_DIR}/negative/${test_name}.cpp"
@@ -280,6 +294,7 @@ foreach(src ${DOCTEST_NEGATIVE_SOURCES})
         COMMAND
             "${CMAKE_CXX_COMPILER}"
             "${NEEDFUL_CPP_STD_FLAG}"
+            "${NEEDFUL_WERROR_FLAG}"
             "${NEEDFUL_DEFINE_FLAG}"
             "${NEEDFUL_INCLUDE_FLAG}${NEEDFUL_H_DIR}"
             "${src}"

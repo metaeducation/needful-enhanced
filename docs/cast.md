@@ -368,7 +368,8 @@ int main() {
 <!-- doctest: negative-test -->
 ```cpp
 // MATCH-ERROR-TEXT: cannot initialize return object of type   <- Clang
-// MATCH-ERROR-TEXT: operator To() const                       <- GCC/MSVC
+// MATCH-ERROR-TEXT: operator To() const                       <- GCC
+// MATCH-ERROR-TEXT: cannot convert from 'const T *' to 'To'   <- MSVC
 
 #ifdef __cplusplus
   #define NEEDFUL_CPP_ENHANCED  1
