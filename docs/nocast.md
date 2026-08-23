@@ -74,6 +74,8 @@ pass the type name explicitly to satisfy C's strict return constraints.
 
 ## Related
 
+- [Operator Precedence](/precedence) — why `nocast` needs a target type to deduce from
+
 - [`cast()` family](/cast) — for casts between known types
 - [FAQ: Why does Needful disable the int-conversion warning?](/faq#int-conversion-warning)
 

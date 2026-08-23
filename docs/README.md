@@ -17,6 +17,7 @@ built with Jekyll and the [just-the-docs](https://just-the-docs.com) theme.
 | `contra.md` | `/contra` | `Contra(T)` / `Sink(T)` / `Init(T)` — contravariant output parameters |
 | `known.md` | `/known` | `known(T, expr)` — compile-time type assertion inside macros |
 | `comments.md` | `/comments` | `possibly`, `dont`, `heeded`, `unnecessary`, `definitely`, `impossible` |
+| `precedence.md` | `/precedence` | How the prefix keywords parse, and when they need parentheses |
 | `nocast.md` | `/nocast` | `nocast`, `needful_nocast_0` — C/C++ portability bridges |
 | `faq.md` | `/faq` | Frequently asked questions and design rationale |
 

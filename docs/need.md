@@ -49,6 +49,8 @@ enabled to catch nulls or zeroes passed to a Need(T) parameter.
 
 ## Related
 
+- [Operator Precedence](/precedence) — how the `needed` prefix keyword actually parses
+
 - [`Option(T)`](/option) — the nullable counterpart; `unwrap` an `Option`
   before passing to `Need`.
 
