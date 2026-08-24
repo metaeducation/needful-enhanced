@@ -160,7 +160,7 @@ quietly disables part of what you think you are checking:
 Both points are covered in detail, per compiler and per standard, under
 [which builds actually check this](/fallible#enforcement).
 
-## Configuration Switches
+## Configuration Switches {#configuration-switches}
 
 All of these are defined **before** including `needful.h`.
 

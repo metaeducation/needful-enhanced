@@ -76,10 +76,23 @@ global error state.  Hence you have to define:
     ErrorType* Needful_Get_Failure()
     void Needful_Set_Failure(ErrorType* error)
     void Needful_Panic_Abruptly()
-    void Needful_Assert_Not_Failing()  // avoids assert() dependency
 
 These can be functions or macros with the same signature.  They should use
 thread-local state if they're to work in multi-threaded code.
+
+There used to be a fifth, `Needful_Assert_Not_Failing()`, so that Needful did
+not have to depend on `assert()`. That reason went away once every Needful
+check began routing through [`NEEDFUL_ASSERT`](/setup#configuration-switches),
+so `needful.h` now derives it:
+
+```c
+#define Needful_Assert_Not_Failing() \
+    NEEDFUL_ASSERT(! Needful_Get_Failure())
+```
+
+Which means it honors your assert replacement automatically. `#undef` and
+redefine it if you want a diagnostic that names the pending error — the
+derived spelling cannot, since it only tests for one.
 
 
 ## The `catch_if_failed` Syntax
@@ -298,7 +311,6 @@ ErrorType* Needful_Test_And_Clear_Failure(void);
 ErrorType* Needful_Get_Failure(void);
 void       Needful_Set_Failure(ErrorType* error);
 void       Needful_Panic_Abruptly(ErrorType* error);
-void       Needful_Assert_Not_Failing(void);
 ```
 
 For quick prototyping, define `NEEDFUL_DECLARE_RESULT_HOOKS 1` **before**
