@@ -129,6 +129,22 @@ because they must be read *before* you `#include`:
   the ones where C++ *cannot* express the C spelling at all — e.g.
   `NEEDFUL_NULLPTR`, since C++ will not implicitly convert `(void*)0` to an
   arbitrary `T*`.
+- **`Need(T)` leads the feature list, even though `Option(T)` is more broadly
+  useful.** Position #1 does *orientation*, not persuasion: `Option(T)` is
+  defined in contrast to a value that cannot be absent, so `Need(T)` is what
+  establishes the axis, and introducing the pair in the other order reads
+  backwards. The banner example uses `Option(T)`, so the more-useful construct
+  does the persuading before the list starts. Keep the entries adjacent and
+  keep the "dual" phrasing that ties them together.
+- **The banner example uses `Option(T)`, and that is deliberate.** The opening
+  example has *two* jobs: show a construct, and explain the C-versus-enhanced
+  mechanism that the whole library rests on. It can therefore only afford to
+  introduce **one** new idea. `Option(T)` is a concept the reader arrives
+  already understanding, so all the novelty budget goes to the two-build-mode
+  trick. A more distinctive construct (the comment macros are the tempting
+  candidate) would mean arguing for something unfamiliar *while* also teaching
+  the mechanism — two new things at once, and the mechanism is the one that
+  matters. One step at a time.
 - **One example, at the top, and no more.** Examples in the docs are compiled
   in CI ([see the doctest system](https://github.com/metaeducation/needful-enhanced/blob/main/docs/README.md));
   examples in the header are not, so they rot. The banner carries a single
@@ -173,6 +189,10 @@ If you are tempted to "fix" one of these, it was deliberate:
 
 ## Related
 
+- **`OPEN-QUESTIONS.md`** (repo root, not published) — the things that are
+  *not* settled. Check it before changing something that looks arbitrary: it
+  may be arbitrary on purpose, pending a decision. Record a position there
+  rather than enacting it.
 - [FAQ](/faq) — design rationale for individual constructs
 - [Precedence](/precedence) — why the prefix keywords parse the way they do
 - [Setup](/setup) — the full configuration switch inventory
