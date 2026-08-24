@@ -49,22 +49,41 @@ builds.
 
 | Type | Use case | Corruption? | Debug Build Cost |
 |---|---|---|---|
-| `Contra(T)` | Read-only pass-through of a contravariant pointer | Never | Zero |
+| `Contra(T)` | In/out, or pass-through: the existing value must survive | **Never**, in any build | Zero |
 | `Sink(T)` | Write-only output; reader must not look at old value | Yes, deferred | Small |
-| `Init(T)` | Full initialization; old value is always overwritten | No (see below) | Zero |
+| `Init(T)` | Full initialization; old value is always overwritten | Off by default (see below) | Zero |
 
 In C, all three expand to `T*`. The C++ wrappers enforce contravariance and
 optionally scramble memory in debug builds.
 
-### `Contra(T)` — Lightweight Contravariant Pass-Through
+### `Contra(T)` — Contravariance Without Corruption
 
-Use `Contra(T)` when a function receives an output location and passes it
-along to another function without writing to it directly. It checks the type
-direction but does no corruption.
+`Contra(T)` is the one to reach for when you want the contravariant type rule
+but the slot's **existing value must survive**. It is not merely "the cheap
+one" — the absence of corruption is the point, and it holds in *every* build,
+regardless of `NEEDFUL_DOES_CORRUPTIONS`.
+
+Two situations call for it:
+
+**An in/out parameter.** The function reads what is there and updates it, so
+scrambling the slot first would destroy the input:
 
 ```c
-void dispatch(Contra(Base) out);   // just forwarding — no direct write
+void accumulate(Contra(Base) io);   // reads io, then writes it back
 ```
+
+**A pass-through.** The function receives an output location and hands it to
+someone else without writing through it directly:
+
+```c
+void dispatch(Contra(Base) out);    // just forwarding — no direct write
+```
+
+Both are relatively rare compared to `Sink(T)` and `Init(T)`, which is why the
+type exists as a deliberate opt-out rather than a default. If you find yourself
+wanting `Sink(T)` semantics but with corruption disabled, `Contra(T)` is the
+declaration you are looking for — say it in the signature rather than turning
+the switch off globally.
 
 ### `Sink(T)` — Write-Only Output with Corruption
 
@@ -104,6 +123,22 @@ To enable corruption for `Init` as well (for intensive debugging sessions):
 ```c
 #define NEEDFUL_INIT_CORRUPTS_LIKE_SINK  1
 ```
+
+This makes every `Init(T)` behave exactly as a `Sink(T)`. It is worth turning
+on when you suspect an `Init_Xxx()` routine is *not* filling every field it
+claims to — the promise `Init(T)` encodes is precisely the one this switch
+stops taking on trust. Expect it to be slower, and expect it to find things.
+
+Note the asymmetry this creates, and that it is intentional:
+
+| | corrupts by default | corrupts under the switch |
+|---|---|---|
+| `Sink(T)` | yes | yes |
+| `Init(T)` | no | **yes** |
+| `Contra(T)` | no | **no** |
+
+`Contra(T)` is the only one of the three that never corrupts under any
+configuration, which is what makes it safe for in/out parameters.
 
 ## The Type Rules
 

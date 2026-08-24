@@ -7,7 +7,7 @@ permalink: /
 
 # Needful
 
-**[One header.][needful-h-raw] Zero dependencies. Rust-grade safety for C.**
+**[One header.][needful-h-raw] Zero dependencies. Rust-grade type checking for C.**
 
 Needful is a [single-file, header-only library][needful-repo] that brings
 `Option(T)`, `Result(T)`, non-null `Need(T)`, type-safe casts, and executable
@@ -66,6 +66,53 @@ Two of these are worth a second look, because their names undersell them:
 - **[Comment macros](/comments)** are the only part of Needful with no
   equivalent in Rust, C++, or anything else — and the only part that asks for
   no type changes at all. If you want to try one thing, try these.
+
+---
+
+## The Weak Points
+
+Most projects show you a softball. Here are the hardballs, up front, so you
+find them now instead of three weeks in.
+
+**It is not a memory-safety solution.** Needful is a *type discipline* layer.
+It will not stop a use-after-free, a buffer overrun, a data race, or an
+integer overflow. What it catches is the class of bug where a value's *meaning*
+was misunderstood: a maybe-null treated as never-null, an error return dropped
+on the floor, an output parameter given the wrong end of a type hierarchy.
+That is a real and valuable class. It is not the one that gets CVEs assigned.
+
+**Enforcement is not uniform, and one common configuration checks nothing.**
+`Fallible(T)` makes three promises and no single build delivers all three;
+MSVC in C mode below C23 delivers *none* of them. The full matrix is
+[documented honestly](/fallible#enforcement) rather than buried — read it
+before you decide which build is your real gate.
+
+**Warnings must be errors or you get nothing.** Most of what Needful rejects
+arrives as a warning, and the compiler then exits zero. Without `-Werror` /
+`/WX`, CI stays green over exactly the mistakes you added Needful to catch.
+
+**The checked build needs a second repository.** We say "one header, no
+dependencies," and that is true of the shipping build. The *checking* build
+wants `needful-enhanced/` cloned next to it and version-matched. It is a
+deliberate trade — but it is the point where the simple story stops being
+simple.
+
+**It is a dialect.** There are a couple hundred macros. The vocabulary you
+actually need is more like twenty-five, but the cast family alone has fifteen
+spellings with lenient and rigid variants. Expect to spend time on taxonomy,
+and expect a new contributor to ask what `unwrap` is.
+
+**The prefix keywords are a trick, and tricks leak.** `unwrap foo` is really
+`g_unwrap_helper + foo`, which means precedence surprises (an entire
+[page](/precedence) exists for them) and tooling — formatters, highlighters,
+code search — that is mildly wrong forever. The saving grace is that a
+misparse is *always* a compile error and never a wrong answer.
+
+**`Result(T)` multiplexes through global state.** The default hooks are
+single-threaded. Making them thread-local is your job, and the design assumes
+one pending failure at a time.
+
+If none of those are dealbreakers, the rest of this site is the good parts.
 
 ---
 

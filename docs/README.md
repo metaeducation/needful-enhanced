@@ -23,7 +23,8 @@ front matter.
 | `unreachable.md` | `/unreachable` | `unreachable`, `dead_end` — divergence hints |
 | `precedence.md` | `/precedence` | How the prefix keywords parse, and when they need parentheses |
 | `faq.md` | `/faq` | Frequently asked questions and design rationale |
-| `setup.md` | `/setup` | Installing needful-enhanced, enabling `NEEDFUL_CPP_ENHANCED` |
+| `design.md` | `/design` | **Read this before editing `needful.h`** — the three-build-mode invariant, what belongs in the header, and what looks like a bug but isn't |
+| `setup.md` | `/setup` | Installing needful-enhanced, enabling `NEEDFUL_CPP_ENHANCED`, full switch inventory |
 
 ## Embedded compile-time tests
 
