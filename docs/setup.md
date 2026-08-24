@@ -135,18 +135,62 @@ The intended CI story is one normal build and one checking build:
 - run: gcc -o app main.c
 
 # C++ build (type-checking)
-- run: g++ -x c++ -std=c++11 -DNEEDFUL_CPP_ENHANCED=1 -o app main.c
+- run: g++ -x c++ -std=c++17 -Werror -DNEEDFUL_CPP_ENHANCED=1 -o app main.c
 ```
 
 No source changes are needed between the two. In the C build, Needful stays a
 transparent macro layer. In the checked C++ build, the same source gets the
 extra type enforcement.
 
+Two details in that second line are load-bearing, and leaving either out
+quietly disables part of what you think you are checking:
+
+- **`-std=c++17`, not `c++11`.** `[[nodiscard]]` is the only spelling that
+  works on a *class*, and `Result(T)` and `Fallible(T)` are classes in enhanced
+  builds. Below C++17 the checked build still enforces type separation, but
+  drops the must-use property — so a dropped `Result(T)` sails through a build
+  you believed was your strictest. If you must build at C++11 or C++14, add
+  `-DNEEDFUL_PRECPP17_NODISCARD=1`, which takes compilers up on accepting the
+  attribute early and silences the resulting `-Wc++17-extensions` pedantry.
+- **`-Werror`.** Most of what Needful rejects arrives as a *warning*.
+  Discarding a must-use value produces a diagnostic and then an exit code of
+  zero, so without escalation CI stays green over exactly the mistakes you
+  added Needful to catch.
+
+Both points are covered in detail, per compiler and per standard, under
+[which builds actually check this](/fallible#enforcement).
+
+## Configuration Switches
+
+All of these are defined **before** including `needful.h`.
+
+| Switch | Default | Effect |
+|---|---|---|
+| `NEEDFUL_CPP_ENHANCED` | `0` | Pull in `needful-enhanced/`; requires C++11+ |
+| `NEEDFUL_DEFINE_ALL_SHORTHANDS` | `0` | Alias every `needful_xxx` as plain `xxx` |
+| `NEEDFUL_<GROUP>_SHORTHANDS` | inherits the above | Per-group aliases: `OPTION`, `CAST`, `RESULT`, `FALLIBLE`, `CONTRA`, `KNOWN`, `COMMENT`, `STATIC_ASSERT`, `USAGE` |
+| `NEEDFUL_NULLPTR_SHIM` | inherits `ALL_SHORTHANDS` | Define `nullptr` in C builds |
+| `NEEDFUL_ASSERT(expr)` | `assert(expr)` | Route Needful's runtime checks somewhere else |
+| `NEEDFUL_ABORT()` | `abort()` | Route `abort_if_none()` somewhere else |
+| `NEEDFUL_DISABLE_INT_WARNING` | `1` | Suppress `-Wint-conversion` in C ([why](/faq#int-conversion-warning)) |
+| `NEEDFUL_PRECPP17_NODISCARD` | `0` | Use `[[nodiscard]]` below C++17 where compilers allow it |
+| `NEEDFUL_FALLIBLE_C23_MUSTUSE` | `0` | Use C23 `[[nodiscard]]` in C; [breaks `static`](/fallible#the-static-restriction) |
+| `NEEDFUL_DOES_CORRUPTIONS` | `0` | Scramble dead variables in debug builds |
+| `NEEDFUL_INIT_CORRUPTS_LIKE_SINK` | `0` | Also scramble `Init(T)` slots, not just `Sink(T)` |
+| `NEEDFUL_PSEUDO_RANDOM_CORRUPTIONS` | `1` | Vary the scramble byte; set `0` for a cheaper fixed fill |
+| `NEEDFUL_DONT_INCLUDE_STDARG_H` | unset | Suppress the `<stdarg.h>` include (for `v_cast()`) |
+| `NEEDFUL_DECLARE_RESULT_HOOKS` | unset | Emit single-threaded default `Result(T)` hooks in this one TU |
+| `NEEDFUL_<X>_USES_WRAPPER` | `NEEDFUL_CPP_ENHANCED` | Turn one wrapper family off: `NEED`, `OPTION`, `RESULT`, `CONTRAS` |
+| `NEEDFUL_CAST_CALLS_HOOKS` | `NEEDFUL_CPP_ENHANCED` | Run `CastHook` validation on `cast()` |
+| `NEEDFUL_FAST_CAST_IS_SLOW` | unset | Make `fast_cast()` hookable, for debugging a hot path |
+| `NEEDFUL_ICAST_SLOW_BUILD` | `0` | Make `i_cast()` the checked integer cast rather than `c_cast()` |
+
 ## Verifying the Setup
 
 A quick smoke test — if this compiles and runs, the enhancement layer is
 working:
 
+<!-- doctest: positive-test -->
 ```cpp
 #include <assert.h>
 

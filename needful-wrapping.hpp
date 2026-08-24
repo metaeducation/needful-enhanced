@@ -298,17 +298,16 @@ struct IsBasicType {
 //=//// `unwrap` KEYWORD HELPER ///////////////////////////////////////////=//
 //
 // `unwrap` is spelled as a prefix "keyword" by making it the left operand of
-// operator+, so `unwrap foo` parses as `g_unwrap_helper + foo`.  See the
-// precedence discussion in %needful-need.hpp for why `+` and `%` are the
-// operators chosen.
+// operator+, so `unwrap foo` parses as `g_unwrap_helper + foo`.  For why `+`
+// (and `%` for Result(T) extraction), and which expressions need parentheses
+// as a result:  https://needful.metaeducation.com/precedence
 //
-// Only the shared tag type lives here.  The overloads live with the types
-// they unwrap: NeedWrapper's in %needful-need.hpp, OptionWrapper's in
-// %needful-option.hpp.  It has to be here rather than in either of those,
+// Only the shared tag type lives here.  The overloads live with the types they
+// unwrap: NeedWrapper's in %needful-need.hpp, OptionWrapper's in
+// %needful-option.hpp.  It must be here rather than in either of those,
 // because both supply an overload and either file may be switched off
-// independently -- declaring it in the Need file made `unwrap` on an
-// Option(T) depend on NEEDFUL_NEED_USES_WRAPPER, which is not a real
-// relationship, and broke the build from a file the user had not disabled.
+// independently--putting it in one would make `unwrap` on the other's type
+// depend on a toggle that has nothing to do with it.
 
 struct UnwrapHelper {};
 constexpr UnwrapHelper g_unwrap_helper = {};

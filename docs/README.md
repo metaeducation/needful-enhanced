@@ -5,23 +5,25 @@ built with Jekyll and the [just-the-docs](https://just-the-docs.com) theme.
 
 ## Page inventory
 
+Listed in sidebar order, which is set by `nav_order` in each page's YAML
+front matter.
+
 | File | URL | Topic |
 |---|---|---|
 | `index.md` | `/` | Homepage, feature table, getting started |
-| `setup.md` | `/setup` | Installing needful-enhanced, enabling `NEEDFUL_CPP_ENHANCED` |
 | `need.md` | `/need` | `Need(T)` — non-null/non-zero type |
 | `option.md` | `/option` | `Option(T)` — Rust-like optional |
 | `fallible.md` | `/fallible` | `Fallible(T)` — must-use Option(T), and the `*_none` discharge vocabulary |
 | `result.md` | `/result` | `Result(T)` — cooperative error propagation |
 | `cast.md` | `/cast` | Cast family: `cast`, `m_cast`, `raw_cast`, etc. |
+| `nocast.md` | `/nocast` | `nocast`, `needful_nocast_0` — C/C++ portability bridges |
+| `comments.md` | `/comments` | `possibly`, `dont`, `heeded`, `unnecessary`, `definitely`, `impossible` |
 | `contra.md` | `/contra` | `Contra(T)` / `Sink(T)` / `Init(T)` — contravariant output parameters |
 | `known.md` | `/known` | `known(T, expr)` — compile-time type assertion inside macros |
-| `comments.md` | `/comments` | `possibly`, `dont`, `heeded`, `unnecessary`, `definitely`, `impossible` |
+| `unreachable.md` | `/unreachable` | `unreachable`, `dead_end` — divergence hints |
 | `precedence.md` | `/precedence` | How the prefix keywords parse, and when they need parentheses |
-| `nocast.md` | `/nocast` | `nocast`, `needful_nocast_0` — C/C++ portability bridges |
 | `faq.md` | `/faq` | Frequently asked questions and design rationale |
-
-`nav_order` in each page's YAML front matter controls the sidebar order.
+| `setup.md` | `/setup` | Installing needful-enhanced, enabling `NEEDFUL_CPP_ENHANCED` |
 
 ## Embedded compile-time tests
 

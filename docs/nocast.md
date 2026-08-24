@@ -1,7 +1,7 @@
 ---
 layout: default
 title: nocast
-nav_order: 10
+nav_order: 7
 permalink: /nocast
 ---
 

@@ -287,7 +287,7 @@ struct IsWrapperSemantic<ResultWrapper<X>> : std::true_type {};
 //           Some_Function();
 //        );
 //
-//    ignoring returned value of type needful::ResultWrapper<RebolValueStruct*>
+//    ignoring returned value of type needful::ResultWrapper<YourStruct*>
 //    declared with attribute 'nodiscard'
 //
 //    We try to give you a hint what's going on with the comment, if you

@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Comment Macros
-nav_order: 9
+nav_order: 8
 permalink: /comments
 ---
 
@@ -32,6 +32,31 @@ possibly(i < 0);   // if i is renamed, this becomes a compile error
 builds, it static-asserts that the expression has a type convertible to
 `bool`. If `i` is renamed and the expression no longer compiles, CI catches it.
 
+## Start Here
+
+If you are evaluating Needful, this is the page to try first.
+
+Everything else in this library has a peer somewhere. Rust has `Option` and
+`Result`, C++17 has `[[nodiscard]]`, and every large C codebase eventually
+grows its own cast wrappers. *Comments that fail the build when they go stale*
+have no equivalent in any of them.
+
+They are also the cheapest thing here to adopt. Every other construct asks you
+to change a type signature and think about who owns what:
+
+| | asks you to | breaks if you stop |
+|---|---|---|
+| `Option(T)`, `Need(T)`, `Fallible(T)` | change declarations, add `unwrap`/`opt` | yes — signatures changed |
+| `Result(T)` | supply failure hooks, restructure returns | yes |
+| Comment macros | nothing | no — no declaration ever changed |
+
+You can add `possibly()` to one function this afternoon, in an existing file,
+with no refactoring and no build changes, and roll the whole experiment back by
+deleting the lines. (The one exception is `heeded()`, which really does
+evaluate its expression — see the table below.) That makes them a good place to
+start, and in practice the thing that gets people to try `Option(T)` a month
+later.
+
 ## Statement-Scope Macros
 
 These go inside function bodies:
@@ -42,9 +67,13 @@ These go inside function bodies:
 | `definitely(cond)` | This is *always* true (not worth asserting at runtime) | `cond` must be bool-convertible |
 | `impossible(cond)` | This can *never* be true | `cond` must be bool-convertible |
 | `unnecessary(expr)` | This code would be redundant or pointless here | `expr` must be valid |
+| `inapplicable(expr)` | This operation does not apply in this case | `expr` must be valid |
 | `dont(expr)` | You might think you need to do this, but it's wrong! | `expr` must be valid |
 | `cant(expr)` | Would like to do this; current limitations prevent it | `expr` must be valid |
 | `heeded(expr)` | This looks stray but its side effect is intentional | expression is evaluated |
+
+Note that `heeded()` is the one entry that is **not** a no-op: it expands to
+`USED(expr)`, so the expression really runs. The others compile away.
 
 ## Global-Scope Macros
 
@@ -63,11 +92,19 @@ uppercased and have slightly different expansion:
 ## `STATIC_ASSERT` and Friends
 
 ```c
-STATIC_ASSERT(sizeof(int) == 4);          // C++ build: compile error if false
-STATIC_ASSERT_LVALUE(variable);           // error if variable is not an lvalue
-STATIC_IGNORE(expr);                      // validate expression, discard result
-STATIC_FAIL(some_identifier_message);     // always fails (marks unreachable paths)
+STATIC_ASSERT(sizeof(int) == 4);       // C++ build: compile error if false
+STATIC_ASSERT_LVALUE(variable);        // error if variable is not an lvalue
+STATIC_IGNORE(expr);                   // validate expression, discard result
+STATIC_FAIL("path is unreachable");    // always fails (marks unreachable paths)
 ```
+
+`STATIC_FAIL()` takes a **string literal** in every build mode. Pre-C11 C has
+no `_Static_assert`, so it falls back to a negative-size array typedef: still a
+hard error, but the message itself is lost, since there is nowhere to put it.
+
+`STATIC_ASSERT()` is enforced in C++ builds and in C11 or later. In pre-C11 C
+it is a no-op, so do not rely on it as your only check of an invariant that
+matters.
 
 ## Example: Self-Documenting Loop
 

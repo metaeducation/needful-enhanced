@@ -76,7 +76,7 @@ the wrapper class rather than on the declaration, so no position is special and
 both spellings expand identically. Keeping both defined in every mode is what
 lets one source file compile as C, as C++, and as checked C++.
 
-### The `static` restriction
+### The `static` restriction {#the-static-restriction}
 
 `__attribute__` may appear anywhere among a declaration's specifiers.
 `[[nodiscard]]` must come *first*. So on a compiler offering only the C23
@@ -151,7 +151,7 @@ diagnostics here that fail a build on their own.
 MSVC needs no `/Zc:__cplusplus`: the C++17 detection reads `_MSVC_LANG`
 directly.
 
-## Discharge Vocabulary
+## Discharge Vocabulary {#discharge-vocabulary}
 
 Because `Fallible(T)` carries an implicit must-use constraint, you cannot reach
 the underlying value without routing it through one of these. Each names a

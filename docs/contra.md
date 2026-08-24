@@ -1,7 +1,7 @@
 ---
 layout: default
 title: "Contra(T) / Sink(T) / Init(T)"
-nav_order: 7
+nav_order: 9
 permalink: /contra
 ---
 

@@ -1,7 +1,7 @@
 ---
 layout: default
 title: known(T, expr)
-nav_order: 8
+nav_order: 10
 permalink: /known
 ---
 

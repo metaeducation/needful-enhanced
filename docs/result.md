@@ -288,7 +288,7 @@ The one check that fails a build on its own is the type separation — refusing
 to convert a `Result(T)` to a `T` is a hard error, and it holds all the way
 down to C++11.
 
-## Setup: Result Hooks
+## Setup: Result Hooks {#setup-result-hooks}
 
 `Result(T)` needs to know how to store, retrieve, and clear the thread-local
 error state. You provide this by defining hook functions or macros:

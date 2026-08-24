@@ -160,57 +160,22 @@ template<typename T>
 struct NeedfulVoidWaypointSafe<NeedWrapper<T>> : std::true_type {};
 
 
-//=/// UNWRAP HELPER CLASS (LEGAL ON Need(), NOT JUST Option()) ///////////=//
+//=/// UNWRAP HELPER OVERLOAD FOR Need(T) /////////////////////////////////=//
 //
-// To avoid requiring parentheses and give a "keyword" look to the `unwrap`
-// operator, the C++ definition makes them put a global variable on the left
-// of an output stream operator.  The variable holds a dummy class which only
-// implements the extraction.
+// `unwrap` is spelled as a prefix "keyword" by making it the left operand of
+// operator+, so `unwrap foo` parses as `g_unwrap_helper + foo`:
 //
-//    Option(Foo*) foo = ...;
-//    if (foo)
-//        Some_Function(unwrap foo)
+//    Some_Function(unwrap foo)  =>  Some_Function(g_unwrap_helper + foo)
 //
-//    /* we have `#define unwrap needful::g_unwrap_helper +` so we get... */
+// The tag type and the macro are in %needful-wrapping.hpp, which is included
+// unconditionally, because `unwrap` is shared vocabulary.  Only this overload
+// is Need's business.  Why `+` here and `%` for Result(T) extraction, and
+// which expressions need parentheses as a result:
 //
-//    Option(Foo*) foo = ...;
-//    if (foo)
-//        Some_Function(needful::g_unwrap_helper + foo)
-//
-// 1. It might seem tempting to make the unwrap operator precedence something
-//    prefix that's very high, like `~`.  This way you could write things
-//    like (unwrap num / 10) and it would be clear that the unwrap should
-//    happen before the division (as you can't divide a wrapped Option(T)).
-//
-//    But interoperability with Result(T) means that postfix extraction of
-//    results should ideally be higher precedence than opt or unwrap:
-//
-//       return_if_failed(Foo* foo = unwrap Some_Api())
-//
-//    We have this expand out into:
-//
-//       Foo* foo = needful::g_unwrap_helper + Some_Api() % g_result_extractor;
-//       /* more expansion of the return_if_failed macro */
-//
-//    If the result extractor were not higher precedence, g_unwrap_helper would
-//    get a Result(Option(T)) and have to re-wrap that as a Result(T), which
-//    makes wasteful extra objects.  It's also semantically questionable: the
-//    result is conceptually on the "outside", and should extract first.
-//
-//    We use `+` (higher precedence than `==`) so `(unwrap foo == 10)` reads
-//    cleanly. `<<` would trigger "overloaded shift vs comparison" warnings.
-//
-
-// UnwrapHelper itself now lives in %needful-wrapping.hpp, which is included
-// unconditionally.  It used to be declared here, which made `unwrap` on an
-// Option(T) silently depend on NEEDFUL_NEED_USES_WRAPPER -- turning Need's
-// wrapper off broke Option with "UnwrapHelper: undeclared identifier", from
-// a file the user had not disabled.  `unwrap` is shared vocabulary, so it
-// belongs with the shared wrapper machinery; only the NeedWrapper overload
-// below is Need's business.
+//    https://needful.metaeducation.com/precedence
 
 template<typename T>
-T operator+(  // lower precedence than % [1]
+T operator+(  // lower precedence than %
     UnwrapHelper,
     const NeedWrapper<T>& need
 ){

@@ -52,10 +52,20 @@ bugs. No code changes needed between them!
 | [`Fallible(T)`](/fallible) | Must-use Option(T) for return types; `FallibleVar(T)` elsewhere |
 | [`Result(T)`](/result) | Multiplexed error + return value; auto-propagation via `return_if_failed` |
 | [`cast()` family](/cast) | Visible, hookable, semantically-named casts |
+| [`nocast`](/nocast) | Restores C's implicit `void*` and enum conversions in a C++ build |
+| [Comment macros](/comments) | `possibly()`, `dont()`, `heeded()` — comments that fail the build when they go stale |
 | [`Contra(T)` / `Sink(T)` / `Init(T)`](/contra) | Contravariant output parameter markers |
-| [`known(T, expr)`](/known) | Zero-cost compile-time type assertion inside macros |
-| [Comment macros](/comments) | `possibly()`, `dont()`, `heeded()` — executable documentation |
-| [`nocast`](/nocast) | Bridge `void*` and enum zero between C and C++ |
+| [`known(T, expr)`](/known) | Zero-cost compile-time type assertion, for macro authors |
+
+Two of these are worth a second look, because their names undersell them:
+
+- **[`nocast`](/nocast)** is what makes "just compile my C as C++" survive
+  contact with a real codebase. Without it, step 2 above buries you in errors
+  about `void*` returns from `malloc()` and `int`-to-enum assignments that C
+  was perfectly happy with.
+- **[Comment macros](/comments)** are the only part of Needful with no
+  equivalent in Rust, C++, or anything else — and the only part that asks for
+  no type changes at all. If you want to try one thing, try these.
 
 ---
 

@@ -153,3 +153,73 @@ Give it a named variable and use that.
 - [`Need(T)`](/need) — where `needed` is defined
 - [`Result(T)`](/result) — the `%` extraction machinery
 - [`nocast`](/nocast) — the deduction-proxy family
+
+---
+
+## Compile-Time Tests
+
+### Every ✅ row, and every recommended fix for a ❌ row
+
+<!-- doctest: positive-test -->
+```cpp
+#include <assert.h>
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_OPTION_SHORTHANDS  1
+#define NEEDFUL_RESULT_SHORTHANDS  1
+#define NEEDFUL_DECLARE_RESULT_HOOKS  1  // use some simple default hooks
+#include "needful.h"
+
+struct Node { int field; };
+
+static Node g_node = { 42 };
+static int g_five = 5;
+
+static Option(int) Seven(void) { return 7; }
+static Option(int) Three(void) { return 3; }
+static Option(int*) Five_Ptr(void) { return &g_five; }
+static Option(Node*) Find_Node(void) { return &g_node; }
+
+static Result(int) Compute(void) { return 20; }
+
+// The extraction rule: the Result(T) call is last, arithmetic comes after.
+//
+static Result(int) Doubles_Afterward(void) {
+    return_if_failed (int v = Compute());
+    return v * 2;
+}
+
+int main() {
+    Option(int) x = Seven();
+    int y = 1;
+
+    // Rows that work: everything binding looser than `+` sees a plain int.
+    //
+    assert(unwrap x + 1 == 8);
+    assert((unwrap x << 1) == 14);
+    assert(unwrap x < 10);
+    assert(unwrap x == 7);
+    assert(unwrap x && y);
+    assert((unwrap x ? 1 : 0) == 1);
+
+    int r = unwrap x;                          // `=` is looser
+    assert(r == 7);
+
+    // Rows that need parentheses: everything binding tighter than `+`.
+    //
+    assert((unwrap x) * 2 == 14);
+    assert((! (unwrap x)) == 0);
+    assert(* (unwrap Five_Ptr()) == 5);
+    assert((unwrap Find_Node())->field == 42);
+    assert((unwrap x) + (unwrap Three()) == 10);
+
+    assert(opt x + 1 == 8);                    // `opt` parses identically
+
+    assert_not_failed (int d = Doubles_Afterward());
+    assert(d == 40);
+
+    return 0;
+}
+```
