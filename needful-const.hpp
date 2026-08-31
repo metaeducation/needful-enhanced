@@ -38,6 +38,7 @@ template<typename T>
 struct ConstifyHelper<T, false, enable_if_t<  // TopLevel = false
     not HasWrappedType<T>::value
     and not std::is_pointer<T>::value
+    and not std::is_function<T>::value
 >> {
     using consted = const T;
     using unconsted = remove_const_t<T>;
@@ -55,9 +56,15 @@ struct ConstifyHelper<T* const, TopLevel, void> {  // pointer *itself* is const
     using unconsted = typename ConstifyHelper<T, false>::unconsted* const;
 };
 
-template<typename Ret, typename... Args>
-struct ConstifyHelper<Ret(*)(Args...), true, void> {  // function pointers
+template<typename Ret, typename... Args, bool TopLevel>
+struct ConstifyHelper<Ret(*)(Args...), TopLevel, void> {  // function pointers
     using consted = Ret(*)(Args...);  // function pointers can't be const
+    using unconsted = Ret(*)(Args...);
+};
+
+template<typename Ret, typename... Args, bool TopLevel>
+struct ConstifyHelper<Ret(* const)(Args...), TopLevel, void> {
+    using consted = Ret(* const)(Args...);  // preserve const pointer-ness
     using unconsted = Ret(*)(Args...);
 };
 
