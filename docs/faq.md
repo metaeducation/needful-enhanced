@@ -98,6 +98,27 @@ STATIC_ASSERT(sizeof(int) == 4);       // fails at compile time if wrong
 
 ---
 
+## Why is C++11 the baseline for the enhanced build? {#cpp11-baseline}
+
+Needful was designed to be retrofitted into existing, mature C codebases--often
+built to target standard C99 or even earlier constraints. Because these mature
+systems are occasionally worked on in environments leveraging older sandboxes,
+VMs, or classical SDKs, requiring a modern C++17 or C++20 compiler simply to
+run an enhanced checking pass limits the library's utility where it might be
+most heavily needed.
+
+By grounding the `needful-enhanced` toolkit on a strict **C++11** baseline,
+Needful maximizes compatibility with older LLVM/GCC versions or legacy MSVC
+installations that remain in active service.
+
+While upgrading the underlying implementation to use C++20 Concepts or C++17
+fold expressions would drastically simplify Needful's internal macro and
+template boilerplate, preserving C++11 ensures you can drop the single header
+into a ten-year-old environment and run static checks just as easily as on a
+modern CI system.
+
+---
+
 ## Why is there no `nocast_0` shorthand (only `needful_nocast_0`)? {#nocast-0-no-shorthand}
 
 `nocast_0` is plumbing — it's used internally by `make_failure(...)` and `none`

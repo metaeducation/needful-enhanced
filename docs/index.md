@@ -36,10 +36,11 @@ doing enhanced builds now and again gives static analysis that finds real bugs.
 **Step 2.** When ready, add the [`needful-enhanced/`][needful-enhanced-repo]
 enhancement files alongside `needful.h`. *(Put this directory in your
 .gitignore, don't commit it.)*  `#define NEEDFUL_CPP_ENHANCED  1` and build as
-C++11 or later.  The macros grow teeth: type mismatches become compile errors.
+[C++11 or later][cpp11-baseline].  The macros grow teeth: type mismatches
+become compile errors.
 
-**Step 3.** Run both modes in CI: C build for production, C++ build to catch
-bugs. No code changes needed between them!
+**Step 3.** Run both modes in CI: C build for production, C++ enhanced build to
+catch bugs. No code changes needed between them!
 
 ---
 
@@ -136,3 +137,4 @@ Common gotchas and design rationale are collected in the [FAQ](/faq).
 [needful-h-raw]: https://raw.githubusercontent.com/metaeducation/needful/refs/heads/main/needful.h
 [needful-repo]: https://github.com/metaeducation/needful/
 [needful-enhanced-repo]: https://github.com/metaeducation/needful-enhanced/
+[cpp11-baseline]: https://needful.metaeducation.com/faq#cpp11-baseline

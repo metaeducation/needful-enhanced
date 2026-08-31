@@ -104,9 +104,13 @@
 
 //=//// TYPE TRAIT ALIAS SHIMS (FOR C++11 COMPATIBILITY) //////////////////=//
 //
-// Needful is supposed to work in C++11, so we don't use the C++14/17/20
-// type trait aliases.  But the language is fully capable of supporting them
-// as a feature--they're just weren't in the standard library.
+// Needful is supposed to work in C++11 (see FAQ for why):
+//
+// https://needful.metaeducation.com/faq#cpp11-baseline
+//
+// So we don't use the C++14/17/20 type trait aliases.  But the language is
+// fully capable of supporting them as a feature--they just weren't in the
+// standard library.
 //
 // Shimming them into the std:: namespace is fraught.  So instead, we just
 // define their equivalents in the needful:: namespace, which means that
