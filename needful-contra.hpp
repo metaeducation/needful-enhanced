@@ -448,7 +448,7 @@ struct NeedfulVoidWaypointSafe<SinkWrapper<TP>> : std::true_type {};
 //
 #if NEEDFUL_USES_CORRUPT_HELPER
     template<typename T>
-    struct CorruptHelper<SinkWrapper<T*>&> {  // C pointer corrupt fails
+        struct CorruptHelper<SinkWrapper<T*>> {  // C pointer corrupt fails
       static void corrupt(SinkWrapper<T*>& wrapper) {
         Corrupt_If_Needful(wrapper.p);  // pointer itself (not contents)
         wrapper.corruption_pending = false;
