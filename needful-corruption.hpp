@@ -49,7 +49,7 @@
 //    garbage bytes, because they can have extra vtables and such--you
 //    can overwrite private compiler data.  But this is a C codebase
 //    which uses just a few C++ features.  If you don't have virtual
-//    methods then is_standard_layout<> should be true, and the memset()
+//    methods then is_trivially_copyable<> should be true, and the memset()
 //    shouldn't be a problem...
 //
 // 2. See definition of Cell and Mem_Fill() for why casting to void* is
@@ -71,8 +71,8 @@
 template<typename T, typename Enable = void>
 struct CorruptHelper {
   static_assert(
-    std::is_standard_layout<T>::value,  // would break C++ [1]
-    "Cannot memset() a C++ struct or class that's not standard layout"
+    std::is_trivially_copyable<T>::value,  // would break C++ [1]
+    "Cannot memset() a C++ struct or class that's not trivially copyable"
   );
 
   static_assert(  // see common specializations later in this file
