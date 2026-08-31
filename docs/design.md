@@ -159,6 +159,18 @@ because they must be read *before* you `#include`:
   examples in the header are not, so they rot. The banner carries a single
   `Option(T)` example to convey the *sense* of the library, and that is all.
 
+### [C++11 is the Baseline][cpp11-baseline] for the Enhanced Layer
+
+If you read the headers in `needful-enhanced/`, you will see complex SFINAE metaprogramming, recursive variadic templates, and backported traits (like `needful::void_t`) that could be trivially replaced by C++17 fold expression
+ or C++20 Concepts.
+
+**This is intentional.** Needful is designed to be retrofitted into classical C codebases inside legacy environments (older CI servers, VMs, constrained SDKs).
+Forcing the host to procure a C++17/20 compiler just to run the static checking
+pass limits the library's reach. The complex C++11 boilerplate in the companion
+tree pays the tax so the user's infrastructure doesn't have to.
+
+[cpp11-baseline]: https://needful.metaeducation.com/faq#cpp11-baseline
+
 ---
 
 ## Things that look like bugs but are not
