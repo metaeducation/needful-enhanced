@@ -17,15 +17,9 @@
 
 //=//// CONSTIFY/UNCONSTIFY: ADD/REMOVE CONST ON POSSIBLY-WRAPPED TYPE ////=//
 //
-// There is no standardized way to request constness be added or removed
-// from wrapped pointers in C++.
-//
-// 1. Some compilers (like GCC) do not like it if you have something like
-//    a return type of a function being `const int` or `const MyEnum`.
-//    While it should not matter, the warning is probably there to help
-//    make sure you aren't misunderstanding and thinking the const does
-//    something.  So we have to special-case fundamental and enum types
-//    so that they don't get consted and trigger warnings.
+// Needful needs predictable const add/remove across wrapped pointer-like
+// types.  The helper below treats top-level const separately so function
+// returns like const int are avoided in warning-heavy toolchains [1].
 //
 
 template<typename T, bool TopLevel = true, typename Enable = void>
@@ -70,16 +64,9 @@ struct ConstifyHelper<Ret(* const)(Args...), TopLevel, void> {
 
 // For recursion inside wrappers, use TopLevel = false.
 //
-// 1. Rewrappable wrappers (template instantiations like OptionWrapper<T>)
-//    can have their inner type replaced via RewrapHelper, so constifying
-//    recurses into the inner type and rewraps the result.
-//
-// 2. Non-rewrappable wrappers (plain structs like Heart that expose
-//    wrapped_type via NEEDFUL_DECLARE_WRAPPED_FIELD but aren't templates)
-//    can't be decomposed by RewrapHelper.  For these, constifying just
-//    means adding/removing top-level const on the struct itself--the inner
-//    type is an implementation detail that doesn't affect the wrapper's
-//    own constness.
+// 1. Rewrappable wrappers recurse into wrapped_type and rebuild via
+//    needful_rewrap_type(...).
+// 2. Non-rewrappable wrappers only receive top-level const changes.
 //
 template<typename T, bool TopLevel>  // rewrappable wrappers [1]
 struct ConstifyHelper<T, TopLevel, enable_if_t<

@@ -22,23 +22,15 @@
 
 //=//// NeedWrapper: STRICT NON-NULL / NON-BOOLEAN TYPE /////////////////////=//
 //
-// NeedWrapper allows implicit conversion to its underlying type, making it
-// largely transparent in usage. However, it blocks boolean coercions and
-// explicit null/zero assignments to catch bugs at compile-time.
+// NeedWrapper is mostly transparent as T, but blocks bool coercion and
+// null-like construction/assignment to catch misuse at compile time.
 //
 // 1. Need(T) works with pointers or non-pointer types like integers or enums
 //    (unlike Sink(T) or Init(T) which intrinsically imply pointers).
 //
-// 2. The primary purpose of the existence of Need() is to stop implicit
-//    conversions to bool.  A public `operator bool() const = delete` is the
-//    key: when the compiler resolves a bool conversion, the deleted operator
-//    is the *best* match (no extra standard conversion needed vs. the
-//    operator T() → T* → bool two-step), so it wins and is ill-formed.
-//    Keeping it public (not private) gives "use of deleted function" errors
-//    rather than access errors, and lets std::is_convertible return false
-//    cleanly in C++17 rather than a hard error.  The enable_if on the
-//    explicit operator U() template is a secondary defense to block
-//    static_cast<bool>() routes that bypass the implicit path.
+// 2. Public deleted operator bool() is the main guard: it is the best match
+//    for bool conversion, so misuse fails with a direct diagnostic.  The
+//    constrained explicit operator U() is a second guard against cast paths.
 //
 // 3. Non-dependent enable_if conditions work in MSVC, but GCC has trouble
 //    with them.  Introducing a dependent type seems to help it along.

@@ -41,6 +41,7 @@
 // default to atomics so this state is race-free without extra setup.
 //
 // Integrators can override in two ways:
+// See %docs/threading.md for the full configuration matrix.
 //
 // 1. Define all three custom synchronization hooks:
 //
@@ -149,35 +150,14 @@
 
 //=//// CORRUPTION HELPER /////////////////////////////////////////////////=//
 //
-// Helper struct for Corrupt_If_Needful() with generalized memset() fallback.
+// CorruptHelper uses class-template specialization (function templates cannot
+// be partially specialized) so pointer/fundamental/enum cases can be handled
+// directly, with a guarded memset fallback for plain data types.
 //
-// Function templates can't be partially specialized, class templates can.
-// Using a struct allows us to provide custom behavior for type families
-// (e.g. "all classes derived from some Base") while still being able to
-// have a generic fallback.  (A function template would see a generic
-// fallback as ambiguous with SFINAE trying to "carve up" the space.)
-//
-// 1. It's unsafe to memory fill an arbitrary C++ class by value with
-//    garbage bytes, because they can have extra vtables and such--you
-//    can overwrite private compiler data.  But this is a C codebase
-//    which uses just a few C++ features.  If you don't have virtual
-//    methods then is_trivially_copyable<> should be true, and the memset()
-//    shouldn't be a problem...
-//
-// 2. See definition of Cell and Mem_Fill() for why casting to void* is
-//    needed.  (Mem_Fill() macro is not defined in the Needful library)
-//
-// 3. Having tried a lot of variations of this code...including using masking
-//    to avoid branching...it seems that using uint_fast8_t and decrement
-//    with a test against 0 is about the fastest way to get good periodicity
-//    of zeroing and non-zeroing.
-//
-// 4. Use macro for efficiency, avoid another function call overhead
-//
-//    decltype(ref) deduces the type of ref (incl. reference/cv qualifiers)
-//
-//    remove_reference strips the reference, so the template matches
-//    the CorruptHelper<T> specializations
+// 1. memset() fallback is restricted to trivially copyable types (or unions).
+// 2. raw_cast(void*, ...) is intentional for Mem_Fill-style compatibility.
+// 3. Pseudo-random mode uses a cheap uint_fast8_t countdown.
+// 4. Corrupt_If_Needful is macro-based to avoid extra wrapper calls.
 //
 
 template<typename T, typename Enable = void>
@@ -223,10 +203,8 @@ STATIC_ASSERT(NEEDFUL_USES_CORRUPT_HELPER == 0);
 
 //=//// POINTER CORRUPTION ////////////////////////////////////////////////=//
 //
-// 1. Unlike the standard memset() fallback which doesn't know what it's
-//    corrupting, this pointer corrupter knows...and there's not a lot of
-//    good reason to pay additional cost to try and randomize states vs.
-//    "bad pointer" and "null pointer".
+// Pointer corruption uses only two states in pseudo-random mode: null and a
+// fixed invalid pointer.  This keeps behavior deterministic and cheap.
 
 template<typename T>
 struct CorruptHelper<T*> {  // Pointer (faster than memset() fallback)

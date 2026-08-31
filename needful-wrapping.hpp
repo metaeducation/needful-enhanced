@@ -13,25 +13,15 @@
 //
 //=/////////////////////////////////////////////////////////////////////////=//
 //
-// Needful's goal is to bring C++ as a service to codebases whose semantic
-// behaviors are all accomplished with C.
-//
-// This means that any wrapper classes used in a C++ build are only for
-// type checking and assertions.  Hence they are always "thin" proxies for
-// some single wrapped implementation type.  That narrowness makes it
-// possible for us to provide efficient and automatic metaprogramming
-// abilities for these wrapped types (e.g. mutability casts).
-//
-// What we do is have all such classes expose a static member called
-// `::wrapped_type`, which we then leverage to make several metaprogramming
-// operations automatic--without the wrapper class author having to get
-// involved and write specializations.  All they have to do is permit
-// explicit casting to the wrapped type, and Needful can do the rest.
+// Wrappers in enhanced mode are thin type-checking shells over one concrete
+// implementation type.  They expose ::wrapped_type so Needful can perform
+// generic operations (unwrap/rewrap/const-transfer) without per-wrapper
+// specializations.
 //
 //=//// NOTES /////////////////////////////////////////////////////////////=//
 //
-// A. In order for the metaprogramming assistance to work, the wrapped_type
-//    must be *the* type you are templated against.  e.g. don't do this:
+// A. For automatic rewrapping to work, wrapped_type must match the wrapper's
+//    actual template parameter.  e.g. don't do this:
 //
 //        template<typename T>
 //        struct MyWrapper {
@@ -59,10 +49,7 @@
 
 //=//// WRAPPER CLASS DEFINITION ///////////////////////////////////////////=//
 //
-// This is better than just `using wrapped_type = T;` because it helps people
-// reading the code navigate to this definition and read the rationale for
-// why this convention is used.  It also means you can't cheat--the bits
-// are the same as the C definition.
+// Central macro so all wrappers follow the same layout and metadata contract.
 //
 // 1. If you have a base class which has the actual storage of the wrapped
 //    type, and a derived class which just adjusts the access for it, then
@@ -85,18 +72,9 @@
 
 //=//// WRAPPER CLASS DETECTION ///////////////////////////////////////////=//
 //
-// Detects whether a type `T` declares a nested type named `wrapped_type`.
-// Types that do so are treated as "wrapper" types by Needful's generic code.
-//
-// This uses the standard C++11 "detection idiom" based on `void_t`.  The
-// primary template defaults to `false_type`, while a partial specialization
-// is selected only if substitution of `typename T::wrapped_type` succeeds.
-// If the nested type does not exist, substitution fails silently (SFINAE),
-// and the primary template is used instead.
-//
-// (NOTE: Using a common empty base class for all wrapper classes was tried
-// to see if it would be more efficient.  But it didn't help, and just made
-// a rule you might not want to follow in your class, so we stick with this.)
+// Detect whether T exposes wrapped_type using C++11 detection idiom (void_t).
+// The primary template is false_type; specialization is selected only when
+// substitution of typename T::wrapped_type succeeds.
 //
 // 1. Any type exposing `wrapped_type` must be standard-layout, because
 //    NEEDFUL_EXTRACT_INNER relies on reinterpret_cast to the first member

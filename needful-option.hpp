@@ -17,13 +17,9 @@
 //
 //=//// NOTES /////////////////////////////////////////////////////////////=//
 //
-// A. By Needful convention, unadorned pointers like `Foo*` are typically
-//    assumed to be non-null. Option(T) is used to make nullability explicit
-//    when states are legitimately optional. This documents intent and aids
-//    readability, rather than heavily littering the codebase with Need(T).
-//
-//    Option() may also be safely unwrapped into raw variables when logic
-//    immediately branches on the truthiness of the variable:
+// A. By convention, bare pointers like Foo* are treated as non-null.
+//    Option(T) marks intentional nullability.  Unwrapping to a raw variable
+//    is acceptable when control flow immediately proves non-nullness:
 //
 //        Foo* foo = opt Some_Optional_Foo(...);
 //        if (! foo)
@@ -71,9 +67,8 @@
 // 3. To allow transparent 0-initialization in globals and C structures, the
 //    default constructor is retained. Uninitialized locals remain so.
 //
-// 4. We want to avoid situations where Option(T) is implicitly assigned the
-//    results of Need(T) functions, creating a misleading situation where
-//    that result appears testable. So prvalue Need(T) construction is blocked.
+// 4. prvalue Need(T) construction is blocked to prevent accidental
+//    conversion into a testable optional value.
 //
 // 5. Explicit c_cast() and standard conversions are allowed because they
 //    indicate deliberate extraction.

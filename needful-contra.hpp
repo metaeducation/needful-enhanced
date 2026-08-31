@@ -13,27 +13,16 @@
 //
 //=/////////////////////////////////////////////////////////////////////////=//
 //
-// Needful's concept of contravariance is based on a very stylized usage of
-// inheritance, in which classes in a derivation hierarchy are all using the
-// same underlying bit patterns.  The only reason they're using inheritance
-// is to get compile-time checking of constraints on those bits, where the
-// subclasses represent more constrained bit patterns than their bases.
+// Contravariance here is a same-layout inheritance discipline: derived types
+// add constraints, not fields.  Init/Sink then allow writes through base-type
+// pointers while rejecting writes that would violate those constraints.
 //
-// SinkWrapper and InitWrapper accept pointers to BASE classes (writing less-
-// constrained bits into a more constrained location is the error to catch).
+// The core question is "Can U be safely used where T* is expected?"  The
+// answer comes from IsContravariant<U, T>, which combines:
+// - layout relationship checks
+// - indirect-encoding safety checks
 //
-// The core question is: "Can U be safely used where T* is expected?" This is
-// answered by IsContravariant<U, T>, which integrates all safety checks:
-//
-// - Inheritance/same-layout relationship (contravariance itself)
-//
-// - Indirect encodings (Slot has getter/setter -> can't write blindly)
-//
-//   * Init/Sink wrappers suppress this (they're output targets)
-//   * Identity conversions ignore this (Slot* -> Slot is always safe)
-//
-// Wrappers with special semantics (nullable, etc.) can specialize
-// IsContravariant directly to opt out of contravariance entirely.
+// Wrappers with custom semantics can specialize IsContravariant directly.
 //
 //=//// NOTES /////////////////////////////////////////////////////////////=//
 //

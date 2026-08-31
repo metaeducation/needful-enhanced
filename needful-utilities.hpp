@@ -17,15 +17,8 @@
 
 //=//// COMPILE-TIME-ONLY DUMMY CLASS INSTANTIATION ///////////////////////=//
 //
-// This uses sizeof() to force the compiler to instantiate a template, in
-// a way that can be used at compile-time.
-//
-// We take advantage of this to create dummy instances of types whose sole
-// job is to do static assertions, without bringing in runtime cost.  This
-// macro documents that we're doing that.
-//
-// Note that if for some reason one needs function call semantics for a check,
-// this works with getting the size of that function's return type.
+// Force template instantiation at compile time via sizeof(), with no runtime
+// object emission.  Useful for traits/helpers that exist only for assertions.
 //
 #define NEEDFUL_DUMMY_INSTANCE(...) \
     static_cast<void>(sizeof(__VA_ARGS__))
@@ -33,10 +26,7 @@
 
 //=//// DUMP TYPE NAME FOR DEBUGGING //////////////////////////////////////=//
 //
-// Somehow, despite decades of C++ development, there is no standard way to
-// print the name of a type at compile time.  This is a workaround that
-// uses a static assertion to force the compiler to print the type name in
-// the error message.
+// Debug-only type probe: force an error that prints the deduced type.
 //
 
 #if !defined(NDEBUG)
@@ -55,16 +45,8 @@
 
 //=//// MATERIALIZE PRVALUE ///////////////////////////////////////////////=//
 //
-// A prvalue is a pure temporary with no memory location--you can't take
-// its address or reinterpret_cast<> it.  GCC enforces this strictly, so
-// tricks that MSVC and Clang tolerate (like binding a cross-type rvalue
-// reference && to a prvalue for reinterpretation) are rejected.  :-(
-//
-// This macro is a workaround, that forces a prvalue to get a memory location
-// via same-type const& binding.  C++ standard mandates "temporary
-// materialization" for this, giving the prvalue a stack slot whose address we
-// can take.  It can be used e.g. to bypass conversion operators by
-// pointer-reinterpreting to the standard-layout first member.
+// Materialize a prvalue by binding to const&, so it gains storage and an
+// address.  This supports cast paths that require a real object location.
 //
 #define NEEDFUL_MATERIALIZE_PRVALUE(expr) \
     (&needful_c_cast( \
@@ -74,12 +56,9 @@
 
 //=//// VARIADIC MACRO PARENTHESES REMOVAL ////////////////////////////////=//
 //
-// NEEDFUL_UNPARENTHESIZE is used to remove a single layer of parentheses
-// from a macro argument.  This is useful if you want to capture variadic
-// arguments at a macro callsite as a single argument in parentheses.
+// Remove one outer parenthesis layer from a macro argument list.
 //
-// Needful uses it to transfer variadic arguments to C++ templates in a way
-// that C can just ignore:
+// Needful uses it to pass grouped macro arguments into template lists:
 //
 //     #define MY_MACRO(list,expr)  /* [1] */
 //         my_template<NEEDFUL_UNPARENTHESIZE list>(expr)
@@ -97,7 +76,7 @@
 //
 //    my_template<int, float, double>(expr)
 //
-// 1. You can't put backslashes in comments, but there'd be one here.
+// 1. Backslashes are omitted in this comment-only sketch.
 //
 #define NEEDFUL_UNPARENTHESIZE(...)  __VA_ARGS__
 

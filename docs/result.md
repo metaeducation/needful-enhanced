@@ -69,6 +69,15 @@ A quick and dirty way to write `return failed;` and not have to come up with
 an error might be useful in some codebases.  We don't try to define that here,
 because it's open ended as to what you'd use for your error value type.
 
+## One Error Channel, Intentionally
+
+Needful's `Result(T)` is intentionally not parameterized as `Result(T,E)`.
+All failures flow through one project-defined error slot and one hook family.
+
+That choice keeps propagation macros uniform, keeps C and enhanced C++ builds
+aligned, and avoids requiring type-threading through expression-position
+macros like `catch_if_failed(...)`.
+
 In order for these macros to work, they need to be able to test and clear the
 global error state.  Hence you have to define:
 

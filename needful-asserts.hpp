@@ -14,27 +14,13 @@
 //=/////////////////////////////////////////////////////////////////////////=//
 //
 
-// 1. You can't use __has_cpp_attribute(nodiscard), because that only says if
-//    the compiler *recognizes* the attribute, not if it's *valid* in the
-//    current language standard.  So if you're compiling with --std=c++11 it
-//    would say it has the attribute, but error when [[nodiscard]] is used.
+// NEEDFUL_NODISCARD prefers [[nodiscard]] in C++17+ (or when explicitly
+// requested by NEEDFUL_PRECPP17_NODISCARD), otherwise stays a no-op.
 //
-// 2. There are possible definition in GCC/Clang/MSVC even in C code that can
-//    be used for NEEDFUL_NODISCARD.  But note these definitions only work on
-//    functions, not types.  The C++17 way works on structs as well (though
-//    not on typedefs).  So in the past, needful.h did this:
-//
-//        #if defined(__GNUC__) || defined(__clang__)
-//            #define NEEDFUL_NODISCARD  __attribute__((warn_unused_result))
-//        #elif defined(_MSC_VER)
-//            #define NEEDFUL_NODISCARD  _Check_return_
-//        #else
-//            #define NEEDFUL_NODISCARD
-//        #endif
-//
-//    The reason that ide was scrapped is because if you use them on structs
-//    (the principal use case for NEEDFUL_NODISCARD in Needful) you can get an
-//    "attribute has no effect" warning.  So it's a no-op unless using C++17.
+// 1. __has_cpp_attribute(nodiscard) checks recognition, not validity under
+//    the active language standard.
+// 2. Older GNU/SAL spellings are function-only and do not cover the class
+//    use cases Needful relies on.
 //
 #if __cplusplus >= 201703L  // C++17 or higher, can't check attribute [1]
     #undef NEEDFUL_NODISCARD
@@ -50,14 +36,8 @@
 
 #endif
 
-// 3. [2] above explains why the GNU/SAL spellings were rejected: they do
-//    nothing on a class, which is the position that matters here.  That
-//    conclusion still holds, but it is not the end of the story, because
-//    compilers accept the *standard* attribute earlier than the standard
-//    requires.  NEEDFUL_PRECPP17_NODISCARD opts into that, and needful.h
-//    emits the pragma that keeps -Wpedantic quiet about it.  Without this,
-//    a checked C++11 build enforces the type separation but not the must-use
-//    property -- see the enforcement tables in %docs/result.md.
+// 3. NEEDFUL_PRECPP17_NODISCARD opts into compilers that accept the standard
+//    attribute before C++17.  See enforcement notes in %docs/result.md.
 
 // 1. We use __VA_ARGS__ here to avoid the need for double-parenthesization
 //    at the callsite, e.g. STATIC_ASSERT((std::is_same<T, U>::value)), which
