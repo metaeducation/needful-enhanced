@@ -4,7 +4,7 @@ Things that are **not settled**. This file exists so a position can be recorded
 without being enacted.
 
 That distinction is the whole point. Without a place like this, the only way to
-register "I think the tagline is wrong" is to *change the tagline* — so
+register "I think the tagline is wrong" is to *change the tagline* -- so
 disagreements arrive as commits, and the reasoning evaporates. Here, a case can
 be made and left to sit.
 
@@ -18,7 +18,7 @@ current leaning.
 ### The anti-rot rule
 
 The failure mode for a file like this is not being wrong. It is **accumulating**
-— growing into a graveyard of stale musings that nobody reads, which is worse
+-- growing into a graveyard of stale musings that nobody reads, which is worse
 than not having one, because it looks like documentation.
 
 So there is exactly one rule: **an entry either moves or dies. It does not
@@ -40,7 +40,7 @@ the reasoning went. Once that relocation is done, the stub gets deleted too.
 If `## Closed` is growing, the relocation step is being skipped.
 
 **Expiry:** if an entry has sat untouched through two rounds of real work on the
-thing it concerns, it is not actually an open question — it is a preference
+thing it concerns, it is not actually an open question -- it is a preference
 nobody holds strongly. Decide it or cut it.
 
 ---
@@ -51,13 +51,14 @@ nobody holds strongly. Decide it or cut it.
 
 Committing design rationale is common (ADRs, `RATIONALE.md`). Committing
 *marketing* uncertainty is rare, and the rarity might itself be the interesting
-part — it's the same move as the "Weak Points" section on the homepage, one
+part -- it's the same move as the "Weak Points" section on the homepage, one
 level up: a project that can say "here's what we haven't figured out" reads as
 more confident than one projecting total certainty.
 
 - **Repo-only (current).** Lives at the repo root, outside `docs/`, so Jekyll
   never publishes it. Contributors see it; evaluators don't. Safe.
-- **Published.** Becomes part of the pitch — "we argue about this in the open."
+
+- **Published.** Becomes part of the pitch -- "we argue about this in the open."
   Risk: an evaluator skimming for reasons to say no finds a list of things the
   author isn't sure about, and reads it as instability rather than candor.
 
@@ -68,11 +69,13 @@ promote later; it's awkward to retract.
 
 Live example, and the reason this file exists.
 
-- `Rust-grade safety for C` — punchy, and an overclaim. "Safety" in the C/Rust
+- `Rust-grade safety for C` -- punchy, and an overclaim. "Safety" in the C/Rust
   conversation means *memory* safety. Needful does not deliver that, and the
   claim is checkable in under a minute.
-- `Rust-style types for C` — accurate and limp. "Types" has no stakes in it.
-- `Rust-grade type checking for C` — **current.** Keeps the phrase that carried
+
+- `Rust-style types for C` -- accurate and limp. "Types" has no stakes in it.
+
+- `Rust-grade type checking for C` -- **current.** Keeps the phrase that carried
   the energy; the noun it modifies is now something actually delivered.
 
 *Leaning:* current wording. But the underlying question generalizes and is not
@@ -94,23 +97,25 @@ So the open part is narrower: is there a third thing, aimed outward?
 - **No page.** Current. Nothing is missing; a page about our own test
   infrastructure risks reading as navel-gazing on a site meant to sell a
   library.
-- **A page, pitched as reusable methodology** — "how to make documentation
+
+- **A page, pitched as reusable methodology** -- "how to make documentation
   that cannot rot," written so another project could copy the approach. That
   is a genuinely different artifact from documenting *our* setup, and it is
   the version with an audience beyond us.
 
 *Leaning:* no page for now. If one gets written it should be the methodology
-version, which makes it a candidate opener for outward-facing material — see
+version, which makes it a candidate opener for outward-facing material -- see
 the introduction question above, and note the two would then compete.
 
 ### Does the name carry its own weight?
 
-`Needful` is memorable but opaque — it tells a stranger nothing, and `Need(T)`,
+`Needful` is memorable but opaque -- it tells a stranger nothing, and `Need(T)`,
 the namesake, is the construct with the least immediate appeal to someone who
 hasn't seen it in use.
 
 - **Keep, always paired with the tagline.** The tagline does the explaining, so
   the name never appears naked. Current de-facto practice.
+
 - **Rename.** Enormous cost (URLs, repos, the corpus of prose) for a benefit
   that is real but unmeasured.
 
@@ -119,21 +124,23 @@ rather than a habit.
 
 ### What should an outward-facing introduction lead with?
 
-Scoped to *outward* material — a talk, a README for a new audience, a post if
+Scoped to *outward* material -- a talk, a README for a new audience, a post if
 one ever gets written. **This does not reopen the banner example**, which is
 settled; see the note under Closed.
 
 - **`Option`/`Result` for C.** Accurate; also a crowded, ignored genre where
   the reader has a pre-formed "another one of these" response ready.
-- **The comment macros** — *"Comments that fail the build."* The most novel
+
+- **The comment macros** -- *"Comments that fail the build."* The most novel
   idea here, the cheapest to demo, and repeatedly the thing fresh readers
   single out unprompted. Not the biggest feature, and it invites "cute" as a
   first reaction.
-- **The asymmetry** — *"Ship the same binary. Check it harder in CI."* The
+
+- **The asymmetry** -- *"Ship the same binary. Check it harder in CI."* The
   strongest argument on the merits, but it needs a paragraph to land rather
   than a snippet, which makes it a bad opener and a good closer.
 
-*Leaning:* none held firmly. The tension is real — the most *novel* thing and
+*Leaning:* none held firmly. The tension is real -- the most *novel* thing and
 the most *persuasive* thing are different things, and leading with novelty
 risks the whole library being filed under "clever."
 
@@ -151,21 +158,23 @@ SQLite's amalgamation is the obvious precedent: a build step that inlines
 
 - **Cost:** a real build step to maintain, a second artifact that can drift, and
   the loss of the property that a reader can see exactly which file does what.
+
 - **Benefit:** deletes an entire objection from the adoption path.
 
 *Leaning:* worth prototyping, not worth committing to sight-unseen. The
-question to answer first is whether the amalgamated file is still *auditable* —
+question to answer first is whether the amalgamated file is still *auditable* --
 if it isn't, it defeats the reason the C definitions are written out in full.
 
 ### Should the prefix keywords have a parenthesized alternative spelling?
 
 `unwrap foo` costs precedence surprises and permanent low-grade tooling
-friction (formatters, highlighters, code search). The mitigation is strong — a
-misparse is always a compile error, never a wrong answer — but it is the
+friction (formatters, highlighters, code search). The mitigation is strong -- a
+misparse is always a compile error, never a wrong answer -- but it is the
 feature most likely to read as "too clever" to a newcomer.
 
 - **Offer `unwrap_(foo)` alongside** so a project can adopt Needful without
   adopting the trick.
+
 - **Don't.** Two spellings for one operation is its own tax, and codebases
   would end up mixing them.
 
@@ -179,6 +188,7 @@ alongside `Option` and `Result` slightly misrepresents who the library is for.
 
 - **Keep it listed**, since it is genuinely useful and someone writing macros
   needs to discover it.
+
 - **Move it to a second tier** with the shims.
 
 *Leaning:* second tier, but the header's list is short enough that this has not
@@ -190,6 +200,7 @@ The default hooks are single-threaded and the design assumes one pending
 failure at a time. Today this is documented and left to the user.
 
 - **Leave it.** The hooks are the extension point; that is what they are for.
+
 - **Ship a thread-local default** so the obvious first thing a user tries is
   also correct in a threaded program.
 
@@ -202,12 +213,13 @@ failure at a time. Today this is documented and left to the user.
 *(Move entries here briefly when decided, with the outcome, then relocate the
 reasoning per the table above and delete the stub.)*
 
-- **Which construct gets the banner example in `needful.h`?** — `Option(T)`.
+- **Which construct gets the banner example in `needful.h`?** -- `Option(T)`.
   The opening example must also teach the C-versus-enhanced mechanism, so it
   can only afford one unfamiliar idea, and the mechanism is the one that
   matters. Recorded in [`docs/design.md`](docs/design.md).
+
 - **Should `Need(T)` lead the feature list, given `Option(T)` is more broadly
-  useful?** — Yes, it leads. `Option(T)` is defined *in contrast to* a value
+  useful?** -- Yes, it leads. `Option(T)` is defined *in contrast to* a value
   that cannot be absent, so Need establishes the axis; and the banner example
   already uses `Option(T)`, so the more-useful construct does the persuading
   before the list starts. Recorded in [`docs/design.md`](docs/design.md).

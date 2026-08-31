@@ -214,13 +214,13 @@ consumer setup in a temporary directory. The contract is:
 The four smoke tests cover that contract directly:
 
 - `smoke-standalone-header-only` copies only `needful.h` and verifies it can
-	compile and run without any `needful-enhanced/` directory present.
+    compile and run without any `needful-enhanced/` directory present.
 - `smoke-enhanced-matching` copies `needful.h` plus the current
-	`needful-enhanced/` tree and verifies a checked build compiles and runs.
+    `needful-enhanced/` tree and verifies a checked build compiles and runs.
 - `smoke-enhanced-missing` requests `NEEDFUL_CPP_ENHANCED` without copying the
-	companion directory and verifies compilation fails.
+    companion directory and verifies compilation fails.
 - `smoke-enhanced-mismatched-version` copies both, then intentionally mutates
-	the copied compatibility macro to verify the version-mismatch `#error`.
+    the copied compatibility macro to verify the version-mismatch `#error`.
 
 These tests exist to catch layout regressions and header/repo skew before they
 turn into confusing downstream setup failures.

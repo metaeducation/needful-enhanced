@@ -72,13 +72,15 @@ So `none` gets one spelling that means the same thing three times:
 
 Each of those needs comparison to work for *both* pointers and enums:
 
-- **C** — plain `0 ==` works for pointers, enums, and integers alike.
-- **C++, unenhanced** — `Nocast0Struct` has a templated conversion operator, so
+- **C** -- plain `0 ==` works for pointers, enums, and integers alike.
+
+- **C++, unenhanced** -- `Nocast0Struct` has a templated conversion operator, so
   `ptr == nocast_0` would already work. **Enums would not.** That is why
   `needful.h` defines `operator==`/`!=` for `Nocast0Struct` directly. The
   trailing return type is the constraint: `-> decltype(! v)` means that if `!v`
   is not valid for `T`, substitution fails and the overload drops out.
-- **C++, enhanced** — `Option(T)` supplies its own `NoneStruct` operators.
+
+- **C++, enhanced** -- `Option(T)` supplies its own `NoneStruct` operators.
 
 Take any one of those three away and the construct works right up until
 somebody declares a `Fallible(SomeEnum)`, which is why all three exist.
@@ -108,6 +110,7 @@ because they must be read *before* you `#include`:
 
 - **[A]** `-Wint-conversion` is globally disabled in C mode. A user must know
   a warning was turned off on their behalf.
+
 - **[B]** `NEEDFUL_ASSERT` / `NEEDFUL_ABORT` hooks. Actionable configuration.
 
 ### Other header conventions
@@ -118,17 +121,21 @@ because they must be read *before* you `#include`:
   (the `typedef enum`, `needful_dead_end_inline`, the C++ namespace blocks, the
   default result hooks) has genuine ordering constraints, and all of it is
   placed accordingly.
+
 - **Every vocabulary section carries a `Docs:` link.** That link is the
   mechanism that lets the header stay short without the reader losing anything.
+
 - **The C definitions are written out in full.** This is an *auditability*
   feature, not a stylistic one: a maintainer evaluating Needful can read the
   file and confirm there is no magic. Do not factor the C definitions into
   cleverness.
+
 - **`#ifdef __cplusplus` only where unavoidable.** C++ variations are done by
   `#undef` and re-`#define` from the companion tree. The unavoidable cases are
   the ones where C++ *cannot* express the C spelling at all — e.g.
   `NEEDFUL_NULLPTR`, since C++ will not implicitly convert `(void*)0` to an
   arbitrary `T*`.
+
 - **`Need(T)` leads the feature list, even though `Option(T)` is more broadly
   useful.** Position #1 does *orientation*, not persuasion: `Option(T)` is
   defined in contrast to a value that cannot be absent, so `Need(T)` is what
@@ -136,6 +143,7 @@ because they must be read *before* you `#include`:
   backwards. The banner example uses `Option(T)`, so the more-useful construct
   does the persuading before the list starts. Keep the entries adjacent and
   keep the "dual" phrasing that ties them together.
+
 - **The banner example uses `Option(T)`, and that is deliberate.** The opening
   example has *two* jobs: show a construct, and explain the C-versus-enhanced
   mechanism that the whole library rests on. It can therefore only afford to
@@ -145,6 +153,7 @@ because they must be read *before* you `#include`:
   candidate) would mean arguing for something unfamiliar *while* also teaching
   the mechanism — two new things at once, and the mechanism is the one that
   matters. One step at a time.
+
 - **One example, at the top, and no more.** Examples in the docs are compiled
   in CI ([see the doctest system](https://github.com/metaeducation/needful-enhanced/blob/main/docs/README.md));
   examples in the header are not, so they rot. The banner carries a single
@@ -172,20 +181,25 @@ If you are tempted to "fix" one of these, it was deliberate:
 
 1. **Build all three modes.** The test suite covers them; `ctest` is not
    optional here, because mode 2 has no other guard.
+
 2. **Run the C matrix.** `needful.h` must compile as plain C at `c11`, `c17`,
-   and latest — with and without `NEEDFUL_FALLIBLE_C23_MUSTUSE`.
+   and latest -- with and without `NEEDFUL_FALLIBLE_C23_MUSTUSE`.
+
 3. **Diff the macro inventory.** If you moved sections around, extract every
    `#define` name before and after and compare the sets. A reorganization that
    silently drops a macro will still compile.
+
 4. **Re-run the doctests.** Docs changes are code changes here. Note that if
    the extraction step cannot find Python it fails *quietly*, and the suite
-   shrinks from 40-odd tests to 16 without saying so — check the count.
+   shrinks from 40-odd tests to 16 without saying so -- check the count.
+
 5. **Mind the three lints**, which cover conventions no compiler enforces:
    `comment-style` (needful.h's own comments are slash-star; `//` only *inside*
    them), `doc-links` (every `Docs:` URL and every `](/page#anchor)` resolves),
    and `no-tabs`. They are ordinary CTest entries, so a full run catches them —
    but they are the ones most likely to be broken by an edit that "obviously"
    could not break anything.
+
 6. **Sync the header** to wherever it is published, and verify the copy. A
    shared-folder copy once produced a file of exactly the right length whose
    tail was NUL padding; `tests/run-header-integrity.cmake` exists because of
@@ -199,6 +213,7 @@ If you are tempted to "fix" one of these, it was deliberate:
   *not* settled. Check it before changing something that looks arbitrary: it
   may be arbitrary on purpose, pending a decision. Record a position there
   rather than enacting it.
-- [FAQ](/faq) — design rationale for individual constructs
-- [Precedence](/precedence) — why the prefix keywords parse the way they do
-- [Setup](/setup) — the full configuration switch inventory
+
+- [FAQ](/faq) -- design rationale for individual constructs
+- [Precedence](/precedence) -- why the prefix keywords parse the way they do
+- [Setup](/setup) -- the full configuration switch inventory

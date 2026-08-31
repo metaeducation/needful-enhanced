@@ -64,9 +64,32 @@ Two of these are worth a second look, because their names undersell them:
   contact with a real codebase. Without it, step 2 above buries you in errors
   about `void*` returns from `malloc()` and `int`-to-enum assignments that C
   was perfectly happy with.
+
 - **[Comment macros](/comments)** are the only part of Needful with no
   equivalent in Rust, C++, or anything else — and the only part that asks for
   no type changes at all. If you want to try one thing, try these.
+
+---
+
+## Design Goals
+
+- **No magic.** [The C definitions are written out in full][needful-h-raw] so
+  you can see how trivial they are. Adding Needful to a C project is a
+  low-impact proposition.
+
+- **Gradual adoption.** Use just `nocast` today. Add `Option` next month.
+  Enable `NEEDFUL_CPP_ENHANCED` when you're ready. Nothing breaks.
+
+- **Codebase documentation.** The comment macros (`possibly`, `definitely`,
+  `impossible`, `unnecessary`, `dont`) replace prose comments with
+  compile-checked expressions that keep themselves up-to-date.
+
+- **Documentation that compiles.** The same idea, turned on this site. Every
+  example here that demonstrates a checked behavior is extracted and built in
+  CI on GCC, Clang, and MSVC — the positive ones must compile *and run*, and
+  the negative ones must **fail** to compile, for the stated reason. A sample
+  that drifts out of date does not quietly mislead you; it turns the build
+  red. The links between these pages are checked the same way.
 
 ---
 
@@ -114,19 +137,6 @@ single-threaded. Making them thread-local is your job, and the design assumes
 one pending failure at a time.
 
 If none of those are dealbreakers, the rest of this site is the good parts.
-
----
-
-## Design Goals
-
-- **No magic.** [The C definitions are written out in full][needful-h-raw] so
-  you can see how trivial they are. Adding Needful to a C project is a
-  low-impact proposition.
-- **Gradual adoption.** Use just `nocast` today. Add `Option` next month.
-  Enable `NEEDFUL_CPP_ENHANCED` when you're ready. Nothing breaks.
-- **Codebase documentation.** The comment macros (`possibly`, `definitely`,
-  `impossible`, `unnecessary`, `dont`) replace prose comments with
-  compile-checked expressions that keep themselves up-to-date.
 
 ---
 

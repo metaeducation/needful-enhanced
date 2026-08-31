@@ -58,7 +58,8 @@ Two files are worth reading before you change anything:
   C++ unenhanced, C++ enhanced), and most of what looks arbitrary follows from
   it. Includes a "things that look like bugs but are not" table and a
   pre-commit checklist.
-- **[`OPEN-QUESTIONS.md`](OPEN-QUESTIONS.md)** — what is deliberately undecided,
+
+- **[`OPEN-QUESTIONS.md`](OPEN-QUESTIONS.md)** -- what's deliberately undecided,
   including positioning and naming. If you disagree with a choice, the intended
   move is to record a position there rather than to enact it in a commit.
 
