@@ -180,7 +180,13 @@ If you are tempted to "fix" one of these, it was deliberate:
 4. **Re-run the doctests.** Docs changes are code changes here. Note that if
    the extraction step cannot find Python it fails *quietly*, and the suite
    shrinks from 40-odd tests to 16 without saying so — check the count.
-5. **Sync the header** to wherever it is published, and verify the copy. A
+5. **Mind the three lints**, which cover conventions no compiler enforces:
+   `comment-style` (needful.h's own comments are slash-star; `//` only *inside*
+   them), `doc-links` (every `Docs:` URL and every `](/page#anchor)` resolves),
+   and `no-tabs`. They are ordinary CTest entries, so a full run catches them —
+   but they are the ones most likely to be broken by an edit that "obviously"
+   could not break anything.
+6. **Sync the header** to wherever it is published, and verify the copy. A
    shared-folder copy once produced a file of exactly the right length whose
    tail was NUL padding; `tests/run-header-integrity.cmake` exists because of
    it.

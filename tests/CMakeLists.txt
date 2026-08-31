@@ -130,6 +130,47 @@ add_test(
 )
 
 
+#=[ SOURCE AND DOCUMENTATION LINTS ]==========================================
+#
+# Two conventions that no compiler enforces, so nothing would otherwise notice
+# them breaking:
+#
+# * comment-style -- needful.h uses slash-star for its own comments; `//`
+#   appears only *inside* block comments.  A stray `// like this` in a macro
+#   compiles fine everywhere Needful is built, which is exactly the problem.
+#
+# * doc-links -- needful.h stays short by pointing at
+#   needful.metaeducation.com instead of explaining in place.  That trade only
+#   works while the pointers resolve, and a renamed heading breaks them
+#   silently.  Checks the header, the .hpp files, and the docs against the
+#   permalinks and anchors that docs/*.md actually declares.
+
+add_test(
+    NAME comment-style
+    COMMAND
+        "${CMAKE_COMMAND}"
+        -DNEEDFUL_H_DIR=${NEEDFUL_H_DIR}
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/run-comment-style.cmake"
+)
+
+add_test(
+    NAME doc-links
+    COMMAND
+        "${CMAKE_COMMAND}"
+        -DDOCS_DIR=${CMAKE_CURRENT_SOURCE_DIR}/../docs
+        "-DSCAN_DIRS=${NEEDFUL_H_DIR};${CMAKE_CURRENT_SOURCE_DIR}/.."
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/run-doc-links.cmake"
+)
+
+add_test(
+    NAME no-tabs
+    COMMAND
+        "${CMAKE_COMMAND}"
+        "-DROOTS=${NEEDFUL_H_DIR}/needful.h;${CMAKE_CURRENT_SOURCE_DIR}/.."
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/run-no-tabs.cmake"
+)
+
+
 #=[ C BUILD TESTS ]===========================================================
 #
 # Every other test here compiles as C++ with NEEDFUL_CPP_ENHANCED=1.  These

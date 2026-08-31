@@ -25,7 +25,7 @@ SomeEnum  e   = nocast 0;                          // C: no-op; C++: constexpr z
 In C, `nocast` expands to nothing. In C++ it expands to a proxy object and an
 `operator+` overload that performs the right conversion at the call site.
 
-## `needful_nocast_0` — Generic Zero
+## `needful_nocast_0` — Generic Zero {#needful_nocast_0}
 
 `needful_nocast_0` is a constexpr zero that converts to any type. It is used
 internally by `Option(T)` and `Result(T)` as a sentinel:

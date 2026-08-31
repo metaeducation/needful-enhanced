@@ -334,7 +334,7 @@ including `needful.h` to get a built-in `const char*`-based implementation:
 > **Note:** `NEEDFUL_DECLARE_RESULT_HOOKS` defines storage and implementations
 > inline. Only define it in **one** translation unit per program.
 
-## `Result(None)` — Fallible Functions With No Return Value
+## `Result(None)` — Fallible Functions With No Return Value {#result-none}
 
 C does not allow `return value;` in a `void`-returning function, which means
 `Result(void)` can't work: you can't write `return needful_make_failure(...)` because there's

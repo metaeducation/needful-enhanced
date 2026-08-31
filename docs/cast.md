@@ -210,7 +210,7 @@ Lenient and rigid variants mirror the behavior of the base cast:
 | `lenient_c_cast_known(T, expr)` | Passes `const` through |
 | `rigid_c_cast_known(T, expr)` | Errors on constness mismatch |
 
-## `downcast` / `upcast`
+## `downcast` / `upcast` {#downcast}
 
 `downcast` is a single-arity cast helper used like an expression:
 

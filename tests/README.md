@@ -226,6 +226,35 @@ These tests exist to catch layout regressions and header/repo skew before they
 turn into confusing downstream setup failures.
 
 
+## Source and Documentation Lints
+
+Some conventions are load-bearing but invisible to a compiler, so they get
+their own CTest entries rather than trusting review to catch them.
+
+- `comment-style` — `needful.h` writes its own comments in slash-star, and
+  uses `//` only *inside* those comments (prose, URLs, sample code). This is a
+  deliberate "old school C" register, and it is easy to break by accident: a
+  `// like this` appended to a macro compiles cleanly in every configuration
+  Needful is built in, so nothing else would ever report it.
+
+- `doc-links` — `needful.h` stays short only because rationale lives at
+  needful.metaeducation.com and the header points there instead of explaining
+  in place. That trade holds exactly as long as the pointers resolve, and
+  renaming a heading breaks them silently. This resolves every
+  `https://needful.metaeducation.com/...` in the header and the `.hpp` files,
+  plus every `](/page#anchor)` and same-page `](#anchor)` in the docs, against
+  the permalinks and anchors that `docs/*.md` actually declares.
+
+  When a link targets a heading whose auto-generated id is ambiguous, pin it
+  with an explicit `{#anchor}` and link to that. Deriving the id is what makes
+  such links quietly fragile in the first place.
+
+- `no-tabs` — indentation is spaces everywhere, in every file type.
+
+All three are plain CMake scripts, so they need no interpreter beyond the one
+already required to build.
+
+
 ## Running the Tests
 
 **Positive + negative (via CTest):**
