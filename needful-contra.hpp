@@ -292,9 +292,21 @@ struct NeedfulVoidWaypointSafe<ContraWrapper<TP>> : std::true_type {};
 //    So rather than disallow overwriting the pointer in a Sink, it just
 //    triggers another corruption if you assign a non-nullptr.
 //
+// 5. Tiny helper-method factoring is intentionally avoided in hot wrapper
+//    paths, so we use a macro; see design rationale:
+//    https://needful.metaeducation.com/design#dont-factor-hot-wrapper-paths
+//
 
 #undef NeedfulSink
 #define NeedfulSink(T)  needful::SinkWrapper<T*>
+
+#define NEEDFUL_SINK_CORRUPT_PENDING(wrapper) /* use macro vs. helper [5] */ \
+    do { \
+        if ((wrapper).corruption_pending) { \
+            Corrupt_If_Needful(*(wrapper).p); \
+            (wrapper).corruption_pending = false; \
+        } \
+    } while (false)
 
 template<typename T>  // write ok even if contained type can be indirect [1]
 struct MayUseIndirectEncoding<SinkWrapper<T>, true> : std::false_type {};
@@ -310,6 +322,7 @@ struct SinkWrapper {
 
     NEEDFUL_DECLARE_WRAPPED_FIELD (T*, p);
 
+    // Mutable because const conversion operators consume this state.
     mutable bool corruption_pending;  // can't corrupt on construct [3]
 
     SinkWrapper()  // compiler MIGHT need, see [B]
@@ -351,17 +364,14 @@ struct SinkWrapper {
     }
 
     SinkWrapper& operator=(std::nullptr_t) {  // `=` allowed [4]
-        if (this->corruption_pending)
-            Corrupt_If_Needful(*this->p);
+        NEEDFUL_SINK_CORRUPT_PENDING(*this);
         this->p = nullptr;
-        this->corruption_pending = false;
         return *this;
     }
 
     SinkWrapper& operator=(const SinkWrapper& other) {  // `=` allowed [4]
         if (this != &other) {
-            if (this->corruption_pending)
-                Corrupt_If_Needful(*this->p);
+            NEEDFUL_SINK_CORRUPT_PENDING(*this);
             this->p = other.p;
             this->corruption_pending = (other.p != nullptr);  // corrupt
             other.corruption_pending = false;  // we take over corrupting
@@ -371,8 +381,7 @@ struct SinkWrapper {
 
     template<typename U, IfContravariant<U, T>* = nullptr>
     SinkWrapper& operator=(const U& u) {  // `=` allowed [4]
-        if (this->corruption_pending)
-            Corrupt_If_Needful(*this->p);
+        NEEDFUL_SINK_CORRUPT_PENDING(*this);
         // Preserve wrapper conversion semantics on downcast path.
         this->p = needful_void_waypoint_cast(T*, u);
         this->corruption_pending = (this->p != nullptr);  // corrupt
@@ -382,35 +391,27 @@ struct SinkWrapper {
     explicit operator bool() const { return p != nullptr; }
 
     operator T*() const {  // corrupt before yielding pointer
-        if (corruption_pending) {
-            Corrupt_If_Needful(*p);  // corrupt pointed-to item
-            corruption_pending = false;
-        }
+        NEEDFUL_SINK_CORRUPT_PENDING(*this);
         return p;
     }
 
     template<typename U>
     explicit operator U*() const {  // corrupt before yielding pointer
-        if (corruption_pending) {
-            Corrupt_If_Needful(*p);  // corrupt pointed-to item
-            corruption_pending = false;
-        }
+        NEEDFUL_SINK_CORRUPT_PENDING(*this);
         return const_cast<U*>(reinterpret_cast<const U*>(p));
     }
 
     T* operator->() const {  // handle corruption before dereference
-        if (corruption_pending) {
-            Corrupt_If_Needful(*p);  // corrupt pointed-to item
-            corruption_pending = false;
-        }
+        NEEDFUL_SINK_CORRUPT_PENDING(*this);
         return p;
     }
 
     ~SinkWrapper() {  // make sure we don't leave scope without corrupting
-        if (corruption_pending)
-            Corrupt_If_Needful(*p);  // corrupt pointed-to item
+        NEEDFUL_SINK_CORRUPT_PENDING(*this);
     }
 };
+
+#undef NEEDFUL_SINK_CORRUPT_PENDING
 
 // Vouch SinkWrapper safe for needful_void_waypoint_cast (see
 // NeedfulVoidWaypointSafe in needful-utilities.hpp): both conversion

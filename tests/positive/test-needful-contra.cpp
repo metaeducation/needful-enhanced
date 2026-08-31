@@ -104,6 +104,13 @@ void test_sink_type_properties() {
     //
     STATIC_ASSERT((needful::IsWrapperSemantic<NeedfulOption(Base*)>::value));
     STATIC_ASSERT((needful::IsWrapperSemantic<NeedfulFallible(Base*)>::value));
+
+    // Sink and Init intentionally accept const Sink sources and mutate only
+    // the source's pending-corruption bit as part of transfer/squash.
+    STATIC_ASSERT((std::is_constructible<Sink(Derived), const Sink(Derived)&>::value));
+    STATIC_ASSERT((std::is_assignable<Sink(Derived)&, const Sink(Derived)&>::value));
+    STATIC_ASSERT((std::is_constructible<Init(Derived), const Sink(Derived)&>::value));
+    STATIC_ASSERT((std::is_assignable<Init(Derived)&, const Sink(Derived)&>::value));
 }
 
 
@@ -176,6 +183,68 @@ void test_sink_bool_and_distinct_type() {
 }
 
 
+//=//// EDGE CASES: TRANSFER AND STATE HANDOFF ////////////////////////////=//
+
+void test_sink_const_source_transfer_constructor() {
+    Base base { 0 };
+    const Sink(Derived) source = &base;
+    assert(source.corruption_pending);
+
+    Sink(Derived) dest = source;  // transfers pending-corruption obligation
+    assert(not source.corruption_pending);
+    assert(dest.corruption_pending);
+
+    Derived* p = dest;  // conversion should consume the pending corruption
+    assert(not dest.corruption_pending);
+    p->bits = 123;
+    assert(base.bits == 123);
+}
+
+void test_sink_const_source_transfer_assignment() {
+    Base base1 { 0 };
+    Base base2 { 0 };
+
+    Sink(Derived) dest = &base1;
+    const Sink(Derived) source = &base2;
+    dest = source;  // old pending state on dest should be handled internally
+
+    assert(not source.corruption_pending);
+    assert(dest.corruption_pending);
+
+    Derived* p = dest;
+    assert(not dest.corruption_pending);
+    p->bits = 222;
+    assert(base2.bits == 222);
+}
+
+void test_init_squashes_const_sink_pending() {
+    Base base { 0 };
+    const Sink(Derived) source = &base;
+    assert(source.corruption_pending);
+
+    Init(Derived) out = source;  // Init consumes source without corruption
+    assert(not source.corruption_pending);
+
+    Derived* p = out;
+    p->bits = 77;
+    assert(base.bits == 77);
+}
+
+void test_sink_self_assignment_preserves_pending() {
+    Base base { 0 };
+    Sink(Derived) out = &base;
+    assert(out.corruption_pending);
+
+    out = out;  // self-assignment should not clear pending state
+    assert(out.corruption_pending);
+
+    Derived* p = out;
+    assert(not out.corruption_pending);
+    p->bits = 333;
+    assert(base.bits == 333);
+}
+
+
 int main() {
     test_sink_accepts_base_pointer();
     test_sink_accepts_identity_pointer();
@@ -186,5 +255,9 @@ int main() {
     test_contra_accepts_identity();
     test_contra_null();
     test_sink_bool_and_distinct_type();
+    test_sink_const_source_transfer_constructor();
+    test_sink_const_source_transfer_assignment();
+    test_init_squashes_const_sink_pending();
+    test_sink_self_assignment_preserves_pending();
     return 0;
 }

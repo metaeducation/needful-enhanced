@@ -88,10 +88,9 @@ the switch off globally.
 ### `Sink(T)` -- Write-Only Output with Corruption
 
 Use `Sink(T)` to mark output parameters where the caller must not rely on
-the old contents. When `NEEDFUL_DOES_CORRUPTIONS` is enabled, the
-`SinkWrapper` scrambles the pointed-to memory with `0xBD` bytes at the moment
-the pointer is first used -- so any code that reads from the output slot before
-writing will see garbage and crash loudly.
+the old contents. When `NEEDFUL_DOES_CORRUPTIONS` is enabled, `SinkWrapper`
+scrambles the pointed-to memory with `0xBD` bytes on the first conversion to a
+pointer (or dereference path), so reads-before-writes fail loudly.
 
 The corruption is *deferred* to first use (not on construction) to avoid
 corrupting another argument's value before it is evaluated:
@@ -110,6 +109,11 @@ void Write_Base(Sink(Base) out) {
     p->bits = 99;
 }
 ```
+
+Internally, a `Sink(T)` carries a `corruption_pending` flag. Copying one
+`Sink` into another transfers that pending-corruption obligation to the
+destination and clears it in the source. This includes copies from
+`const Sink(...)&`: mutating this one bit is the transfer mechanism.
 
 ### `Init(T)` -- Full Initialization
 
@@ -179,6 +183,9 @@ fields.
 
 The C++ build checks these properties via `static_assert` inside
 `IsSameLayoutBase`.
+
+`Sink(T)` and `Init(T)` also reject `const` pointee types (e.g.
+`Sink(const Foo)`) because output wrappers must model writable storage.
 
 ## Indirect Encodings
 
@@ -273,6 +280,60 @@ int main() {
     Derived d = {};
     write_base(&d);  // ERROR: Sink(Base) must not accept Derived*
     return 0;
+}
+```
+
+### Copying from `const Sink(...)` transfers pending-corruption state
+
+This is an implementation contract worth pinning down with a runtime doctest:
+the source starts pending, the destination takes responsibility, and the source
+is cleared.
+
+<!-- doctest: positive-test -->
+```cpp
+#include <assert.h>
+
+#define NEEDFUL_CPP_ENHANCED  1
+#define NEEDFUL_CONTRA_SHORTHANDS  1
+#include "needful.h"
+
+struct Base { int bits; };
+struct Derived : Base {};
+
+int main() {
+  Base b = {0};
+  const Sink(Derived) source = &b;
+  assert(source.corruption_pending);
+
+  Sink(Derived) dest = source;
+  assert(! source.corruption_pending);
+  assert(dest.corruption_pending);
+
+  Derived* p = dest;
+  p->bits = 1;
+  assert(b.bits == 1);
+  return 0;
+}
+```
+
+### `Sink(const T)` is rejected
+
+Output wrappers require writable pointees.
+
+<!-- doctest: negative-test -->
+```cpp
+// MATCH-ERROR-TEXT: Sink(T) cannot sink const pointee
+// MATCH-ERROR-TEXT: static assertion failed
+#define NEEDFUL_CPP_ENHANCED  1
+#define NEEDFUL_CONTRA_SHORTHANDS  1
+#include "needful.h"
+
+struct Base { int bits; };
+
+int main() {
+  Sink(const Base) bad = nullptr;
+  (void)bad;
+  return 0;
 }
 ```
 

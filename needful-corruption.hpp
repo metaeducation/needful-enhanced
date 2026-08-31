@@ -37,7 +37,7 @@
 
 //=//// CORRUPTION HELPER /////////////////////////////////////////////////=//
 //
-// Helper stuct for Corrupt_If_Needful() with generalized memset() fallback.
+// Helper struct for Corrupt_If_Needful() with generalized memset() fallback.
 //
 // Function templates can't be partially specialized, class templates can.
 // Using a struct allows us to provide custom behavior for type families
@@ -57,7 +57,7 @@
 //
 // 3. Having tried a lot of variations of this code...including using masking
 //    to avoid branching...it seems that using uint_fast8_t and decrement
-//    with a test against 0 is about the fastest way to get good perodicity
+//    with a test against 0 is about the fastest way to get good periodicity
 //    of zeroing and non-zeroing.
 //
 // 4. Use macro for efficiency, avoid another function call overhead
@@ -150,7 +150,7 @@ struct CorruptHelper<T*> {  // Pointer (faster than memset() fallback)
   NEEDFUL_ASSERT(needful::CorruptHelper<decltype(ptr)>::is_corrupt(ptr))
 
 
-//=//// BOOLEAN CORRUPTION (MUST FLUCTUATE TRUE + FALSE) //////////////////=//
+//=//// BOOLEAN CORRUPTION (MUST PRODUCE BOTH TRUE + FALSE) ////////////////=//
 //
 // 1. Booleans are special in the sense that writing a fixed garbage value
 //    into them is not attention-getting, since they're only interpreted as

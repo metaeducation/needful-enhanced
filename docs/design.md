@@ -201,6 +201,29 @@ tree pays the tax so the user's infrastructure doesn't have to.
 
 [cpp11-baseline]: https://needful.metaeducation.com/faq#cpp11-baseline
 
+### Why Some Code Stays Unfactored {#dont-factor-hot-wrapper-paths}
+
+In the enhanced headers, you will see local duplication that would normally be
+factored into tiny helper methods.
+
+In ordinary library code, factoring is usually cleaner. Here, it can cost real
+debug-build performance in toolchains/configurations that do not inline
+aggressively (or at all).
+
+`Sink(T)` is the clearest case: conversion operators, assignment paths, and
+destructor all run short corruption checks. Keeping those checks spelled out in
+place avoids turning hot paths into repeated helper calls in non-optimized
+builds, which are exactly the builds maintainers run during development.
+
+So the policy is:
+
+- In hot wrapper paths, prefer explicit local code over tiny helper factoring.
+- Accept small repetition when it removes call overhead risk in debug builds.
+- Put the full rationale here once, and reference this anchor from headers
+  instead of repeating the explanation.
+
+This is a performance-and-predictability choice, not a style preference.
+
 ---
 
 ## Things that look like bugs but are not
@@ -259,3 +282,5 @@ If you are tempted to "fix" one of these, it was deliberate:
 - [FAQ](/faq) -- design rationale for individual constructs
 - [Precedence](/precedence) -- why the prefix keywords parse the way they do
 - [Setup](/setup) -- the full configuration switch inventory
+- [C++ Modernization Notes](/cpp-modernization) -- what C++14/17/20 would
+  simplify if the baseline ever changes
