@@ -8,25 +8,42 @@ permalink: /
 # Needful
 
 **[One header.][needful-h-raw]**
-**[Zero dependencies.](/design#zero-dependency)**
+**[Zero-dependency shipping builds.](/design#zero-dependency)**
 **Rust-grade type checking for C.**
 
 Needful is a [single-file, header-only library][needful-repo] that brings
 `Option(T)`, `Result(T)`, non-null `Need(T)`, type-safe casts, and executable
-comment annotations to C codebases, with zero runtime cost and no tools beyond
-the compiler you already have.
+comment annotations to C codebases.
 
-The key trick: most Needful constructs compile as a **transparent no-op in
-C**. Flip one switch (`#define NEEDFUL_CPP_ENHANCED  1`) and build as
-C++11 (or even better, C++17!)  Those same constructs light up with
-compile-time type enforcement that catches real bugs.
+It is a type-discipline layer, not a memory-safety layer. It catches
+mis-modeled values and interface mistakes; it does not prevent use-after-free,
+buffer overruns, data races, or overflow bugs.
+
+The key trick is architectural, not magical: the same source can be compiled
+in multiple modes, and the macros change role from transparent vocabulary to
+strict checking wrappers.
 
 Your C code stays C. The C++ compiler just *checks* it harder.
 
-From a security perspective, pitching Needful to your organization should be
-a no-brainer.  Whether you make your release builds with C or C++, if you
-aren't using NEEDFUL_CPP_ENHANCED *you are running zero additional code*.  And
-doing enhanced builds now and again gives static analysis that finds real bugs.
+From a security perspective, Needful is straightforward to evaluate: whether
+release builds use C or C++, if `NEEDFUL_CPP_ENHANCED` is off you are running
+zero additional runtime code. Running checked builds in CI then adds static
+analysis pressure that finds real bugs.
+
+## How It Works (No Surprises)
+
+Needful has three practical build modes:
+
+| Build mode | What you include | Dependency profile | Typical purpose |
+|---|---|---|---|
+| C (default) | `needful.h` | Single header + standard C headers only | Production/release |
+| C++ (unenhanced) | `needful.h` | Single header + standard C/C++ headers only | Compatibility check pass |
+| C++ enhanced (`NEEDFUL_CPP_ENHANCED=1`) | `needful.h` + `needful-enhanced/` companion tree | Extra C++ metaprogramming headers (for example `type_traits`) | Strong static-analysis pass in CI |
+
+So "zero dependencies" means: in shipping builds (C, or C++ without
+enhancement), Needful adds no runtime library and no companion-tree
+requirement. The extra dependencies are only for the optional enhanced check
+mode, which is exactly where the heavier C++ machinery lives.
 
 ---
 
@@ -40,6 +57,21 @@ enhancement files alongside `needful.h`. *(Put this directory in your
 .gitignore, don't commit it.)*  `#define NEEDFUL_CPP_ENHANCED  1` and build as
 [C++11 or later][cpp11-baseline].  The macros grow teeth: type mismatches
 become compile errors.
+
+For CI to enforce those checks reliably, run the checked build with warnings
+as errors (`-Werror` / `/WX`).
+
+What that changes in practice:
+
+| Feature area | Without `-Werror` / `/WX` | With `-Werror` / `/WX` |
+|---|---|---|
+| `Need(T)`, `Option(T)`, `Sink/Init/Contra`, `known(...)` type constraints | Still meaningful: these are mostly hard type errors | Same guarantees, plus warning-based checks below become enforceable |
+| Comment macros (`possibly`, `dont`, etc.) | Still meaningful: stale/invalid expressions fail compilation | Same |
+| `Fallible(T)` / must-use checks | Often degrades: compilers typically emit a warning, then exit 0 | Enforced in CI as intended |
+| `Result(T)` dropped-value/must-use style checks (where implemented via nodiscard-style diagnostics) | Can degrade to warnings depending on compiler/mode | Enforced as failures |
+
+So yes, Needful is still useful without warnings-as-errors, but part of the
+"must use / must handle" promise becomes advisory instead of mandatory.
 
 **Step 3.** Run both modes in CI: C build for production, C++ enhanced build to
 catch bugs. No code changes needed between them!
@@ -92,6 +124,25 @@ Two of these are worth a second look, because their names undersell them:
   the negative ones must **fail** to compile, for the stated reason. A sample
   that drifts out of date does not quietly mislead you; it turns the build
   red. The links between these pages are checked the same way.
+
+---
+
+## Who This Is For
+
+Needful is most useful when all of these are true:
+
+- You have a C codebase where nullability, error propagation, and output
+  parameter misuse produce expensive bugs.
+
+- You can run an occasional checked C++ build in CI, even if release artifacts
+  are still built as C.
+
+- You want stronger static checking without introducing runtime dependencies or
+  rewriting the codebase into another language.
+
+If your primary objective is memory safety, this is the wrong tool to lead
+with. If your objective is stronger value and API discipline in existing C,
+this is exactly the niche.
 
 ---
 

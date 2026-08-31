@@ -75,8 +75,6 @@ Live example, and the reason this file exists.
 
 - `Rust-style types for C` -- accurate and limp. "Types" has no stakes in it.
 
-- `Rust-style types for C` -- accurate and limp. "Types" has no stakes in it.
-
 - `Rust-grade type checking for C` -- **current.** Keeps the phrase that carried
   the energy; the noun it modifies is now something actually delivered.
 
@@ -84,6 +82,32 @@ Live example, and the reason this file exists.
 settled: **how much punch is accuracy worth?** The [Weak Points](docs/index.md)
 section bets heavily that candor *is* the marketing. If that bet is right, the
 tagline should be the most conservative claim on the site, not the loosest.
+
+### Should the non-memory-safety caveat appear above the fold?
+
+Needful is explicit that it is not a memory-safety system, but where that
+appears changes first impressions.
+
+- **Lead with it near the top.** Increases trust with skeptical evaluators and
+  security reviewers; reduces risk of an "overclaim" read.
+
+- **Keep it in Weak Points only.** Keeps the opening punchier and shorter;
+  risks some readers deciding before they reach the caveat.
+
+*Leaning:* lead with it briefly, then expand under Weak Points.
+
+### Should warnings-as-errors be framed as a core requirement earlier?
+
+Many Needful checks surface as warnings first, so enforcement depends on
+`-Werror` / `/WX` in the checked build.
+
+- **Mention in Getting Started.** Makes the operational contract explicit at
+  adoption time; fewer "it compiled, so I guess we're safe" misreads.
+
+- **Keep only in Weak Points and test docs.** Less upfront friction in the
+  pitch; higher risk that teams miss the enforcement dependency.
+
+*Leaning:* mention once in Getting Started, with details in Weak Points/docs.
 
 ### Should docs-as-tests get its own documentation page?
 

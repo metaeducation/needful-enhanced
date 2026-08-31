@@ -178,8 +178,34 @@ Shorthands (`Option`, `return_if_failed`) preserve the exact casing of their `ne
 
 ### The Zero-Dependency Footprint {#zero-dependency}
 
-Needful aggressively avoids imposing header dependencies on the host project.
-For example:
+"Zero dependency" in Needful is scoped, and the scope matters:
+
+- **Shipping/runtime scope:** Needful adds no runtime library dependency.
+  In non-enhanced builds, the constructs are macro-level vocabulary and your
+  binary does not gain a new linked component.
+
+- **Packaging scope (default use):** C projects can ship with `needful.h`
+  alone. C++ projects can also build against `needful.h` alone when
+  `NEEDFUL_CPP_ENHANCED` is off.
+
+- **Enhanced-check scope:** when `NEEDFUL_CPP_ENHANCED=1`, you are opting into
+  the companion `needful-enhanced/` tree and its C++ metaprogramming headers.
+  That mode is intentionally a stronger static-analysis pass, usually run in
+  CI or other checking builds.
+
+This is the architecture in one line: **single-header for shipping; companion
+tree for stronger checking.**
+
+Concrete dependency split:
+
+| Build mode | Required Needful files | Typical standard headers introduced by Needful |
+|---|---|---|
+| C, unenhanced | `needful.h` | none required beyond C headers it may include (`assert.h`, `stdlib.h`) unless caller overrides hooks |
+| C++, unenhanced | `needful.h` | C++ header support used directly in `needful.h` (notably `type_traits` for `nocast`) plus the same opt-out C headers |
+| C++, enhanced | `needful.h` + `needful-enhanced/` | all of the above, plus enhanced-layer headers such as `utility` and `stdint.h`, and platform-conditional includes like `iso646.h` (MSVC) and optional `stdarg.h` |
+
+Needful still aggressively avoids unnecessary host-project coupling. For
+example:
 
 - **No `<stdbool.h>`:** Constructs like `catch_if_failed` deliberately use
 integer states (`int _done_ = 0` / `_done_ == 0`) rather than standard boolean
