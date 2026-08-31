@@ -185,9 +185,11 @@ and expect a new contributor to ask what `unwrap` is.
 code search -- that is mildly wrong forever. The saving grace is that a
 misparse is *always* a compile error and never a wrong answer.
 
-**`Result(T)` multiplexes through global state.** The default hooks are
-single-threaded. Making them thread-local is your job, and the design assumes
-one pending failure at a time.
+**Threading is explicit configuration, not magic.** `Result(T)` default hooks
+are single-threaded and should be replaced with thread-local storage in
+threaded programs. Corruption helpers (`NEEDFUL_DOES_CORRUPTIONS`) are
+thread-safe by default in enhanced C++ builds (atomics), with optional lock
+hooks and explicit single-thread mode for constrained environments.
 
 If none of those are dealbreakers, the rest of this site is the good parts.
 
@@ -196,6 +198,7 @@ If none of those are dealbreakers, the rest of this site is the good parts.
 ## Frequently Asked Questions
 
 Common gotchas and design rationale are collected in the [FAQ](/faq).
+Threaded integration details are collected in [Threading](/threading).
 
 [needful-h-raw]: https://raw.githubusercontent.com/metaeducation/needful/refs/heads/main/needful.h
 [needful-repo]: https://github.com/metaeducation/needful/

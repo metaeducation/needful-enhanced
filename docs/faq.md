@@ -185,10 +185,15 @@ strong compile-time checking on older C toolchains.
 
 ## How do I use Needful in a multi-threaded program? {#thread-safety}
 
-The `Result(T)` error state uses a global variable in the
-`NEEDFUL_DECLARE_RESULT_HOOKS` built-in implementation. For multi-threaded use,
-provide your own hook implementations using `thread_local` storage
-(C11 `_Thread_local` or C++11 `thread_local`):
+There are two separate threading concerns:
+
+- `Result(T)` failure-state hooks
+- enhanced corruption countdown state (when `NEEDFUL_DOES_CORRUPTIONS=1`)
+
+For `Result(T)`, the `NEEDFUL_DECLARE_SINGLETHREADED_RESULT_HOOKS` built-in
+implementation is single-threaded. In threaded programs, provide your own
+hook implementations using `thread_local` storage (C11 `_Thread_local` or
+C++11 `thread_local`):
 
 ```c
 static _Thread_local const char* tls_failure;
@@ -200,6 +205,11 @@ const char* Needful_Test_And_Clear_Failure(void) {
 }
 // ... other hooks ...
 ```
+
+For corruption in enhanced C++ builds, the default is now thread-safe via
+atomics, with optional project lock hooks or explicit single-thread mode.
+
+See [Threading](/threading) for the full configuration matrix.
 
 ---
 

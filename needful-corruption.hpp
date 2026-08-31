@@ -35,6 +35,118 @@
 #endif
 
 
+//=//// THREADING MODEL FOR CORRUPTION COUNTDOWNS /////////////////////////=//
+//
+// Pseudo-random corruption uses countdown state.  In enhanced builds,
+// default to atomics so this state is race-free without extra setup.
+//
+// Integrators can override in two ways:
+//
+// 1. Define all three custom synchronization hooks:
+//
+//      NEEDFUL_DECLARE_ATOMIC_VAR(name)
+//      NEEDFUL_LOCK_VARIABLE(var)
+//      NEEDFUL_UNLOCK_VARIABLE(var)
+//
+//    This path avoids the <atomic> dependency while still serializing updates
+//    through project-provided synchronization.
+//
+// 2. Define NEEDFUL_CORRUPTION_ASSUME_SINGLE_THREADED 1 to force plain
+//    non-atomic statics (fastest, but only valid when truly single-threaded).
+//
+
+#if defined(NEEDFUL_DECLARE_ATOMIC_VAR) || defined(NEEDFUL_LOCK_VARIABLE) || defined(NEEDFUL_UNLOCK_VARIABLE)
+  #if !defined(NEEDFUL_DECLARE_ATOMIC_VAR)
+    STATIC_FAIL("Define NEEDFUL_DECLARE_ATOMIC_VAR(name) with NEEDFUL_LOCK_VARIABLE/NEEDFUL_UNLOCK_VARIABLE");
+  #endif
+
+  #if !defined(NEEDFUL_LOCK_VARIABLE)
+    STATIC_FAIL("Define NEEDFUL_LOCK_VARIABLE(var) with NEEDFUL_DECLARE_ATOMIC_VAR/NEEDFUL_UNLOCK_VARIABLE");
+  #endif
+
+  #if !defined(NEEDFUL_UNLOCK_VARIABLE)
+    STATIC_FAIL("Define NEEDFUL_UNLOCK_VARIABLE(var) with NEEDFUL_DECLARE_ATOMIC_VAR/NEEDFUL_LOCK_VARIABLE");
+  #endif
+
+  #define NEEDFUL_CORRUPTION_CUSTOM_SYNC_HOOKS  1
+#else
+  #define NEEDFUL_CORRUPTION_CUSTOM_SYNC_HOOKS  0
+#endif
+
+#if !defined(NEEDFUL_CORRUPTION_ASSUME_SINGLE_THREADED)
+  #define NEEDFUL_CORRUPTION_ASSUME_SINGLE_THREADED  0
+#endif
+
+#if !defined(NEEDFUL_CORRUPTION_USE_ATOMICS)
+  #if NEEDFUL_CORRUPTION_CUSTOM_SYNC_HOOKS
+    #define NEEDFUL_CORRUPTION_USE_ATOMICS  0
+  #else
+    #define NEEDFUL_CORRUPTION_USE_ATOMICS  1
+  #endif
+#endif
+
+#if NEEDFUL_CORRUPTION_ASSUME_SINGLE_THREADED && NEEDFUL_CORRUPTION_USE_ATOMICS
+  STATIC_FAIL("Choose one: NEEDFUL_CORRUPTION_ASSUME_SINGLE_THREADED or NEEDFUL_CORRUPTION_USE_ATOMICS");
+#endif
+
+#if NEEDFUL_CORRUPTION_ASSUME_SINGLE_THREADED && NEEDFUL_CORRUPTION_CUSTOM_SYNC_HOOKS
+  STATIC_FAIL("NEEDFUL_CORRUPTION_ASSUME_SINGLE_THREADED conflicts with NEEDFUL_DECLARE_ATOMIC_VAR/LOCK/UNLOCK hooks");
+#endif
+
+#if NEEDFUL_CORRUPTION_USE_ATOMICS && NEEDFUL_CORRUPTION_CUSTOM_SYNC_HOOKS
+  STATIC_FAIL("NEEDFUL_CORRUPTION_USE_ATOMICS conflicts with NEEDFUL_DECLARE_ATOMIC_VAR/LOCK/UNLOCK hooks");
+#endif
+
+#if NEEDFUL_PSEUDO_RANDOM_CORRUPTIONS \
+  && (! NEEDFUL_CORRUPTION_CUSTOM_SYNC_HOOKS) \
+  && (! NEEDFUL_CORRUPTION_ASSUME_SINGLE_THREADED) \
+  && (! NEEDFUL_CORRUPTION_USE_ATOMICS)
+  STATIC_FAIL("Pseudo-random corruption requires atomics, custom sync hooks, or NEEDFUL_CORRUPTION_ASSUME_SINGLE_THREADED 1");
+#endif
+
+#if NEEDFUL_PSEUDO_RANDOM_CORRUPTIONS
+  template<typename Tag>
+  NEEDFUL_ALWAYS_INLINE uint_fast8_t Next_Corruption_Countdown() {
+    #if NEEDFUL_CORRUPTION_CUSTOM_SYNC_HOOKS
+    static NEEDFUL_DECLARE_ATOMIC_VAR(countdown) = NEEDFUL_CORRUPTION_SEED;
+    NEEDFUL_LOCK_VARIABLE(countdown);
+    const uint_fast8_t out = i_cast(uint_fast8_t, countdown);
+    if (out == 0)
+      countdown = i_cast(uint_fast8_t, NEEDFUL_CORRUPTION_DOSE - 1);
+    else
+      countdown = i_cast(uint_fast8_t, out - 1);
+    NEEDFUL_UNLOCK_VARIABLE(countdown);
+    return out;
+
+    #elif NEEDFUL_CORRUPTION_ASSUME_SINGLE_THREADED
+    static uint_fast8_t countdown = NEEDFUL_CORRUPTION_SEED;
+    const uint_fast8_t out = countdown;
+    if (countdown == 0)
+      countdown = NEEDFUL_CORRUPTION_DOSE;
+    --countdown;
+    return out;
+
+    #else
+    static std::atomic<uint_fast8_t> countdown(NEEDFUL_CORRUPTION_SEED);
+    uint_fast8_t old = countdown.load(std::memory_order_relaxed);
+    for (;;) {
+      const uint_fast8_t next = (old == 0)
+        ? i_cast(uint_fast8_t, NEEDFUL_CORRUPTION_DOSE - 1)
+        : i_cast(uint_fast8_t, old - 1);
+
+      if (countdown.compare_exchange_weak(
+        old,
+        next,
+        std::memory_order_relaxed,
+        std::memory_order_relaxed
+      ))
+        return old;
+    }
+    #endif
+  }
+#endif
+
+
 //=//// CORRUPTION HELPER /////////////////////////////////////////////////=//
 //
 // Helper struct for Corrupt_If_Needful() with generalized memset() fallback.
@@ -71,8 +183,8 @@
 template<typename T, typename Enable = void>
 struct CorruptHelper {
   static_assert(
-    std::is_trivially_copyable<T>::value,  // would break C++ [1]
-    "Cannot memset() a C++ struct or class that's not trivially copyable"
+    std::is_trivially_copyable<T>::value or std::is_union<T>::value,
+    "Cannot memset() a non-trivial C++ class (union fallback is permitted)"
   );
 
   static_assert(  // see common specializations later in this file
@@ -84,15 +196,13 @@ struct CorruptHelper {
 
   static void corrupt(T& ref) {  // fallback if no other specialization
   #if NEEDFUL_PSEUDO_RANDOM_CORRUPTIONS
-    static uint_fast8_t countdown = NEEDFUL_CORRUPTION_SEED;
+    struct CountdownTag;
+    const uint_fast8_t countdown = Next_Corruption_Countdown<CountdownTag>();
     memset(
         raw_cast(void*, &ref),  // void* cast needed [2]
         countdown,  // countdown does double-duty as the fill byte
         sizeof(T)
     );
-    if (countdown == 0)
-        countdown = NEEDFUL_CORRUPTION_DOSE;
-    --countdown;  // `else` to avoid decrementing would slow it down [3]
   #else
     memset(raw_cast(void*, &ref), 0xBD, sizeof(T));
   #endif
@@ -122,14 +232,13 @@ template<typename T>
 struct CorruptHelper<T*> {  // Pointer (faster than memset() fallback)
     static void corrupt(T*& ref) {
     #if NEEDFUL_PSEUDO_RANDOM_CORRUPTIONS
-      static uint_fast8_t countdown = NEEDFUL_CORRUPTION_SEED;
+    struct CountdownTag;
+    const uint_fast8_t countdown = Next_Corruption_Countdown<CountdownTag>();
       if (countdown == 0) {
           ref = nullptr;  // nullptr occasionally, deterministic
-          countdown = NEEDFUL_CORRUPTION_DOSE;
       }
       else {
           ref = p_cast(T*, i_cast(intptr_t, 0xDECAFBAD));  // fixed value [1]
-          --countdown;
       }
     #else
       ref = p_cast(T*, i_cast(intptr_t, 0xDECAFBAD));  // fixed value [1]
@@ -161,11 +270,9 @@ template<>
 struct CorruptHelper<bool> {
     static void corrupt(bool& ref) {
         possibly(NEEDFUL_PSEUDO_RANDOM_CORRUPTIONS);  // ignore it [1]
-        static uint_fast8_t countdown = NEEDFUL_CORRUPTION_SEED;
+    struct CountdownTag;
+    const uint_fast8_t countdown = Next_Corruption_Countdown<CountdownTag>();
         ref = (countdown & 0x1);
-        if (countdown == 0)
-            countdown = NEEDFUL_CORRUPTION_DOSE;
-        --countdown;
     }
 };
 
@@ -185,14 +292,13 @@ struct CorruptHelper<
 >{
     static void corrupt(T& ref) {
     #if NEEDFUL_PSEUDO_RANDOM_CORRUPTIONS
-      static uint_fast8_t countdown = NEEDFUL_CORRUPTION_SEED;
+    struct CountdownTag;
+    const uint_fast8_t countdown = Next_Corruption_Countdown<CountdownTag>();
       if (countdown == 0) {
           ref = static_cast<T>(0);  // false/0 occasionally, deterministic
-          countdown = NEEDFUL_CORRUPTION_DOSE;
       }
       else {
           ref = static_cast<T>(12345678);  // garbage the rest of the time
-          --countdown;
       }
     #else
       ref = static_cast<T>(12345678);

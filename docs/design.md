@@ -204,6 +204,11 @@ Concrete dependency split:
 | C++, unenhanced | `needful.h` | C++ header support used directly in `needful.h` (notably `type_traits` for `nocast`) plus the same opt-out C headers |
 | C++, enhanced | `needful.h` + `needful-enhanced/` | all of the above, plus enhanced-layer headers such as `utility` and `stdint.h`, and platform-conditional includes like `iso646.h` (MSVC) and optional `stdarg.h` |
 
+Even in enhanced mode, the standard-library surface is intentionally narrow:
+type traits, forwarding, and low-level utility headers. It avoids
+container-heavy dependencies (for example `vector`) and does not assume a
+project-wide STL allocator/runtime model.
+
 Needful still aggressively avoids unnecessary host-project coupling. For
 example:
 
@@ -308,5 +313,6 @@ If you are tempted to "fix" one of these, it was deliberate:
 - [FAQ](/faq) -- design rationale for individual constructs
 - [Precedence](/precedence) -- why the prefix keywords parse the way they do
 - [Setup](/setup) -- the full configuration switch inventory
+- [Threading](/threading) -- thread model for Result hooks and corruption state
 - [C++ Modernization Notes](/cpp-modernization) -- what C++14/17/20 would
   simplify if the baseline ever changes

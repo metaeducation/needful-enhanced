@@ -25,13 +25,15 @@
 // of that shipped.  There is one error state and one kind of failure.)
 //
 // The whole mechanism rests on four hooks the client supplies:
-// Needful_Get_Failure, Needful_Set_Failure, Needful_Test_And_Clear_Failure
-// and Needful_Panic_Abruptly.  Define NEEDFUL_DECLARE_RESULT_HOOKS in exactly
-// one translation unit for a stock single-threaded implementation, or write
-// your own over thread-local storage.
 //
-// (Needful_Assert_Not_Failing() used to be a fifth hook.  needful.h now
-// derives it from Needful_Get_Failure() so it honors NEEDFUL_ASSERT.)
+//   * Needful_Get_Failure
+//   * Needful_Set_Failure
+//   * Needful_Test_And_Clear_Failure
+//   * Needful_Panic_Abruptly
+//
+// Define `NEEDFUL_DECLARE_SINGLETHREADED_RESULT_HOOKS` to 1 in exactly one
+// translation unit for a stock single-threaded implementation, or write your
+// own over thread-local storage.
 //
 //=//// make_failure(...) /////////////////////////////////////////////////=//
 //

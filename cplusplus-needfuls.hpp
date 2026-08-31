@@ -76,6 +76,69 @@
 #include <utility>
 
 
+//=//// <atomic> FOR DEFAULT CORRUPTION COUNTDOWNS ////////////////////////=//
+//
+// Include <atomic> only when the corruption code path needs it:
+//
+// * corruption enabled,
+// * pseudo-random countdown enabled,
+// * not using custom synchronization hooks,
+// * not explicitly single-threaded,
+// * and not explicitly disabling atomics.
+//
+
+#if NEEDFUL_DOES_CORRUPTIONS
+  #define NEEDFUL_CORRUPTION_USES_ATOMICS  0
+
+  #if !defined(NEEDFUL_PSEUDO_RANDOM_CORRUPTIONS)
+    #define NEEDFUL_CORRUPTION_PSEUDO_RANDOM_ON  1
+  #elif NEEDFUL_PSEUDO_RANDOM_CORRUPTIONS
+    #define NEEDFUL_CORRUPTION_PSEUDO_RANDOM_ON  1
+  #else
+    #define NEEDFUL_CORRUPTION_PSEUDO_RANDOM_ON  0
+  #endif
+
+  #if !defined(NEEDFUL_CORRUPTION_ASSUME_SINGLE_THREADED)
+    #define NEEDFUL_CORRUPTION_IS_SINGLE_THREADED  0
+  #elif NEEDFUL_CORRUPTION_ASSUME_SINGLE_THREADED
+    #define NEEDFUL_CORRUPTION_IS_SINGLE_THREADED  1
+  #else
+    #define NEEDFUL_CORRUPTION_IS_SINGLE_THREADED  0
+  #endif
+
+  #if !defined(NEEDFUL_CORRUPTION_USE_ATOMICS)
+    #define NEEDFUL_CORRUPTION_ATOMICS_REQUESTED  1
+  #elif NEEDFUL_CORRUPTION_USE_ATOMICS
+    #define NEEDFUL_CORRUPTION_ATOMICS_REQUESTED  1
+  #else
+    #define NEEDFUL_CORRUPTION_ATOMICS_REQUESTED  0
+  #endif
+
+  #if NEEDFUL_CORRUPTION_PSEUDO_RANDOM_ON
+    #if !defined(NEEDFUL_DECLARE_ATOMIC_VAR)
+      #if !defined(NEEDFUL_LOCK_VARIABLE)
+        #if !defined(NEEDFUL_UNLOCK_VARIABLE)
+          #if !NEEDFUL_CORRUPTION_IS_SINGLE_THREADED
+            #if NEEDFUL_CORRUPTION_ATOMICS_REQUESTED
+              #undef NEEDFUL_CORRUPTION_USES_ATOMICS
+              #define NEEDFUL_CORRUPTION_USES_ATOMICS  1
+            #endif
+          #endif
+        #endif
+      #endif
+    #endif
+  #endif
+
+  #if NEEDFUL_CORRUPTION_USES_ATOMICS
+    #include <atomic>
+  #endif
+
+  #undef NEEDFUL_CORRUPTION_PSEUDO_RANDOM_ON
+  #undef NEEDFUL_CORRUPTION_IS_SINGLE_THREADED
+  #undef NEEDFUL_CORRUPTION_ATOMICS_REQUESTED
+#endif
+
+
 //=//// <stdint.h> FOR MAKING POINTERS FROM INTEGERS //////////////////////=//
 //
 // There's no portable way to cast an integer to a pointer in C++ without

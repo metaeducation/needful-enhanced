@@ -178,12 +178,18 @@ All of these are defined **before** including `needful.h`.
 | `NEEDFUL_DOES_CORRUPTIONS` | `0` | Scramble dead variables in debug builds |
 | `NEEDFUL_INIT_CORRUPTS_LIKE_SINK` | `0` | Also scramble `Init(T)` slots, not just `Sink(T)` |
 | `NEEDFUL_PSEUDO_RANDOM_CORRUPTIONS` | `1` | Vary the scramble byte; set `0` for a cheaper fixed fill |
+| `NEEDFUL_CORRUPTION_USE_ATOMICS` | `1` | Thread-safe corruption countdown updates (enhanced corruption) |
+| `NEEDFUL_CORRUPTION_ASSUME_SINGLE_THREADED` | `0` | Use non-atomic corruption countdown state (only for truly single-threaded processes) |
+| `NEEDFUL_DECLARE_ATOMIC_VAR(name)` + `NEEDFUL_LOCK_VARIABLE(var)` + `NEEDFUL_UNLOCK_VARIABLE(var)` | unset | Project synchronization path for corruption countdowns; define all three or none |
 | `NEEDFUL_DONT_INCLUDE_STDARG_H` | unset | Suppress the `<stdarg.h>` include (for `v_cast()`) |
-| `NEEDFUL_DECLARE_RESULT_HOOKS` | unset | Emit single-threaded default `Result(T)` hooks in this one TU |
+| `NEEDFUL_DECLARE_SINGLETHREADED_RESULT_HOOKS` | unset | Emit single-threaded default `Result(T)` hooks in this one TU |
 | `NEEDFUL_<X>_USES_WRAPPER` | `NEEDFUL_CPP_ENHANCED` | Turn one wrapper family off: `NEED`, `OPTION`, `RESULT`, `CONTRAS` |
 | `NEEDFUL_CAST_CALLS_HOOKS` | `NEEDFUL_CPP_ENHANCED` | Run `CastHook` validation on `cast()` |
 | `NEEDFUL_FAST_CAST_IS_SLOW` | unset | Make `fast_cast()` hookable, for debugging a hot path |
 | `NEEDFUL_ICAST_SLOW_BUILD` | `0` | Make `i_cast()` the checked integer cast rather than `c_cast()` |
+
+For details on configuring threaded programs (both `Result(T)` hooks and
+corruption behavior), see [Threading](/threading).
 
 ## Verifying the Setup
 

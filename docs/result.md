@@ -7,9 +7,9 @@ permalink: /result
 
 # `Result(T)` -- Cooperative Error Propagation
 
-`Result(T)` multiplexes an error and a return value using thread-local state,
-giving C code a Rust-inspired error handling style without exceptions or
-`setjmp`/`longjmp`.
+`Result(T)` multiplexes an error and a return value using project-supplied
+failure state (typically thread-local in threaded code), giving C code a
+Rust-inspired error handling style without exceptions or `setjmp`/`longjmp`.
 
 ## The Pattern
 
@@ -323,16 +323,24 @@ void       Needful_Set_Failure(ErrorType* error);
 void       Needful_Panic_Abruptly(ErrorType* error);
 ```
 
-For quick prototyping, define `NEEDFUL_DECLARE_RESULT_HOOKS 1` **before**
-including `needful.h` to get a built-in `const char*`-based implementation:
+*(Needful_Assert_Not_Failing() used to be a fifth hook.  needful.h now
+derives it from Needful_Get_Failure() so it honors NEEDFUL_ASSERT.)*
+
+For prototyping, define `NEEDFUL_DECLARE_SINGLETHREADED_RESULT_HOOKS 1`
+**before** including `needful.h` to get a built-in `const char*`-based
+implementation:
 
 ```c
-#define NEEDFUL_DECLARE_RESULT_HOOKS 1
+#define NEEDFUL_DECLARE_SINGLETHREADED_RESULT_HOOKS 1
 #include "needful.h"
 ```
 
-> **Note:** `NEEDFUL_DECLARE_RESULT_HOOKS` defines storage and implementations
-> inline. Only define it in **one** translation unit per program.
+> **Note:** `NEEDFUL_DECLARE_SINGLETHREADED_RESULT_HOOKS` defines storage and
+> implementations inline. Only define it in **one** translation unit per
+> program.
+
+The long name is used because it states the threading assumption explicitly.
+`NEEDFUL_DECLARE_RESULT_HOOKS` remains accepted as a compatibility alias.
 
 ## `Result(None)` -- Fallible Functions With No Return Value {#result-none}
 
@@ -378,7 +386,8 @@ checks that you handled the result rather than silently discarding it.
   #define NEEDFUL_CPP_ENHANCED  1
 #endif
 #define NEEDFUL_RESULT_SHORTHANDS  1
-#define NEEDFUL_DECLARE_RESULT_HOOKS  1  // use some simple default hooks
+#define NEEDFUL_DECLARE_SINGLETHREADED_RESULT_HOOKS  1
+// use some simple default hooks
 #include "needful.h"
 
 Result(int) double_if_positive(int x) {
@@ -415,7 +424,8 @@ int main() {
   #define NEEDFUL_CPP_ENHANCED  1
 #endif
 #define NEEDFUL_RESULT_SHORTHANDS  1
-#define NEEDFUL_DECLARE_RESULT_HOOKS  1  // use some simple default hooks
+#define NEEDFUL_DECLARE_SINGLETHREADED_RESULT_HOOKS  1
+// use some simple default hooks
 #include "needful.h"
 
 #define fail  make_failure  // project-local keyword-style alias

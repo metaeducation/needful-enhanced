@@ -1,6 +1,6 @@
 // test-needful-result.cpp
 // Tests for Result(T): trap/except/assume/rescue error propagation flow,
-// and NEEDFUL_DECLARE_RESULT_HOOKS for self-contained testing.
+// and NEEDFUL_DECLARE_SINGLETHREADED_RESULT_HOOKS for self-contained testing.
 //
 // Build: needs NEEDFUL_CPP_ENHANCED=1 and the directory containing
 // needful.h in the include path.
@@ -11,7 +11,7 @@
 #include <stdlib.h>
 
 #define NEEDFUL_CPP_ENHANCED  1
-#define NEEDFUL_DECLARE_RESULT_HOOKS 1
+#define NEEDFUL_DECLARE_SINGLETHREADED_RESULT_HOOKS 1
 #include "needful.h"
 
 #define Result  NeedfulResult

@@ -101,6 +101,9 @@ corrupting another argument's value before it is evaluated:
 if (some_function(&ptr, ptr)) { ... }
 ```
 
+For threaded builds, see [Threading](/threading) for the corruption countdown
+concurrency model and configuration options.
+
 ```c
 struct Base { int bits; };
 
@@ -198,6 +201,7 @@ where the wrapper guarantees safe writes.
 ## Related
 
 - [`Need(T)`](/need) -- non-null pointers (orthogonal concern)
+- [Threading](/threading) -- configuration and guarantees for corruption state
 
 ---
 
