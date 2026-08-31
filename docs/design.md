@@ -159,6 +159,23 @@ because they must be read *before* you `#include`:
   examples in the header are not, so they rot. The banner carries a single
   `Option(T)` example to convey the *sense* of the library, and that is all.
 
+
+### Naming and Casing Conventions
+
+Needful employs a deliberate casing split to signal a macro's role to the reader:
+
+- **PascalCase for Types, Declarations, and Hooks:** Constructs that act as
+types, wrappers, structural annotations, or user-supplied hooks use PascalCase
+(e.g., `NeedfulOption(T)`, `NeedfulSink`, `Needful_Get_Failure`,
+`NeedfulResult(T)`).
+
+- **snake_case for Operative Macros:** Constructs that execute code, evaluate assertions, or control flow use snake_case (e.g., `needful_return_if_failed`, `needful_make_failure`, `needful_cast`).
+
+- **Internal State Variables:** Scoped dummy variables injected by macros use aggressive underscores (e.g., `_done_`) or the `NEEDFUL_UNIQUE_NAME` generator
+to avoid shadowing or colliding with user scope.
+
+Shorthands (`Option`, `return_if_failed`) preserve the exact casing of their `needful_` prefixed parents.
+
 ### The Zero-Dependency Footprint {#zero-dependency}
 
 Needful aggressively avoids imposing header dependencies on the host project.
