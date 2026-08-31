@@ -351,6 +351,8 @@ struct SinkWrapper {
     }
 
     SinkWrapper& operator=(std::nullptr_t) {  // `=` allowed [4]
+        if (this->corruption_pending)
+            Corrupt_If_Needful(*this->p);
         this->p = nullptr;
         this->corruption_pending = false;
         return *this;
@@ -358,6 +360,8 @@ struct SinkWrapper {
 
     SinkWrapper& operator=(const SinkWrapper& other) {  // `=` allowed [4]
         if (this != &other) {
+            if (this->corruption_pending)
+                Corrupt_If_Needful(*this->p);
             this->p = other.p;
             this->corruption_pending = (other.p != nullptr);  // corrupt
             other.corruption_pending = false;  // we take over corrupting
@@ -367,6 +371,8 @@ struct SinkWrapper {
 
     template<typename U, IfContravariant<U, T>* = nullptr>
     SinkWrapper& operator=(const U& u) {  // `=` allowed [4]
+        if (this->corruption_pending)
+            Corrupt_If_Needful(*this->p);
         // Preserve wrapper conversion semantics on downcast path.
         this->p = needful_void_waypoint_cast(T*, u);
         this->corruption_pending = (this->p != nullptr);  // corrupt
