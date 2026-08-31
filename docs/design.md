@@ -159,6 +159,19 @@ because they must be read *before* you `#include`:
   examples in the header are not, so they rot. The banner carries a single
   `Option(T)` example to convey the *sense* of the library, and that is all.
 
+### The Zero-Dependency Footprint {#zero-dependency}
+
+Needful aggressively avoids imposing header dependencies on the host project.
+For example:
+
+- **No `<stdbool.h>`:** Constructs like `catch_if_failed` deliberately use
+integer states (`int _done_ = 0` / `_done_ == 0`) rather than standard boolean
+types.
+
+- **Opt-out `<assert.h>` / `<stdlib.h>`:** `NEEDFUL_ASSERT` and `NEEDFUL_ABORT`
+only include their standard library headers if the host project has not already
+provided a definition before including `needful.h`.
+
 ### [C++11 is the Baseline][cpp11-baseline] for the Enhanced Layer
 
 If you read the headers in `needful-enhanced/`, you will see complex SFINAE metaprogramming, recursive variadic templates, and backported traits (like `needful::void_t`) that could be trivially replaced by C++17 fold expression

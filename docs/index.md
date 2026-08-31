@@ -7,7 +7,9 @@ permalink: /
 
 # Needful
 
-**[One header.][needful-h-raw] Zero dependencies. Rust-grade type checking for C.**
+**[One header.][needful-h-raw]**
+**[Zero dependencies.](/design#zero-dependency)**
+**Rust-grade type checking for C.**
 
 Needful is a [single-file, header-only library][needful-repo] that brings
 `Option(T)`, `Result(T)`, non-null `Need(T)`, type-safe casts, and executable
