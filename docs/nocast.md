@@ -5,7 +5,7 @@ nav_order: 7
 permalink: /nocast
 ---
 
-# `nocast` — Frictionless C-to-C++ Bridge Cast
+# `nocast` -- Frictionless C-to-C++ Bridge Cast
 
 `nocast` solves two specific incompatibilities between C and C++ that arise
 constantly when you try to compile C code as C++:
@@ -25,7 +25,7 @@ SomeEnum  e   = nocast 0;                          // C: no-op; C++: constexpr z
 In C, `nocast` expands to nothing. In C++ it expands to a proxy object and an
 `operator+` overload that performs the right conversion at the call site.
 
-## `needful_nocast_0` — Generic Zero {#needful_nocast_0}
+## `needful_nocast_0` -- Generic Zero {#needful_nocast_0}
 
 `needful_nocast_0` is a constexpr zero that converts to any type. It is used
 internally by `Option(T)` and `Result(T)` as a sentinel:
@@ -52,7 +52,7 @@ Derived* d = downcast base_ptr;   // base -> derived (trust the programmer)
 
 `raw_downcast` is the unhooked version, suitable to use on fresh allocations.
 
-## `needful_struct_0` — Generic Struct Zero
+## `needful_struct_0` -- Generic Struct Zero
 
 While `needful_nocast_0` handles scalars, pointers, and enums, C does not
 allow anonymous braces `{ 0 }` to be used as a raw expression in a `return`
@@ -74,9 +74,9 @@ pass the type name explicitly to satisfy C's strict return constraints.
 
 ## Related
 
-- [Operator Precedence](/precedence) — why `nocast` needs a target type to deduce from
+- [Operator Precedence](/precedence) -- why `nocast` needs a target type to deduce from
 
-- [`cast()` family](/cast) — for casts between known types
+- [`cast()` family](/cast) -- for casts between known types
 - [FAQ: Why does Needful disable the int-conversion warning?](/faq#int-conversion-warning)
 
 ## Why not `#define needful_nocast_0 {}` in C++?

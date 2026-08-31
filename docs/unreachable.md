@@ -5,7 +5,7 @@ nav_order: 11
 permalink: /unreachable
 ---
 
-# `needful_unreachable` — Indicate Divergence & Optimize Branches
+# `needful_unreachable` -- Indicate Divergence & Optimize Branches
 
 `needful_unreachable` tells both the programmer and the compiler that a specific
 code path is mathematically or logically impossible to reach.
@@ -73,6 +73,6 @@ completely eliminating type boilerplate.
 
 ## Related
 
-- [`nocast`](/nocast) — the `needful_nocast_0` polymorphic zero it relies on
-- [`Option(T)`](/option) — for values that may legitimately be absent
-- [`Result(T)`](/result) — for functions that can fail with an error
+- [`nocast`](/nocast) -- the `needful_nocast_0` polymorphic zero it relies on
+- [`Option(T)`](/option) -- for values that may legitimately be absent
+- [`Result(T)`](/result) -- for functions that can fail with an error

@@ -2,7 +2,7 @@
 
 ## Philosophy
 
-Needful's primary value is compile-time enforcement — most of what it promises
+Needful's primary value is compile-time enforcement -- most of what it promises
 is that certain things **will not compile**, not that they produce a particular
 runtime value.  This shapes the whole structure of the test suite.
 
@@ -12,7 +12,7 @@ Tests are split into three categories:
 ### C Build Tests (`c/`)
 
 Everything else in this suite compiles as C++ with `NEEDFUL_CPP_ENHANCED=1`.
-These compile `needful.h` as **plain C**, with no enhancement layer at all —
+These compile `needful.h` as **plain C**, with no enhancement layer at all --
 which is the mode that actually ships.
 
 `test-needful-c-sweep.c` names every public macro at least once in a single C
@@ -29,14 +29,14 @@ its own binary.
 It reports success by catching its own `SIGABRT` and exiting 0, and is
 registered as an ordinary test.  `WILL_FAIL` is **not** used, and is worth
 understanding as a trap: it inverts a non-zero exit *code* and does not cover
-abnormal termination — CMake's own docs note that "system-level test failures
+abnormal termination -- CMake's own docs note that "system-level test failures
 such as segmentation faults or heap errors will still fail the test even if
 `WILL_FAIL` is true."  A POSIX `abort()` raises `SIGABRT`, which CTest records
 as "Subprocess aborted" regardless.  A `WILL_FAIL` version of this test passed
 on Windows and failed on Linux, because `_set_abort_behavior()` turns Windows
 `abort()` into a plain exit-code return that `WILL_FAIL` *can* invert.
 
-The file also `#undef`s `NDEBUG`, since it *is* the assertion under test — a
+The file also `#undef`s `NDEBUG`, since it *is* the assertion under test -- a
 Release build would otherwise compile the check away and report the very
 regression it guards against.
 
@@ -65,7 +65,7 @@ interesting checks in needful are of this kind:
 STATIC_ASSERT(not needful_is_convertible_v(decltype(oi1), int));
 ```
 
-**Runtime assertions** (`assert(...)`) verify dynamic behavior — that `unwrap`
+**Runtime assertions** (`assert(...)`) verify dynamic behavior -- that `unwrap`
 returns the right value, that `none` is falsey, that Result propagation
 actually propagates.  These are the minority of the tests but cover the parts
 of needful that have runtime semantics.
@@ -81,7 +81,7 @@ Source blocks that **must fail to compile** with `NEEDFUL_CPP_ENHANCED=1`.
 Each contains exactly one construct that needful should reject.  The test
 passes when the compiler exits non-zero.
 
-These live in the documentation, not in a `negative/` directory — see
+These live in the documentation, not in a `negative/` directory -- see
 [Docs-as-Tests](#docs-as-tests) below.  `tests/negative/` is still wired up in
 `CMakeLists.txt` and `run-negative-tests.py` as an escape hatch for a case that
 genuinely cannot be expressed as a doc example, but it is empty and the docs
@@ -107,7 +107,7 @@ test that compiles successfully, or that fails with none of the expected
 phrases, is reported as a failure.
 
 Because different compilers word the same error differently, a single phrase
-rarely covers all three targets.  Use multiple `// MATCH-ERROR-TEXT:` lines —
+rarely covers all three targets.  Use multiple `// MATCH-ERROR-TEXT:` lines --
 the check passes if *any one* matches:
 
 ```cpp
@@ -120,7 +120,7 @@ By default (`python run-negative-tests.py`), a test file with *no*
 warning.  Run with `--match-error-text` to make missing or non-matching
 phrases a hard failure.  CI always runs with `--match-error-text`.  This
 two-tier design lets you write a new negative test and commit it immediately
-— you can add the exact phrases later once you've seen what each compiler
+-- you can add the exact phrases later once you've seen what each compiler
 actually says.
 
 CTest also runs negative tests via `WILL_FAIL TRUE`, which gives a fast
@@ -147,7 +147,7 @@ enhanced build rejects are the most valuable tests to have.
 
 ## Docs-as-Tests
 
-Negative tests are not only in `negative/` — they are also embedded directly
+Negative tests are not only in `negative/` -- they are also embedded directly
 in the documentation source under `docs/*.md`.  This keeps the compile-time
 example in the page that explains it, rather than in a separate file.
 
@@ -177,7 +177,7 @@ reads it.  Run via `tools/extract-doctests.py`, which writes extracted files
 to `tests/doctest-extracted/{positive,negative}/`.  CMake runs it
 automatically at configure time when `NEEDFUL_EXTRACT_DOCTESTS=ON`.
 
-The `doctest-extracted/` directory is `.gitignore`d — it is always regenerated
+The `doctest-extracted/` directory is `.gitignore`d -- it is always regenerated
 from source.
 
 
@@ -190,16 +190,16 @@ The constructs and their current test coverage:
 | `Option(T)` | test-needful-option.cpp | docs/option.md |
 | `Fallible(T)` / `*_none` vocabulary | c/test-needful-c-sweep.c, docs/fallible.md | docs/fallible.md |
 | Casts (`cast`, `m_cast`, etc.) | test-needful-casts.cpp | docs/cast.md |
-| Const metaprogramming | test-needful-const.cpp | — |
+| Const metaprogramming | test-needful-const.cpp | -- |
 | `Need(T)` | test-needful-need.cpp | docs/need.md |
 | `Result(T)` / `return_if_failed` / `catch_if_failed` | test-needful-result.cpp | docs/result.md |
 | `known(T, expr)` / `rigid_known` / `known_any` | test-needful-known.cpp | docs/known.md |
 | `Sink` / `Init` / `Contra` | test-needful-contra.cpp | docs/contra.md |
-| `nocast` / `nocast_0` | test-needful-nocast.cpp | — |
+| `nocast` / `nocast_0` | test-needful-nocast.cpp | -- |
 | Commentary macros (`possibly`, `dont`, etc.) | test-needful-comments.cpp | docs/comments.md |
 | Corruption / `NEEDFUL_DOES_CORRUPTIONS` | c/test-needful-c-sweep.c | c/test-corrupt-assert-fires.c |
-| `unreachable` family / `dead_end` | c/test-needful-c-sweep.c | — |
-| Plain-C build of every macro | c/test-needful-c-sweep.c | — |
+| `unreachable` family / `dead_end` | c/test-needful-c-sweep.c | -- |
+| Plain-C build of every macro | c/test-needful-c-sweep.c | -- |
 
 
 ## Installation Smoke Tests
@@ -231,13 +231,13 @@ turn into confusing downstream setup failures.
 Some conventions are load-bearing but invisible to a compiler, so they get
 their own CTest entries rather than trusting review to catch them.
 
-- `comment-style` — `needful.h` writes its own comments in slash-star, and
+- `comment-style` -- `needful.h` writes its own comments in slash-star, and
   uses `//` only *inside* those comments (prose, URLs, sample code). This is a
   deliberate "old school C" register, and it is easy to break by accident: a
   `// like this` appended to a macro compiles cleanly in every configuration
   Needful is built in, so nothing else would ever report it.
 
-- `doc-links` — `needful.h` stays short only because rationale lives at
+- `doc-links` -- `needful.h` stays short only because rationale lives at
   needful.metaeducation.com and the header points there instead of explaining
   in place. That trade holds exactly as long as the pointers resolve, and
   renaming a heading breaks them silently. This resolves every
@@ -249,7 +249,7 @@ their own CTest entries rather than trusting review to catch them.
   with an explicit `{#anchor}` and link to that. Deriving the id is what makes
   such links quietly fragile in the first place.
 
-- `no-tabs` — indentation is spaces everywhere, in every file type.
+- `no-tabs` -- indentation is spaces everywhere, in every file type.
 
 All three are plain CMake scripts, so they need no interpreter beyond the one
 already required to build.
@@ -277,7 +277,7 @@ NEEDFUL_H_DIR=/path/to/dir python run-negative-tests.py
 ```
 
 By convention, `needful.h` is expected one directory above the `needful-enhanced/`
-repo checkout — the same place a user would place it when using just the
+repo checkout -- the same place a user would place it when using just the
 single-file distribution.
 
 
@@ -305,7 +305,7 @@ int* result = known(int*, p);
 ### What does `lenient_exactly(T, expr)` actually check?
 
 The name is counterintuitive: `lenient_exactly(T, expr)` checks that `expr`
-is of type `constify(T)` — the *const* version of `T`.  It is designed for
+is of type `constify(T)` -- the *const* version of `T`.  It is designed for
 accepting a const expression and annotating that it is *exactly* the const
 form of what you expected.  So:
 

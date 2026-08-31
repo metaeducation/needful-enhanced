@@ -286,7 +286,7 @@ struct IsBasicType {
 //   https://en.cppreference.com/w/cpp/language/data_members#Standard-layout
 //
 // This is how the casting wrapped conversion operators (which may have
-// side effects—e.g. Sink's corruption semantics) can directly access the
+// side effects--e.g. Sink's corruption semantics) can directly access the
 // inner value for casting purposes.  The static_assert on is_standard_layout
 // in each overload ensures the guarantee actually holds.
 //

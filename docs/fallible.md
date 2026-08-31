@@ -5,7 +5,7 @@ nav_order: 4
 permalink: /fallible
 ---
 
-# `Fallible(T)` — Checked Nullable Value (Must-Use)
+# `Fallible(T)` -- Checked Nullable Value (Must-Use)
 
 `Fallible(T)` is an explicitly nullable wrapper that forces the client to handle
 the potential absence of a value. It shares the same zero-overhead footprint as
@@ -55,20 +55,20 @@ They are **the same type**. They differ only in which declaration positions
 they are legal in, and only in C.
 
 The reason is how the must-use annotation behaves. In C, `Fallible(T)` carries
-one — `__attribute__((warn_unused_result))`, or C23's `[[nodiscard]]` — and an
+one -- `__attribute__((warn_unused_result))`, or C23's `[[nodiscard]]` -- and an
 annotation that means "this function's result must be used" is only meaningful
 on a function. Applied anywhere else, the compiler objects:
 
 | position | what happens |
 |---|---|
-| return type | accepted — the intended use |
+| return type | accepted -- the intended use |
 | local, global, parameter, struct member | diagnosed (warning; an error under `-Werror` / `/WX`) |
 | `typedef`, cast | hard error |
 
 That is a **feature**, not an obstacle. It means `Fallible(T)` polices its own
 position for free: a value that must be checked cannot be quietly parked in a
 struct field where nothing will ever check it. But legitimate locals and
-parameters do exist — a helper that receives one, a cached result — and they
+parameters do exist -- a helper that receives one, a cached result -- and they
 need a spelling with no annotation on it. That is `FallibleVar(T)`.
 
 Under `NEEDFUL_CPP_ENHANCED` there is nothing to omit: `[[nodiscard]]` rides on
@@ -86,7 +86,7 @@ spelling, this is a syntax error:
 static Fallible(int*) helper(void);   // ERROR under the C23-only path
 ```
 
-and no reordering rescues it — `Fallible(int*) static helper(void)` fails too.
+and no reordering rescues it -- `Fallible(int*) static helper(void)` fails too.
 Needful therefore prefers the GNU spelling wherever it exists (GCC and Clang
 offer it at *every* C standard, no C23 needed), and leaves the C23-only path
 **opt-in** behind `NEEDFUL_FALLIBLE_C23_MUSTUSE`. A compiler upgrade should not
@@ -99,30 +99,30 @@ them internal linkage another way.
 
 `Fallible(T)` makes three separate promises, and **no single configuration
 delivers all three.** Which ones you get depends on the compiler, the language
-standard, and — critically — on whether you turned warnings into errors.
+standard, and -- critically -- on whether you turned warnings into errors.
 
 | build | must-use | position | won't decay to `T` |
 |---|---|---|---|
-| C — GCC/Clang, **any** standard | ✅ | ✅ | — |
-| C — MSVC `/std:c11`, `c17` | ✗ | ✗ | — |
-| C — C23 + `NEEDFUL_FALLIBLE_C23_MUSTUSE` | ✅ | ✅ | — |
-| C++ — no enhancement, GCC/Clang | ✅ | ✅ | — |
-| C++ — no enhancement, MSVC C++17+ | ✅ | ✅ | — |
-| C++ — `NEEDFUL_CPP_ENHANCED`, C++11/14 | ✗ | n/a | ✅ |
-| C++ — enhanced, C++11/14 + `NEEDFUL_PRECPP17_NODISCARD` | ✅ | n/a | ✅ |
-| C++ — `NEEDFUL_CPP_ENHANCED`, **C++17+** | ✅ | n/a | ✅ |
+| C -- GCC/Clang, **any** standard | ✅ | ✅ | -- |
+| C -- MSVC `/std:c11`, `c17` | ✗ | ✗ | -- |
+| C -- C23 + `NEEDFUL_FALLIBLE_C23_MUSTUSE` | ✅ | ✅ | -- |
+| C++ -- no enhancement, GCC/Clang | ✅ | ✅ | -- |
+| C++ -- no enhancement, MSVC C++17+ | ✅ | ✅ | -- |
+| C++ -- `NEEDFUL_CPP_ENHANCED`, C++11/14 | ✗ | n/a | ✅ |
+| C++ -- enhanced, C++11/14 + `NEEDFUL_PRECPP17_NODISCARD` | ✅ | n/a | ✅ |
+| C++ -- `NEEDFUL_CPP_ENHANCED`, **C++17+** | ✅ | n/a | ✅ |
 
 Three things in that table are worth stopping on.
 
 **The enhanced build is not strictly stronger.** At C++11/14 it enforces the
 type separation but *not* the must-use property, because `NEEDFUL_NODISCARD`
-has no *standard* spelling before C++17 — so a plain C build under GCC catches
+has no *standard* spelling before C++17 -- so a plain C build under GCC catches
 a dropped `Fallible(T)` that the checked C++11 build lets through. If you run
 the enhanced build in CI, run it at **C++17 or higher**, or set
 `-DNEEDFUL_PRECPP17_NODISCARD=1`, which takes compilers up on accepting
 `[[nodiscard]]` earlier than required and silences the resulting
 `-Wc++17-extensions` pedantry. See
-[the discussion in `Result(T)`](/result#no-c-mustuse) — the switch is shared by
+[the discussion in `Result(T)`](/result#no-c-mustuse) -- the switch is shared by
 both constructs. Otherwise you have turned off a guarantee you had for free.
 
 **Position checking does not apply under enhancement**, and does not need to:
@@ -131,7 +131,7 @@ so `Fallible(T)` and `FallibleVar(T)` are the same type and every position is
 legal. The positional discipline is a C-build property.
 
 **MSVC in C mode below C23 checks nothing at all.** `_Check_return_` looks like
-it should help and does not — it is a SAL annotation, inert outside `/analyze`.
+it should help and does not -- it is a SAL annotation, inert outside `/analyze`.
 If MSVC-C is your only build, the enhanced C++ build is where your enforcement
 has to come from.
 
@@ -145,7 +145,7 @@ escalate warnings gets a diagnostic scrolled past in a log, not enforcement:
 | GCC / Clang | on by default (`-Wunused-result`, `-Wattributes`) | `-Werror`, or `-Werror=unused-result -Werror=attributes` |
 | MSVC | `/W1` for C4834 (discard), `/W3` for C4869 (position) | `/WX`, or `/we4834 /we4869` |
 
-The two hard errors — `Fallible(T)` in a `typedef` or a cast — are the only
+The two hard errors -- `Fallible(T)` in a `typedef` or a cast -- are the only
 diagnostics here that fail a build on their own.
 
 MSVC needs no `/Zc:__cplusplus`: the C++17 detection reads `_MSVC_LANG`
@@ -155,7 +155,7 @@ directly.
 
 Because `Fallible(T)` carries an implicit must-use constraint, you cannot reach
 the underlying value without routing it through one of these. Each names a
-different decision about the disengaged state, which is the point — the type
+different decision about the disengaged state, which is the point -- the type
 makes you say which one you meant.
 
 | Macro | Meaning |
@@ -168,7 +168,7 @@ makes you say which one you meant.
 | `infallible expr` | Expression-position discharge; asserts engaged, yields `T` |
 
 `return_if_none` expands to `return needful_none`, so it may only appear in a
-function whose return type accepts `none` — an `Option(T)` or a `Result(None)`.
+function whose return type accepts `none` -- an `Option(T)` or a `Result(None)`.
 
 Note that `assert_not_none` and `tolerate_none` are **not** the same macro
 wearing two names. The first claims the value cannot be none and checks that
@@ -185,7 +185,7 @@ exists to catch.
 
 `Fallible(T)` is built on `Option(T)`, which requires only that `T` be
 explicitly convertible to `bool`. A `Fallible(SomeEnum)` is perfectly ordinary
-— and comparing an enum against `(void*)0` is a constraint violation in C and a
+-- and comparing an enum against `(void*)0` is a constraint violation in C and a
 hard error in C++. Worse: `needful.h` globally suppresses `-Wint-conversion` in
 C builds (see the [FAQ](/faq#int-conversion-warning)), so on GCC and Clang that
 mistake compiled **silently** as C and blew up only under C++ enhancement. A
@@ -211,7 +211,7 @@ discharge macros inject a postfix extractor token via the modulus operator:
 Because `%` binds tighter than assignment (`=`) but looser than a function
 call, the macro intercepts the `Fallible(T)` return value, peels off the
 wrapper, and lets the underlying raw type assign cleanly to the local variable
-— all before the comparison happens.
+-- all before the comparison happens.
 
 That last detail is why the comparison is against `none` rather than against
 the wrapper: by the time it runs, the extractor has already removed the
@@ -230,8 +230,8 @@ if (node == none)
 
 ## Related
 
-- [`Option(T)`](/option) — nullable values that are legal to drop/ignore
-- [`Result(T)`](/result) — for functions that multiplex a full error object with a return value
+- [`Option(T)`](/option) -- nullable values that are legal to drop/ignore
+- [`Result(T)`](/result) -- for functions that multiplex a full error object with a return value
 
 ---
 

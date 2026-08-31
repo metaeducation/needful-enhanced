@@ -7,7 +7,7 @@ permalink: /design
 
 # Why `needful.h` Is Written The Way It Is
 
-This page is for anyone **editing** Needful — including AI assistants, who
+This page is for anyone **editing** Needful -- including AI assistants, who
 otherwise re-derive (or re-litigate) the same reasoning every session.
 
 It is also useful if you are just trying to understand why a construct is
@@ -23,7 +23,7 @@ mean the same thing in all of them:
 
 | # | Mode | How you get it | What the macros are |
 |---|---|---|---|
-| 1 | **C** | just `#include "needful.h"` | transparent — mostly nothing at all |
+| 1 | **C** | just `#include "needful.h"` | transparent -- mostly nothing at all |
 | 2 | **C++, unenhanced** | same source built by a C++ compiler | still transparent, but C++ typing rules apply |
 | 3 | **C++, enhanced** | `NEEDFUL_CPP_ENHANCED 1` + companion tree | wrapper classes with real enforcement |
 
@@ -53,13 +53,13 @@ The none-reactive macros (`return_if_none`, `abort_if_none`, ...) test with:
 not against `nullptr` or `(void*)0`. The reason is the three-mode invariant.
 
 `Option(T)` and `Fallible(T)` require only that `T` be explicitly convertible
-to `bool`. So `Option(SomeEnum)` is perfectly ordinary — and comparing an enum
+to `bool`. So `Option(SomeEnum)` is perfectly ordinary -- and comparing an enum
 against `(void*)0` is a constraint violation in C and an error in C++.
 
 That alone would be a portability bug. What makes it a *three-mode* bug is
 this: `needful.h` suppresses `-Wint-conversion` in C builds
 ([why](/faq#int-conversion-warning)). So on GCC and Clang, the enum mistake
-would **compile silently as C** and fail only under enhancement — exactly the
+would **compile silently as C** and fail only under enhancement -- exactly the
 C/C++ divergence Needful exists to prevent.
 
 So `none` gets one spelling that means the same thing three times:
@@ -99,7 +99,7 @@ The dividing rule:
 > docs. If it explains **what this line does**, it should be short enough to
 > ride on the line itself.
 
-There is almost no legitimate middle case — and the middle is exactly where
+There is almost no legitimate middle case -- and the middle is exactly where
 numbered footnotes live. Hence:
 
 **`needful.h` has no numbered footnotes.** If you find yourself writing
@@ -116,7 +116,7 @@ because they must be read *before* you `#include`:
 ### Other header conventions
 
 - **Part 1 is the vocabulary; Part 2 is the plumbing.** A reader never has to
-  reach Part 2. This works because macro bodies expand lazily — a Part 1 macro
+  reach Part 2. This works because macro bodies expand lazily -- a Part 1 macro
   may reference a Part 2 macro defined later in the file. Only *real code*
   (the `typedef enum`, `needful_dead_end_inline`, the C++ namespace blocks, the
   default result hooks) has genuine ordering constraints, and all of it is
@@ -132,7 +132,7 @@ because they must be read *before* you `#include`:
 
 - **`#ifdef __cplusplus` only where unavoidable.** C++ variations are done by
   `#undef` and re-`#define` from the companion tree. The unavoidable cases are
-  the ones where C++ *cannot* express the C spelling at all — e.g.
+  the ones where C++ *cannot* express the C spelling at all -- e.g.
   `NEEDFUL_NULLPTR`, since C++ will not implicitly convert `(void*)0` to an
   arbitrary `T*`.
 
@@ -151,7 +151,7 @@ because they must be read *before* you `#include`:
   already understanding, so all the novelty budget goes to the two-build-mode
   trick. A more distinctive construct (the comment macros are the tempting
   candidate) would mean arguing for something unfamiliar *while* also teaching
-  the mechanism — two new things at once, and the mechanism is the one that
+  the mechanism -- two new things at once, and the mechanism is the one that
   matters. One step at a time.
 
 - **One example, at the top, and no more.** Examples in the docs are compiled
@@ -168,7 +168,7 @@ If you are tempted to "fix" one of these, it was deliberate:
 | Looks wrong | Why it is that way |
 |---|---|
 | `-Wint-conversion` globally suppressed in C | `make_failure(...)` and `none` are comma expressions, and the comma operator strips `0` of its null-pointer-constant status ([detail](/faq#int-conversion-warning)) |
-| `needful_is_none` has doubled parentheses | Suppresses "suggest parentheses around assignment used as truth value" — callers pass assignments by design |
+| `needful_is_none` has doubled parentheses | Suppresses "suggest parentheses around assignment used as truth value" -- callers pass assignments by design |
 | `assert_not_none` evaluates into a local first | `NEEDFUL_ASSERT` compiles away under `NDEBUG`; putting `_expr_` inside it would silently drop the caller's assignment |
 | `panic_if_failed` is not `abort_if_failed` | A failure carries an error payload to report; a disengaged `Option` has nothing to report and can only `NEEDFUL_ABORT()`. A shared prefix would promise a shared exit path that does not exist |
 | The GNU must-use spelling is preferred over `[[nodiscard]]` | `__attribute__` may appear anywhere among declaration specifiers; `[[nodiscard]]` must lead. That is the difference between `static Fallible(int*) f(void)` compiling and not ([detail](/fallible#the-static-restriction)) |
@@ -196,7 +196,7 @@ If you are tempted to "fix" one of these, it was deliberate:
 5. **Mind the three lints**, which cover conventions no compiler enforces:
    `comment-style` (needful.h's own comments are slash-star; `//` only *inside*
    them), `doc-links` (every `Docs:` URL and every `](/page#anchor)` resolves),
-   and `no-tabs`. They are ordinary CTest entries, so a full run catches them —
+   and `no-tabs`. They are ordinary CTest entries, so a full run catches them --
    but they are the ones most likely to be broken by an edit that "obviously"
    could not break anything.
 
@@ -209,7 +209,7 @@ If you are tempted to "fix" one of these, it was deliberate:
 
 ## Related
 
-- **`OPEN-QUESTIONS.md`** (repo root, not published) — the things that are
+- **`OPEN-QUESTIONS.md`** (repo root, not published) -- the things that are
   *not* settled. Check it before changing something that looks arbitrary: it
   may be arbitrary on purpose, pending a decision. Record a position there
   rather than enacting it.

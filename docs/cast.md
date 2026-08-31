@@ -5,7 +5,7 @@ nav_order: 6
 permalink: /cast
 ---
 
-# `cast()` Family — Visible, Hookable Casts
+# `cast()` Family -- Visible, Hookable Casts
 
 Needful replaces invisible parenthesized casts with named, semantically
 differentiated macros. You can spot them in code, they communicate intent,
@@ -28,7 +28,7 @@ and in C++ builds they can run validation hooks.
 | `downcast expr` | Base pointer/expression to derived target type by context |
 | `upcast(T, expr)` | Assignment-safe implicit conversion with const mirrored from source |
 
-All are no-ops in C builds — they expand to `(T)(expr)`.
+All are no-ops in C builds -- they expand to `(T)(expr)`.
 
 ## Why `cast()` Runs Hooks
 
@@ -40,9 +40,9 @@ safest thing to do.  People reach for `cast` without thinking.  If that got
 them raw, unchecked behavior, they would have to remember to opt *in* to
 safety everywhere.  Instead, opting *out* requires an explicit, named choice:
 
-- **`raw_cast`** — "I know this memory isn't valid yet (fresh allocation)."
-- **`fast_cast`** — "I know it's valid, but I can't afford hooks on this path."
-- **`c_cast`** — "I need exact C semantics and have thought about why."
+- **`raw_cast`** -- "I know this memory isn't valid yet (fresh allocation)."
+- **`fast_cast`** -- "I know it's valid, but I can't afford hooks on this path."
+- **`c_cast`** -- "I need exact C semantics and have thought about why."
 
 Each name is a declaration of intent that stands out in code review.  An
 auditor can `grep` for `raw_cast` and `fast_cast` to find every place that
@@ -54,7 +54,7 @@ There is also a **long-term maintenance argument**.  As a codebase grows,
 `cast()` calls accumulate far ahead of the people writing CastHook
 specializations for new types.  Making `cast` hookable means those
 specializations can be added incrementally, and all existing call sites
-immediately benefit — no sweep of the codebase required.  If `cast` were raw,
+immediately benefit -- no sweep of the codebase required.  If `cast` were raw,
 adding a new validation rule would require auditing every cast to decide which
 ones should have been `h_cast` all along.
 
@@ -67,7 +67,7 @@ cases are the ones that opt out.
 ### Gradual Adoption
 
 If you are adding Needful to an existing codebase incrementally, it can help
-to start by redefining `cast` as `raw_cast` — so the first pass is just
+to start by redefining `cast` as `raw_cast` -- so the first pass is just
 making old-style parentheses casts visible without changing behaviour:
 
 ```c
@@ -128,19 +128,19 @@ Null pointer casts are passed through to the hook rather than short-circuited
 in the cast machinery. This is intentional for two reasons:
 
 **Policy belongs in the hook.** Most hooks return early on null (there are no
-bits to validate), but a hook can also `crash` or assert — making null casts to
+bits to validate), but a hook can also `crash` or assert -- making null casts to
 that type a hard error in debug builds. If the machinery silently skipped null,
 hooks would lose that ability.
 
 **C++11/MSVC compatibility.** Intercepting null in the generic cast machinery
 requires an `if` whose condition depends on a type trait
-(`std::is_pointer<T>::value`) — and MSVC raises warning C4127
+(`std::is_pointer<T>::value`) -- and MSVC raises warning C4127
 ("conditional expression is constant") on exactly that pattern, even when
 wrapped in helper structs. With `/WX` (warnings-as-errors), that is a build
 failure. The clean C++ solution would be `if constexpr`, but that requires
 C++17. Working around it in C++11 while keeping the check in the machinery
 means disguising the constant as a runtime value (e.g. via an overloaded
-function returning `const void*`) — but that introduces a real function call
+function returning `const void*`) -- but that introduces a real function call
 in unoptimized debug builds, precisely where cast performance matters most.
 Since hooks receive a concrete pointer argument, the null check there is a
 plain runtime branch: no warning, no workaround overhead.
@@ -154,15 +154,15 @@ if (not p)
 
 Omit or replace it with a hard error to make null casts illegal for that type.
 
-## `v_cast` — `va_list` ↔ `void*`
+## `v_cast` -- `va_list` ↔ `void*`
 
 `va_list` is implementation-defined in a way that makes regular casts
 unsafe across platforms. On GCC/Linux x86-64 (and others), `va_list` is a
 typedef for a fixed-size *array* type. Arrays in C decay to a pointer to
-their first element — so `(void*)ap` when `ap` is an array-based `va_list`
+their first element -- so `(void*)ap` when `ap` is an array-based `va_list`
 gives you a pointer *into* the array, not a pointer *to the `va_list` object
 itself*. When the receiving function casts that `void*` back to `va_list*`,
-it gets a `va_list*` pointing at an element, not at the `va_list` — and
+it gets a `va_list*` pointing at an element, not at the `va_list` -- and
 code that works correctly on struct-based platforms fails silently on
 array-based ones.
 
@@ -187,7 +187,7 @@ void call_it(int first, ...) {
 permitted (not bare `va_list`). Needful includes `<stdarg.h>` to pull in
 the `va_list` definition; suppress this with `NEEDFUL_DONT_INCLUDE_STDARG_H`.
 
-## `c_cast_known` — Combined Cast and Type Assertion
+## `c_cast_known` -- Combined Cast and Type Assertion
 
 `c_cast_known(T, expr)` is a combined form of `c_cast(T, known(T, expr))`
 that sidesteps a C preprocessor limitation: when `T` contains commas (as
@@ -206,7 +206,7 @@ Lenient and rigid variants mirror the behavior of the base cast:
 
 | Variant | Constness behavior |
 |---|---|
-| `c_cast_known(T, expr)` | Lenient — alias for `lenient_c_cast_known` |
+| `c_cast_known(T, expr)` | Lenient -- alias for `lenient_c_cast_known` |
 | `lenient_c_cast_known(T, expr)` | Passes `const` through |
 | `rigid_c_cast_known(T, expr)` | Errors on constness mismatch |
 
@@ -263,9 +263,9 @@ can be a good idea.
 
 ## Related
 
-- [nocast](/nocast) — bridge `void*` and enum zero without a cast
-- [`downcast` / `upcast`](/cast#downcast) — inheritance-aware casting
-- [clang-format + Needful](/faq#clang-format-needful) — keep cast-like spacing
+- [nocast](/nocast) -- bridge `void*` and enum zero without a cast
+- [`downcast` / `upcast`](/cast#downcast) -- inheritance-aware casting
+- [clang-format + Needful](/faq#clang-format-needful) -- keep cast-like spacing
     for `downcast`/`nocast`
 
 ---
@@ -314,7 +314,7 @@ struct BaseStruct { int x; };
 typedef struct BaseStruct Base;
 
 #if NEEDFUL_CPP_ENHANCED
-  struct Derived : Base {};  // no extra fields — same layout
+  struct Derived : Base {};  // no extra fields -- same layout
 #else
   typedef Base Derived;  // Derived identical to Base if not enhanced
 #endif
@@ -344,7 +344,7 @@ struct BaseStruct { int x; };
 typedef struct BaseStruct Base;
 
 #if NEEDFUL_CPP_ENHANCED
-  struct Derived : Base {};  // no extra fields — same layout
+  struct Derived : Base {};  // no extra fields -- same layout
 #else
   typedef Base Derived;  // Derived identical to Base if not enhanced
 #endif
@@ -381,7 +381,7 @@ struct BaseStruct { int x; };
 typedef struct BaseStruct Base;
 
 #if NEEDFUL_CPP_ENHANCED
-  struct Derived : Base {};  // no extra fields — same layout
+  struct Derived : Base {};  // no extra fields -- same layout
 #else
   typedef Base Derived;  // Derived identical to Base if not enhanced
 #endif

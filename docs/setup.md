@@ -148,7 +148,7 @@ quietly disables part of what you think you are checking:
 - **`-std=c++17`, not `c++11`.** `[[nodiscard]]` is the only spelling that
   works on a *class*, and `Result(T)` and `Fallible(T)` are classes in enhanced
   builds. Below C++17 the checked build still enforces type separation, but
-  drops the must-use property — so a dropped `Result(T)` sails through a build
+  drops the must-use property -- so a dropped `Result(T)` sails through a build
   you believed was your strictest. If you must build at C++11 or C++14, add
   `-DNEEDFUL_PRECPP17_NODISCARD=1`, which takes compilers up on accepting the
   attribute early and silences the resulting `-Wc++17-extensions` pedantry.
@@ -187,7 +187,7 @@ All of these are defined **before** including `needful.h`.
 
 ## Verifying the Setup
 
-A quick smoke test — if this compiles and runs, the enhancement layer is
+A quick smoke test -- if this compiles and runs, the enhancement layer is
 working:
 
 <!-- doctest: positive-test -->

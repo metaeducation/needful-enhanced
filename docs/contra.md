@@ -5,7 +5,7 @@ nav_order: 9
 permalink: /contra
 ---
 
-# `Contra(T)`, `Sink(T)`, `Init(T)` — Contravariant Output Parameters
+# `Contra(T)`, `Sink(T)`, `Init(T)` -- Contravariant Output Parameters
 
 ## The Core Idea: [Contravariance][variance-wiki]
 
@@ -18,7 +18,7 @@ relationship.
 struct Base { int bits; };
 
 #if NEEDFUL_CPP_ENHANCED  // declare inheritance if using C++ enhanced mode
-  struct Derived : Base {};  // no extra fields — same layout
+  struct Derived : Base {};  // no extra fields -- same layout
 #else
   typedef Base Derived;  // Derived identical to Base in C version
 #endif
@@ -29,7 +29,7 @@ run backwards compared to input parameters. This is known as
 [**contravariance**][variance-wiki].
 
 For inputs, covariance applies: a function accepting `Base*` can accept
-`Derived*` — passing something more specific where something less specific
+`Derived*` -- passing something more specific where something less specific
 is expected is safe.
 
 For outputs, the reverse is true. A function that *writes* `Base` bits into a
@@ -56,11 +56,11 @@ builds.
 In C, all three expand to `T*`. The C++ wrappers enforce contravariance and
 optionally scramble memory in debug builds.
 
-### `Contra(T)` — Contravariance Without Corruption
+### `Contra(T)` -- Contravariance Without Corruption
 
 `Contra(T)` is the one to reach for when you want the contravariant type rule
 but the slot's **existing value must survive**. It is not merely "the cheap
-one" — the absence of corruption is the point, and it holds in *every* build,
+one" -- the absence of corruption is the point, and it holds in *every* build,
 regardless of `NEEDFUL_DOES_CORRUPTIONS`.
 
 Two situations call for it:
@@ -76,21 +76,21 @@ void accumulate(Contra(Base) io);   // reads io, then writes it back
 someone else without writing through it directly:
 
 ```c
-void dispatch(Contra(Base) out);    // just forwarding — no direct write
+void dispatch(Contra(Base) out);    // just forwarding -- no direct write
 ```
 
 Both are relatively rare compared to `Sink(T)` and `Init(T)`, which is why the
 type exists as a deliberate opt-out rather than a default. If you find yourself
 wanting `Sink(T)` semantics but with corruption disabled, `Contra(T)` is the
-declaration you are looking for — say it in the signature rather than turning
+declaration you are looking for -- say it in the signature rather than turning
 the switch off globally.
 
-### `Sink(T)` — Write-Only Output with Corruption
+### `Sink(T)` -- Write-Only Output with Corruption
 
 Use `Sink(T)` to mark output parameters where the caller must not rely on
 the old contents. When `NEEDFUL_DOES_CORRUPTIONS` is enabled, the
 `SinkWrapper` scrambles the pointed-to memory with `0xBD` bytes at the moment
-the pointer is first used — so any code that reads from the output slot before
+the pointer is first used -- so any code that reads from the output slot before
 writing will see garbage and crash loudly.
 
 The corruption is *deferred* to first use (not on construction) to avoid
@@ -111,10 +111,10 @@ void Write_Base(Sink(Base) out) {
 }
 ```
 
-### `Init(T)` — Full Initialization
+### `Init(T)` -- Full Initialization
 
 Use `Init(T)` for functions that promise to fill every field of the output.
-`Init` is semantically identical to `Sink` except it skips corruption —
+`Init` is semantically identical to `Sink` except it skips corruption --
 there's no point scrambling bytes that will all be overwritten anyway. This
 gives `Init` zero overhead even with `NEEDFUL_DOES_CORRUPTIONS` on.
 
@@ -126,7 +126,7 @@ To enable corruption for `Init` as well (for intensive debugging sessions):
 
 This makes every `Init(T)` behave exactly as a `Sink(T)`. It is worth turning
 on when you suspect an `Init_Xxx()` routine is *not* filling every field it
-claims to — the promise `Init(T)` encodes is precisely the one this switch
+claims to -- the promise `Init(T)` encodes is precisely the one this switch
 stops taking on trust. Expect it to be slower, and expect it to find things.
 
 Note the asymmetry this creates, and that it is intentional:
@@ -143,8 +143,8 @@ configuration, which is what makes it safe for in/out parameters.
 ## The Type Rules
 
 For `Sink(T)`, the accepted pointer types are:
-- `T*` — identity (always safe)
-- `U*` where `U` is a same-layout **base class** (supertype) of `T` —
+- `T*` -- identity (always safe)
+- `U*` where `U` is a same-layout **base class** (supertype) of `T` --
   meaning `T` derives from `U` and `sizeof(U) == sizeof(T)`
 
 That second case is the surprising one. If `Derived : Base {}` with no
@@ -185,18 +185,18 @@ The C++ build checks these properties via `static_assert` inside
 Some types store an encoding pointer (getter/setter) rather than a plain value.
 Writing blindly into such a slot corrupts the encoding. Needful's
 `MayUseIndirectEncoding` trait marks these types, and `IsContravariant`
-refuses them as `Sink`/`Init` targets unless they are themselves wrapped —
+refuses them as `Sink`/`Init` targets unless they are themselves wrapped --
 where the wrapper guarantees safe writes.
 
 ## Related
 
-- [`Need(T)`](/need) — non-null pointers (orthogonal concern)
+- [`Need(T)`](/need) -- non-null pointers (orthogonal concern)
 
 ---
 
 ## Compile-Time Tests
 
-### `Sink(Derived)` accepts `Base*` — the contravariant direction
+### `Sink(Derived)` accepts `Base*` -- the contravariant direction
 
 A base-typed pointer can be passed where a more-specific Sink is expected,
 because the writer fills exactly the same bytes (same-sizeof inheritance).
@@ -215,7 +215,7 @@ struct BaseStruct { int bits; };
 typedef struct BaseStruct Base;
 
 #if NEEDFUL_CPP_ENHANCED
-  struct Derived : Base {};  // no extra fields — same layout
+  struct Derived : Base {};  // no extra fields -- same layout
 #else
   typedef Base Derived;  // Derived identical to Base if not enhanced
 #endif
@@ -235,7 +235,7 @@ int main() {
 }
 ```
 
-### `Sink(Base)` rejects `Derived*` — wrong direction, even with same layout
+### `Sink(Base)` rejects `Derived*` -- wrong direction, even with same layout
 
 Even though `Derived` adds no fields (same sizeof), it is a *subtype* of
 `Base`, not a supertype. Passing it as `Sink(Base)` is rejected.
@@ -257,7 +257,7 @@ Even though `Derived` adds no fields (same sizeof), it is a *subtype* of
 struct Base { int bits; };
 
 #if NEEDFUL_CPP_ENHANCED
-  struct Derived : Base {};  // no extra fields — same layout
+  struct Derived : Base {};  // no extra fields -- same layout
 #else
   typedef Base Derived;  // Derived identical to Base if not enhanced
 #endif

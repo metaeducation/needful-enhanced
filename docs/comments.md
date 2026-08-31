@@ -5,11 +5,11 @@ nav_order: 8
 permalink: /comments
 ---
 
-# Comment Macros — Executable Documentation
+# Comment Macros -- Executable Documentation
 
 Needful provides a family of macros that replace prose comments with
 compile-checked expressions. In C, they are all no-ops. In C++ builds, they
-verify that the expression inside is well-formed — so if you rename a
+verify that the expression inside is well-formed -- so if you rename a
 variable, the comment breaks at compile time instead of silently going stale.
 
 ## The Problem With Prose Comments
@@ -28,7 +28,7 @@ int i = Get_Integer(...);
 possibly(i < 0);   // if i is renamed, this becomes a compile error
 ```
 
-`possibly()` is a no-op at runtime — it compiles away completely. But in C++
+`possibly()` is a no-op at runtime -- it compiles away completely. But in C++
 builds, it static-asserts that the expression has a type convertible to
 `bool`. If `i` is renamed and the expression no longer compiles, CI catches it.
 
@@ -46,14 +46,14 @@ to change a type signature and think about who owns what:
 
 | | asks you to | breaks if you stop |
 |---|---|---|
-| `Option(T)`, `Need(T)`, `Fallible(T)` | change declarations, add `unwrap`/`opt` | yes — signatures changed |
+| `Option(T)`, `Need(T)`, `Fallible(T)` | change declarations, add `unwrap`/`opt` | yes -- signatures changed |
 | `Result(T)` | supply failure hooks, restructure returns | yes |
-| Comment macros | nothing | no — no declaration ever changed |
+| Comment macros | nothing | no -- no declaration ever changed |
 
 You can add `possibly()` to one function this afternoon, in an existing file,
 with no refactoring and no build changes, and roll the whole experiment back by
 deleting the lines. (The one exception is `heeded()`, which really does
-evaluate its expression — see the table below.) That makes them a good place to
+evaluate its expression -- see the table below.) That makes them a good place to
 start, and in practice the thing that gets people to try `Option(T)` a month
 later.
 

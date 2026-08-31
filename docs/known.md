@@ -5,7 +5,7 @@ nav_order: 10
 permalink: /known
 ---
 
-# `known(T, expr)` — Cheap Compile-Time Type Assertion
+# `known(T, expr)` -- Cheap Compile-Time Type Assertion
 
 `known(T, expr)` asserts at compile time that `expr` is of type `T`, then
 passes the value through unchanged. It is a zero-cost alternative to inline
@@ -19,7 +19,7 @@ char* wrong = get_char();
 void* p = known(int*, wrong);  // ERROR (C++ build): type mismatch
 ```
 
-In C, `known(T, expr)` is `(expr)` — a no-op. The C++ build uses a
+In C, `known(T, expr)` is `(expr)` -- a no-op. The C++ build uses a
 `static_assert` that fires if the types don't match.
 
 ## Why Not an Inline Function?
@@ -82,7 +82,7 @@ caller passes a simple variable, not an expression with side effects.
 ## Related
 
 - [FAQ: Why does `decltype(known(...))` give a reference type?](/faq#known-decltype)
-- [`cast()` family](/cast) — type-changing operations; `known()` is type-asserting
+- [`cast()` family](/cast) -- type-changing operations; `known()` is type-asserting
 
 ---
 

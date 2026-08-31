@@ -96,7 +96,7 @@ void test_known_lvalue() {
 //=//// lenient_exactly / rigid_exactly ///////////////////////////////////=//
 //
 // lenient_exactly(T, expr): expr must be EXACTLY constify(T)
-//   — designed for accepting const expressions and treating them as const T
+//   -- designed for accepting const expressions and treating them as const T
 // rigid_exactly(T, expr): expr must be EXACTLY T
 
 void test_lenient_exactly_const() {

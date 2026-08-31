@@ -5,11 +5,11 @@ nav_order: 3
 permalink: /option
 ---
 
-# `Option(T)` — Explicitly Nullable Type
+# `Option(T)` -- Explicitly Nullable Type
 
 `Option(T)` is a Rust-inspired optional that uses `T`'s falsey state (null,
 zero, or false) as its "none" sentinel. Critically, it has the **same size as
-`T`** — no extra bool, no heap allocation.
+`T`** -- no extra bool, no heap allocation.
 
 ```c
 Option(char*) abc = "hello";
@@ -26,7 +26,7 @@ char* s = unwrap abc;   // OK: explicit extraction
 char* s = opt abc;      // OK: extracts even if none (use with care)
 ```
 
-In C, `Option(T)` is a transparent no-op — it expands to `T`. The C++ build
+In C, `Option(T)` is a transparent no-op -- it expands to `T`. The C++ build
 wraps the value in `OptionWrapper<T>`, which blocks implicit conversion to `T`
 and requires explicit `unwrap` or `opt`.
 
@@ -44,7 +44,7 @@ and requires explicit `unwrap` or `opt`.
 - Same size as `T` (no extra byte)
 - Works with any type whose `0` state is a valid sentinel (pointers, ints,
   enums)
-- No C++ dependency — compiles as plain C
+- No C++ dependency -- compiles as plain C
 - Can be used in C structs without any C++ contamination
 
 ## The Naming of `opt`
@@ -72,11 +72,11 @@ boolean or `Result(T)`.
 
 ## Related
 
-- [Operator Precedence](/precedence) — why `unwrap x->field` needs parentheses
+- [Operator Precedence](/precedence) -- why `unwrap x->field` needs parentheses
 
-- [`Need(T)`](/need) — the non-nullable counterpart
-- [`Result(T)`](/result) — for functions that can fail with an error
-- [`Result(None)`](/result#result-none) — for fallible functions that return no value on success
+- [`Need(T)`](/need) -- the non-nullable counterpart
+- [`Result(T)`](/result) -- for functions that can fail with an error
+- [`Result(None)`](/result#result-none) -- for fallible functions that return no value on success
 
 ---
 

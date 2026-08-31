@@ -54,7 +54,7 @@ catch bugs. No code changes needed between them!
 | [`Result(T)`](/result) | Multiplexed error + return value; auto-propagation via `return_if_failed` |
 | [`cast()` family](/cast) | Visible, hookable, semantically-named casts |
 | [`nocast`](/nocast) | Restores C's implicit `void*` and enum conversions in a C++ build |
-| [Comment macros](/comments) | `possibly()`, `dont()`, `heeded()` — comments that fail the build when they go stale |
+| [Comment macros](/comments) | `possibly()`, `dont()`, `heeded()` -- comments that fail the build when they go stale |
 | [`Contra(T)` / `Sink(T)` / `Init(T)`](/contra) | Contravariant output parameter markers |
 | [`known(T, expr)`](/known) | Zero-cost compile-time type assertion, for macro authors |
 
@@ -66,7 +66,7 @@ Two of these are worth a second look, because their names undersell them:
   was perfectly happy with.
 
 - **[Comment macros](/comments)** are the only part of Needful with no
-  equivalent in Rust, C++, or anything else — and the only part that asks for
+  equivalent in Rust, C++, or anything else -- and the only part that asks for
   no type changes at all. If you want to try one thing, try these.
 
 ---
@@ -86,7 +86,7 @@ Two of these are worth a second look, because their names undersell them:
 
 - **Documentation that compiles.** The same idea, turned on this site. Every
   example here that demonstrates a checked behavior is extracted and built in
-  CI on GCC, Clang, and MSVC — the positive ones must compile *and run*, and
+  CI on GCC, Clang, and MSVC -- the positive ones must compile *and run*, and
   the negative ones must **fail** to compile, for the stated reason. A sample
   that drifts out of date does not quietly mislead you; it turns the build
   red. The links between these pages are checked the same way.
@@ -108,7 +108,7 @@ That is a real and valuable class. It is not the one that gets CVEs assigned.
 **Enforcement is not uniform, and one common configuration checks nothing.**
 `Fallible(T)` makes three promises and no single build delivers all three;
 MSVC in C mode below C23 delivers *none* of them. The full matrix is
-[documented honestly](/fallible#enforcement) rather than buried — read it
+[documented honestly](/fallible#enforcement) rather than buried -- read it
 before you decide which build is your real gate.
 
 **Warnings must be errors or you get nothing.** Most of what Needful rejects
@@ -118,7 +118,7 @@ arrives as a warning, and the compiler then exits zero. Without `-Werror` /
 **The checked build needs a second repository.** We say "one header, no
 dependencies," and that is true of the shipping build. The *checking* build
 wants `needful-enhanced/` cloned next to it and version-matched. It is a
-deliberate trade — but it is the point where the simple story stops being
+deliberate trade -- but it is the point where the simple story stops being
 simple.
 
 **It is a dialect.** There are a couple hundred macros. The vocabulary you
@@ -128,8 +128,8 @@ and expect a new contributor to ask what `unwrap` is.
 
 **The prefix keywords are a trick, and tricks leak.** `unwrap foo` is really
 `g_unwrap_helper + foo`, which means precedence surprises (an entire
-[page](/precedence) exists for them) and tooling — formatters, highlighters,
-code search — that is mildly wrong forever. The saving grace is that a
+[page](/precedence) exists for them) and tooling -- formatters, highlighters,
+code search -- that is mildly wrong forever. The saving grace is that a
 misparse is *always* a compile error and never a wrong answer.
 
 **`Result(T)` multiplexes through global state.** The default hooks are

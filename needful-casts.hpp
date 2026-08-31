@@ -539,7 +539,7 @@ Hookable_Cast_Helper(FromRef&& from)  // && is why helper is a function! [A]
 //=//// OVERLOAD 4: semantic wrapper -> re-wrapped result /////////////////=//
 //
 // Why it exists: Semantic wrappers (Option, Result) carry meaning beyond the
-// raw type—their wrapping is part of the data's contract.  Cast must not
+// raw type--their wrapping is part of the data's contract.  Cast must not
 // silently strip them.  Instead, the inner value is cast and re-wrapped in
 // the same template: `cast(Stump*, Result(Stub*))` -> `Result(Stump*)`.
 // This is essential for patterns like `panic_if_failed(cast(T, result_expr))`
@@ -853,7 +853,7 @@ NEEDFUL_DEFINE_DOWNCAST_HELPERS(UnhookableDowncast, unhookable);
 //   ref and takes its address.  This forces temporary materialization
 //   so even prvalues get a stack location we can pointer-reinterpret.
 //   The outer *c_cast(const ExtractType*, ...) dereferences through
-//   the reinterpreted pointer—zero cost, no conversion operator call.
+//   the reinterpreted pointer--zero cost, no conversion operator call.
 //
 
 template<typename T>

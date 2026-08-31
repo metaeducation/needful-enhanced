@@ -207,7 +207,7 @@ def main():
             )
 
             if exit_code == 0:
-                # Compiled successfully — this is always a failure
+                # Compiled successfully -- this is always a failure
                 print(f"  FAIL  {test.name}  (compiled when it should not have)")
                 if expected_phrases:
                     for p in expected_phrases:
@@ -215,13 +215,13 @@ def main():
                 failed += 1
                 continue
 
-            # Compilation failed — now check it was for the right reason
+            # Compilation failed -- now check it was for the right reason
             if not expected_phrases:
                 if args.match_error_text:
                     print(f"  FAIL  {test.name}  (no MATCH-ERROR-TEXT comment; required with --match-error-text)")
                     failed += 1
                 else:
-                    print(f"  PASS  {test.name}  [no MATCH-ERROR-TEXT — any failure accepted]")
+                    print(f"  PASS  {test.name}  [no MATCH-ERROR-TEXT -- any failure accepted]")
                     warned += 1
                     passed += 1
             elif any(p.lower() in output.lower() for p in expected_phrases):

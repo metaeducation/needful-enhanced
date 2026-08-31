@@ -59,7 +59,7 @@ static void write_derived(Sink(Derived) out) {
 void test_sink_accepts_base_pointer() {
     Base base { 0 };
 
-    // Sink(Derived) accepts Base* — Base is a base of Derived (SAFE direction)
+    // Sink(Derived) accepts Base* -- Base is a base of Derived (SAFE direction)
     write_derived(&base);
     assert(base.bits == 42);
 }

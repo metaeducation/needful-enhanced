@@ -5,9 +5,9 @@ nav_order: 2
 permalink: /need
 ---
 
-# `Need(T)` — Required Non-Null Value
+# `Need(T)` -- Required Non-Null Value
 
-`Need(T)` marks a pointer or value as *required* — it must never be null or
+`Need(T)` marks a pointer or value as *required* -- it must never be null or
 zero. Its primary purpose is to prevent meaningless boolean coercion: if a
 value is guaranteed non-null, checking `if (ptr)` is a bug, not a feature.
 
@@ -20,7 +20,7 @@ printf("%d\n", *ptr);   // safe to dereference
 if (ptr) { ... }        // ERROR (C++ build): cannot coerce Need(T*) to bool
 ```
 
-In C, `Need(T)` is a transparent no-op — it expands to `T` directly. The C++
+In C, `Need(T)` is a transparent no-op -- it expands to `T` directly. The C++
 build wraps the value in `NeedWrapper<T>`, which deletes the implicit bool
 conversion and disallows construction from `nullptr`.
 
@@ -34,9 +34,9 @@ conversion and disallows construction from `nullptr`.
 
 ## Guarantees (C++ build)
 
-- `Need(int*) p = nullptr;` — compile error (deleted constructor)
-- `bool b = p;` — compile error (no implicit bool conversion)
-- `Need(int*) p = someOption;` — compile error (must explicitly unwrap first)
+- `Need(int*) p = nullptr;` -- compile error (deleted constructor)
+- `bool b = p;` -- compile error (no implicit bool conversion)
+- `Need(int*) p = someOption;` -- compile error (must explicitly unwrap first)
 
 ## When to Use
 
@@ -49,9 +49,9 @@ enabled to catch nulls or zeroes passed to a Need(T) parameter.
 
 ## Related
 
-- [Operator Precedence](/precedence) — how the `needed` prefix keyword actually parses
+- [Operator Precedence](/precedence) -- how the `needed` prefix keyword actually parses
 
-- [`Option(T)`](/option) — the nullable counterpart; `unwrap` an `Option`
+- [`Option(T)`](/option) -- the nullable counterpart; `unwrap` an `Option`
   before passing to `Need`.
 
 ---
@@ -126,7 +126,7 @@ int main() {
 
 ### Need(T) can be passed where Option(T) is expected
 
-`Need(T*)` widens safely to `Option(T*)` — the non-null guarantee is a
+`Need(T*)` widens safely to `Option(T*)` -- the non-null guarantee is a
 subset of the nullable type's domain.
 
 <!-- doctest: positive-test -->
@@ -157,7 +157,7 @@ int main() {
 
 ### Option(T) cannot be passed where Need(T) is expected
 
-The reverse direction requires an explicit `unwrap` — an `Option` may be
+The reverse direction requires an explicit `unwrap` -- an `Option` may be
 null, so the compiler rejects the implicit narrowing.
 
 <!-- doctest: negative-test -->

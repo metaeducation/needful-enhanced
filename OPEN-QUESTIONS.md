@@ -75,6 +75,8 @@ Live example, and the reason this file exists.
 
 - `Rust-style types for C` -- accurate and limp. "Types" has no stakes in it.
 
+- `Rust-style types for C` -- accurate and limp. "Types" has no stakes in it.
+
 - `Rust-grade type checking for C` -- **current.** Keeps the phrase that carried
   the energy; the noun it modifies is now something actually delivered.
 

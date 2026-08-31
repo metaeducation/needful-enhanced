@@ -43,7 +43,7 @@ this directory is used and none of it is needed.
 ```
 docs/               Web documentation (needful.metaeducation.com)
 tests/              Positive and negative compile-time tests
-tools/              extract-doctests.py — docs-as-tests infrastructure
+tools/              extract-doctests.py -- docs-as-tests infrastructure
 .github/            CI across GCC, Clang, MSVC
 needful-*.hpp       The enhancement headers included by needful.h
 OPEN-QUESTIONS.md   Things not yet settled (repo-only, not published)
@@ -53,13 +53,13 @@ OPEN-QUESTIONS.md   Things not yet settled (repo-only, not published)
 
 Two files are worth reading before you change anything:
 
-- **[`docs/design.md`](docs/design.md)** — why `needful.h` is written the way
+- **[`docs/design.md`](docs/design.md)** -- why `needful.h` is written the way
   it is. The governing invariant is that **three** build modes must agree (C,
   C++ unenhanced, C++ enhanced), and most of what looks arbitrary follows from
   it. Includes a "things that look like bugs but are not" table and a
   pre-commit checklist.
 
-- **[`OPEN-QUESTIONS.md`](OPEN-QUESTIONS.md)** -- what's deliberately undecided,
+- **[`OPEN-QUESTIONS.md`](OPEN-QUESTIONS.md)** -- what is deliberately undecided,
   including positioning and naming. If you disagree with a choice, the intended
   move is to record a position there rather than to enact it in a commit.
 

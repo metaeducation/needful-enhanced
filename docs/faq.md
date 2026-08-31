@@ -83,7 +83,7 @@ int* check = known(int*, ptr);   // compile error if types don't match
 ## What's the difference between `definitely` and `STATIC_ASSERT`? {#definitely-vs-static-assert}
 
 `definitely(cond)` is a statement-scope macro for documenting programmer
-beliefs at runtime. It compiles to a no-op (it does *not* assert at runtime —
+beliefs at runtime. It compiles to a no-op (it does *not* assert at runtime --
 use a real `assert()` if you want a runtime check). The C++ build verifies the
 expression is bool-convertible and well-formed.
 
@@ -121,7 +121,7 @@ modern CI system.
 
 ## Why is there no `nocast_0` shorthand (only `needful_nocast_0`)? {#nocast-0-no-shorthand}
 
-`nocast_0` is plumbing — it's used internally by `make_failure(...)` and `none`
+`nocast_0` is plumbing -- it's used internally by `make_failure(...)` and `none`
 to produce a generic zero. Exposing it as a short name would imply it's a
 common user-facing API, which it isn't. Users working with options and results
 should use `none` (for `Option` and `Fallible`) or `make_failure(...)` (for
@@ -135,7 +135,7 @@ intentional: `nocast` appears at user call sites regularly (e.g.
 
 ## Why can't `return_if_failed` also work on a `Fallible(T)`? {#result-fallible-unification}
 
-Because it would be *silently* wrong, not merely difficult — and that is a
+Because it would be *silently* wrong, not merely difficult -- and that is a
 sharper reason than it first appears.
 
 The obstacle is not a missing trick. In the C build the two are already
@@ -147,7 +147,7 @@ The obstacle is that **the two macros test different things.**
 `return_if_failed` consults the thread-global failure state, which a
 `Fallible(T)` never sets. `return_if_none` consults the returned value itself,
 which a `Result(T)` never uses to signal. A merged macro would have to dispatch
-on the operand's type to know which of the two to consult — and in the C build
+on the operand's type to know which of the two to consult -- and in the C build
 there is no type to dispatch on, because both are transparent macros over `T`.
 
 So the unification is impossible in C. Since Needful's whole contract is that
@@ -158,7 +158,7 @@ Consider what the failure would look like if the rule were relaxed. Write
 `return_if_failed (x = some_fallible_call())` and it compiles cleanly, finds
 the failure global unset, declines to return, and carries on with a disengaged
 `x`. No diagnostic, in either build. Keeping the two vocabularies visibly
-distinct — `failed` for the error channel, `none` for the value — is what makes
+distinct -- `failed` for the error channel, `none` for the value -- is what makes
 that mistake hard to write in the first place.
 
 See [`Result(T)`](/result#fallible-relationship) for the side-by-side table of
@@ -172,7 +172,7 @@ Needful uses C11's official `_Static_assert(cond, "message")` automatically
 when compiling as C11 or newer.
 
 The problem is pre-C11 C: there is no portable, reliable replacement. Older
-tricks — such as `typedef int sa[-1]` on false conditions — only work at
+tricks -- such as `typedef int sa[-1]` on false conditions -- only work at
 file or function scope, not inside expressions, and produce cryptic errors.
 Compiler and standard edge cases are too numerous to paper over cleanly.
 

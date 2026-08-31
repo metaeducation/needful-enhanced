@@ -5,7 +5,7 @@ nav_order: 5
 permalink: /result
 ---
 
-# `Result(T)` — Cooperative Error Propagation
+# `Result(T)` -- Cooperative Error Propagation
 
 `Result(T)` multiplexes an error and a return value using thread-local state,
 giving C code a Rust-inspired error handling style without exceptions or
@@ -91,14 +91,14 @@ so `needful.h` now derives it:
 ```
 
 Which means it honors your assert replacement automatically. `#undef` and
-redefine it if you want a diagnostic that names the pending error — the
+redefine it if you want a diagnostic that names the pending error -- the
 derived spelling cannot, since it only tests for one.
 
 
 ## The `catch_if_failed` Syntax
 
-The most ergonomic pattern — `needful_catch_if_failed` (shorthand:
-`catch_if_failed`) — attaches naturally to an expression and allows an
+The most ergonomic pattern -- `needful_catch_if_failed` (shorthand:
+`catch_if_failed`) -- attaches naturally to an expression and allows an
 `else` clause:
 
 ```c
@@ -153,11 +153,11 @@ The two vocabularies are deliberately parallel:
 | propagate it | `return_if_failed (stmt)` | `return_if_none (stmt)` |
 | die on it | `panic_if_failed (stmt)` | `abort_if_none (stmt)` |
 | assert impossible | `assert_not_failed (stmt)` | `assert_not_none (stmt)` |
-| handle it | `catch_if_failed (decl) { }` | — plain `if` |
-| deliberately ignore | — see `extract_failure` | `tolerate_none (stmt)` |
+| handle it | `catch_if_failed (decl) { }` | -- plain `if` |
+| deliberately ignore | -- see `extract_failure` | `tolerate_none (stmt)` |
 
 The gaps are real rather than missing work. `Fallible(T)` needs no `catch`
-because there is no error payload to catch — the absence *is* the information.
+because there is no error payload to catch -- the absence *is* the information.
 `Result(T)` needs no `tolerate` because `extract_failure` already reads and
 clears the state.
 
@@ -169,7 +169,7 @@ symmetry would be. A failure carries an error object, so it is handed to
 that does not exist.
 
 **The two families do not interoperate**, and cannot be merged into one.
-See [the FAQ](/faq#result-fallible-unification) — this comes up more than once,
+See [the FAQ](/faq#result-fallible-unification) -- this comes up more than once,
 and the reason is more interesting than "nobody got around to it."
 
 ### How the scoping trick works
@@ -211,15 +211,15 @@ In C, `Result(T)` is `#define NeedfulResult(T) T` and `NEEDFUL_RESULT_0` is
 plain `0`. There is no annotation that could help, because the guarantees are
 about a *wrapper type* rather than about a function's return value, and C has
 no way to express that. So a pure-C build gives you the vocabulary, the
-propagation, and the runtime assertions — but not one compile-time check.
+propagation, and the runtime assertions -- but not one compile-time check.
 
 | build | must extract the result | `return` not forgotten on `make_failure` | won't decay to `T` |
 |---|---|---|---|
-| C — any compiler, any standard | ✗ | ✗ | ✗ |
-| C++ — no enhancement | ✗ | ✗ | ✗ |
-| C++ — `NEEDFUL_CPP_ENHANCED`, C++11/14 | ✗ | ✗ | ✅ |
-| C++ — enhanced, C++11/14 + `NEEDFUL_PRECPP17_NODISCARD` | ✅ | ✅ | ✅ |
-| C++ — `NEEDFUL_CPP_ENHANCED`, **C++17+** | ✅ | ✅ | ✅ |
+| C -- any compiler, any standard | ✗ | ✗ | ✗ |
+| C++ -- no enhancement | ✗ | ✗ | ✗ |
+| C++ -- `NEEDFUL_CPP_ENHANCED`, C++11/14 | ✗ | ✗ | ✅ |
+| C++ -- enhanced, C++11/14 + `NEEDFUL_PRECPP17_NODISCARD` | ✅ | ✅ | ✅ |
+| C++ -- `NEEDFUL_CPP_ENHANCED`, **C++17+** | ✅ | ✅ | ✅ |
 
 The first two rows are why Needful's pitch is *"C for production, C++ for
 stronger checks"* rather than *"C is enough"*. If you never run a checked C++
@@ -241,10 +241,10 @@ where the two builds part company:
 ```
 
 Under enhancement the extractor is `operator%`, so the returned wrapper is
-genuinely consumed — which is exactly how the `[[nodiscard]]` on
+genuinely consumed -- which is exactly how the `[[nodiscard]]` on
 `ResultWrapper` gets discharged by ordinary code. In C the extractor expands to
 nothing, leaving a bare expression statement. Annotating `Result(T)` in C would
-therefore make the compiler object to Needful's *own correct code* — concretely
+therefore make the compiler object to Needful's *own correct code* -- concretely
 to [`Result(None)`](#result-none) calls, where no assignment consumes the value
 either:
 
@@ -255,11 +255,11 @@ return_if_failed (int v = Compute());  /* fine -- consumed by the initializer */
 
 Nor can the C extractor simply be given a body. It has to be a postfix token
 that is valid both after a bare call *and* inside a declaration's initializer,
-while preserving the value's type — including when `T` is a struct. That is
+while preserving the value's type -- including when `T` is a struct. That is
 precisely what `operator%` provides in C++, and C has no equivalent.
 
 A `(void)` cast is not a way out either. It does suppress C23's
-`[[nodiscard]]`, but GCC's `warn_unused_result` deliberately ignores one — and
+`[[nodiscard]]`, but GCC's `warn_unused_result` deliberately ignores one -- and
 GCC/Clang is the configuration that would otherwise deliver this coverage,
 since it offers the attribute at every C standard. The escape hatch exists only
 where it is not needed.
@@ -267,13 +267,13 @@ where it is not needed.
 **There is consequently no `ResultVar(T)`.** `FallibleVar(T)` exists because
 `Fallible(T)`'s annotation is legal only on a function's return type, so locals
 and parameters need an unannotated spelling. `Result(T)` carries no
-declaration-position annotation in either build mode — under enhancement the
-`[[nodiscard]]` rides on the wrapper class — so every position is already legal
+declaration-position annotation in either build mode -- under enhancement the
+`[[nodiscard]]` rides on the wrapper class -- so every position is already legal
 and there is nothing to work around.
 
 The C++11/14 row is the trap. `ResultWrapper` and `Result0Struct` are both
 declared `NEEDFUL_NODISCARD`, which has no *standard* spelling before C++17 and
-quietly becomes nothing — so the build still refuses to let a `Result(T)` decay
+quietly becomes nothing -- so the build still refuses to let a `Result(T)` decay
 into a `T`, but stops noticing when you drop one entirely, or when you write
 `make_failure(...)` and forget the `return`. That last one is the mistake the
 `[[nodiscard]]` on `Result0Struct` exists to catch, and it is easy to make
@@ -287,12 +287,12 @@ takes them up on it, and suppresses the `-Wc++17-extensions` complaint that GCC
 and Clang raise under `-Wpedantic` so such a build stays usable.
 
 It is opt-in, and applies to every compiler at once rather than switching
-itself on wherever it happens to work — a configuration where MSVC rejects code
+itself on wherever it happens to work -- a configuration where MSVC rejects code
 that GCC accepts is precisely the divergence Needful exists to avoid.
 
 Note that for MSVC this closes the gap completely: `/std:c++11` is not a real
 option there (it is an unrecognized flag, silently ignored), so C++14 is the
-floor with or without a `/std:` switch — and C++14 with the switch was measured
+floor with or without a `/std:` switch -- and C++14 with the switch was measured
 to fire every check in the C++17 row.
 
 ### Warnings must be errors
@@ -307,7 +307,7 @@ not enforcement:
 
 MSVC needs no `/Zc:__cplusplus`; the C++17 detection reads `_MSVC_LANG`.
 
-The one check that fails a build on its own is the type separation — refusing
+The one check that fails a build on its own is the type separation -- refusing
 to convert a `Result(T)` to a `T` is a hard error, and it holds all the way
 down to C++11.
 
@@ -334,7 +334,7 @@ including `needful.h` to get a built-in `const char*`-based implementation:
 > **Note:** `NEEDFUL_DECLARE_RESULT_HOOKS` defines storage and implementations
 > inline. Only define it in **one** translation unit per program.
 
-## `Result(None)` — Fallible Functions With No Return Value {#result-none}
+## `Result(None)` -- Fallible Functions With No Return Value {#result-none}
 
 C does not allow `return value;` in a `void`-returning function, which means
 `Result(void)` can't work: you can't write `return needful_make_failure(...)` because there's
@@ -359,9 +359,9 @@ checks that you handled the result rather than silently discarding it.
 
 ## Related
 
-- [Operator Precedence](/precedence) — why the `Result` call must come last in the statement
+- [Operator Precedence](/precedence) -- why the `Result` call must come last in the statement
 
-- [`Option(T)`](/option) — nullable values without an error
+- [`Option(T)`](/option) -- nullable values without an error
 - [FAQ: Why does `needful_make_failure(...)` disable the int-conversion warning?](/faq#int-conversion-warning)
 
 ---
