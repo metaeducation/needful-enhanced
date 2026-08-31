@@ -174,22 +174,32 @@ and the reason is more interesting than "nobody got around to it."
 
 ### How the scoping trick works
 
-C99 allows a `for` loop to declare multiple variables in its init clause *if
-they are the same type*. Since the error variable is a pointer, a dummy
-`_once` sentinel of the same pointer type can be co-declared:
+To scope the error variable and allow an optional `else` block to attach
+seamlessly in standard C, `catch_if_failed` introduces two nested `for` loops.
+The outer loop serves as a container to inject a state variable (`_done_`),
+and the inner loop performs the assignment:
 
 ```c
-for (Error* e = Needful_Get_Failure(), *_once = nullptr; !_once; ++_once)
-    if (Needful_Test_And_Clear_Failure())
-        /* { error body } */
-    else
-        /* { success body } */
+for (int _done_ = 0; _done_ == 0; )
+    for (Error* e = Needful_Get_Failure(); _done_ == 0; _done_ = 1)
+        if (Needful_Test_And_Clear_Failure())
+            /* { error body } */
+        else
+            /* { success body } */
 ```
 
-`_once` starts as `nullptr`, so `!_once` is true and the body runs once.
-`++_once` makes it non-null and the loop exits. This scopes `e` to the
-loop body exactly like a normal `if` block — while the `if`/`else`
-structure leaves the `else` clause free for the success case.
+This ensures the block runs exactly once, scoping `e` and `_done_` to the
+loop body like a normal `if` block, without polluting the outer scope.
+
+*(Note on `int` vs `bool`: Needful enforces a zero-dependency, minimal footprint philosophy. By using `int _done_ = 0` (and `_done_ == 0`) vs a `<stdbool.h>`'s
+`bool _done_ = false`, the library avoids forcing C projects to take on a
+dependency on standard boolean definitions.)*
+
+*(Note: An earlier, trickier iteration of this macro merged everything into
+one loop using C99's ability to declare multiple same-typed variables:*
+`for (Error* e = Needful_Get_Failure(), *_once = nullptr; !_once; ++_once)`.
+*However, incrementing a null pointer constitutes Undefined Behavior in C/C++,
+prompting the safer two-loop design.)*
 
 ## Which builds actually check this {#enforcement}
 
