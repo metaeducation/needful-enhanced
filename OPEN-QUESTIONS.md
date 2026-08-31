@@ -80,6 +80,29 @@ settled: **how much punch is accuracy worth?** The [Weak Points](docs/index.md)
 section bets heavily that candor *is* the marketing. If that bet is right, the
 tagline should be the most conservative claim on the site, not the loosest.
 
+### Should docs-as-tests get its own documentation page?
+
+The guarantee and the mechanics are different audiences, and they have already
+been split: the *guarantee* ("every example here is compiled in CI, the
+negative ones must fail for the stated reason") is a Design Goal on the
+homepage, because it changes how much a reader should trust the samples. The
+*mechanics* (fence tagging, `MATCH-ERROR-TEXT`, the extractor) are in
+`docs/README.md`, because they only matter to someone adding a test.
+
+So the open part is narrower: is there a third thing, aimed outward?
+
+- **No page.** Current. Nothing is missing; a page about our own test
+  infrastructure risks reading as navel-gazing on a site meant to sell a
+  library.
+- **A page, pitched as reusable methodology** — "how to make documentation
+  that cannot rot," written so another project could copy the approach. That
+  is a genuinely different artifact from documenting *our* setup, and it is
+  the version with an audience beyond us.
+
+*Leaning:* no page for now. If one gets written it should be the methodology
+version, which makes it a candidate opener for outward-facing material — see
+the introduction question above, and note the two would then compete.
+
 ### Does the name carry its own weight?
 
 `Needful` is memorable but opaque — it tells a stranger nothing, and `Need(T)`,
