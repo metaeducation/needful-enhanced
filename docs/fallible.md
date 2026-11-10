@@ -288,7 +288,6 @@ if (node == none)
 #endif
 #define NEEDFUL_FALLIBLE_SHORTHANDS  1
 #define NEEDFUL_OPTION_SHORTHANDS  1
-#define NEEDFUL_NULLPTR_SHIM  1
 #include "needful.h"
 
 Fallible(int*) get_data(bool success) {
@@ -385,7 +384,6 @@ int main() {
   #define NEEDFUL_CPP_ENHANCED  1
 #endif
 #define NEEDFUL_FALLIBLE_SHORTHANDS  1
-#define NEEDFUL_NULLPTR_SHIM  1
 #include "needful.h"
 
 Fallible(int*) get_resource(void) {
@@ -409,7 +407,6 @@ int main() {
   #define NEEDFUL_CPP_ENHANCED  1
 #endif
 #define NEEDFUL_FALLIBLE_SHORTHANDS  1
-#define NEEDFUL_NULLPTR_SHIM  1
 #include "needful.h"
 
 Fallible(int*) get_resource(void) {
@@ -440,7 +437,6 @@ shared `none` state survives both directions--for enums as well as pointers.
 #endif
 #define NEEDFUL_FALLIBLE_SHORTHANDS  1
 #define NEEDFUL_OPTION_SHORTHANDS  1
-#define NEEDFUL_NULLPTR_SHIM  1
 #include "needful.h"
 
 typedef enum { COLOR_0, COLOR_RED } Color;  // 0 state is none
@@ -531,7 +527,6 @@ int main() {
 #endif
 #define NEEDFUL_FALLIBLE_SHORTHANDS  1
 #define NEEDFUL_OPTION_SHORTHANDS  1
-#define NEEDFUL_NULLPTR_SHIM  1
 #include "needful.h"
 
 Fallible(int*) get_resource(void) {
@@ -556,7 +551,6 @@ int main() {
 #endif
 #define NEEDFUL_FALLIBLE_SHORTHANDS  1
 #define NEEDFUL_OPTION_SHORTHANDS  1
-#define NEEDFUL_NULLPTR_SHIM  1
 #include "needful.h"
 
 Option(int*) get_maybe(void) {
@@ -581,7 +575,6 @@ int main() {
 #endif
 #define NEEDFUL_FALLIBLE_SHORTHANDS  1
 #define NEEDFUL_OPTION_SHORTHANDS  1
-#define NEEDFUL_NULLPTR_SHIM  1
 #include "needful.h"
 
 Fallible(int*) get_resource(void) {
@@ -607,7 +600,6 @@ int main() {
 #endif
 #define NEEDFUL_FALLIBLE_SHORTHANDS  1
 #define NEEDFUL_OPTION_SHORTHANDS  1
-#define NEEDFUL_NULLPTR_SHIM  1
 #include "needful.h"
 
 Fallible(int*) get_resource(void) {
@@ -638,7 +630,6 @@ is free to ignore, with no trace that the value came from something fallible.
 #endif
 #define NEEDFUL_FALLIBLE_SHORTHANDS  1
 #define NEEDFUL_OPTION_SHORTHANDS  1
-#define NEEDFUL_NULLPTR_SHIM  1
 #include "needful.h"
 
 Fallible(int*) get_resource(void) {
@@ -669,7 +660,6 @@ int main() {
 #endif
 #define NEEDFUL_FALLIBLE_SHORTHANDS  1
 #define NEEDFUL_OPTION_SHORTHANDS  1
-#define NEEDFUL_NULLPTR_SHIM  1
 #include "needful.h"
 
 Fallible(int*) get_resource(void) {
@@ -696,7 +686,6 @@ int main() {
 #endif
 #define NEEDFUL_FALLIBLE_SHORTHANDS  1
 #define NEEDFUL_OPTION_SHORTHANDS  1
-#define NEEDFUL_NULLPTR_SHIM  1
 #include "needful.h"
 
 Fallible(int*) get_resource(void) {

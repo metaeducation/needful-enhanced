@@ -169,7 +169,7 @@ All of these are defined **before** including `needful.h`.
 | `NEEDFUL_CPP_ENHANCED` | `0` | Pull in `needful-enhanced/`; requires C++11+ |
 | `NEEDFUL_DEFINE_ALL_SHORTHANDS` | `0` | Alias every `needful_xxx` as plain `xxx` |
 | `NEEDFUL_<GROUP>_SHORTHANDS` | inherits the above | Per-group aliases: `OPTION`, `CAST`, `RESULT`, `FALLIBLE`, `CONTRA`, `KNOWN`, `COMMENT`, `STATIC_ASSERT`, `USAGE` |
-| `NEEDFUL_NULLPTR_SHIM` | inherits `ALL_SHORTHANDS` | Define `nullptr` in C builds |
+| `NEEDFUL_NO_NULLPTR_SHIM` | `0` | Don't define `nullptr` in pre-C23 C builds ([why it's on](#nullptr)) |
 | `NEEDFUL_ASSERT(expr)` | `assert(expr)` | Route Needful's runtime checks somewhere else |
 | `NEEDFUL_ABORT()` | `abort()` | Route `abort_if_none()` somewhere else |
 | `NEEDFUL_PRECPP17_NODISCARD` | `0` | Use `[[nodiscard]]` below C++17 where compilers allow it |
@@ -189,6 +189,30 @@ All of these are defined **before** including `needful.h`.
 
 For details on configuring threaded programs (both `Result(T)` hooks and
 corruption behavior), see [Threading](/threading).
+
+### Why `nullptr`, not `NULL` {#nullptr}
+
+C allows `NULL` to be defined as plain `0`, an `int`. That breaks in two
+places Needful cares about:
+
+- **Variadic calls.** A `NULL` passed where the callee reads a pointer with
+  `va_arg()` pushes an `int`. On platforms where `int` and pointers differ in
+  size or representation, the callee reads garbage. Strictly conforming C needs
+  a cast at each such callsite (`(char*)NULL`).
+- **`Option(T*)` in a C++ build.** An `Option(T*)` accepts a null *pointer*,
+  but rejects a bare `0` (which could just as well be an integer), so
+  `return NULL;` may not compile where `return nullptr;` does.
+
+So by default `needful.h` gives pre-C23 C a `nullptr`:
+
+```c
+#define nullptr  ((void*)0)
+```
+
+C++ and C23 already have `nullptr` as a keyword, and are left alone. Define
+`NEEDFUL_NO_NULLPTR_SHIM` to `1` if your C code defines `nullptr` some other
+way. Needful's own macros use `NEEDFUL_NULLPTR` internally, so they work
+either way.
 
 ## Verifying the Setup
 
