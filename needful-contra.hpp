@@ -510,9 +510,28 @@ struct InitWrapper : ContraWrapper<TP> {
         sink.corruption_pending = false;  // squash corruption (see above)
     }
 
-    using Base::operator=;
+    // Assignment is spelled out rather than pulled in via `using Base::
+    // operator=`.  That would bring in ContraWrapper's operator=(SinkWrapper)
+    // alongside ours, and while the standard says ours hides it, GCC doesn't
+    // see the two templates' SFINAE heads as equivalent (they name T via
+    // different aliases).  Both stay visible, the call is ambiguous, and
+    // Init can't take a Sink by assignment--yet it must, since swapping in
+    // NEEDFUL_INIT_CORRUPTS_LIKE_SINK makes Init a SinkWrapper, which can.
+    // (Constructors don't hit this: overload resolution prefers a
+    // non-inherited constructor over an inherited one.)
+
+    InitWrapper& operator=(std::nullptr_t) {
+        this->p = nullptr;
+        return *this;
+    }
 
     InitWrapper& operator=(const InitWrapper& other) = default;
+
+    template<typename U, IfContravariant<U, T>* = nullptr>
+    InitWrapper& operator=(const U& u) {
+        Base::operator=(u);
+        return *this;
+    }
 
     template<typename U, IfContravariant<SinkWrapper<U>, T>* = nullptr>
     InitWrapper& operator=(const SinkWrapper<U>& sink) {
