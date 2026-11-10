@@ -23,12 +23,10 @@
 
 cmake_minimum_required(VERSION 3.14)
 
-# Files are read with file(STRINGS ... ENCODING UTF-8).  The encoding is not
-# optional: without it, the em dashes in this project's prose come back as
-# semicolons, which CMake then reads as list separators -- welding a page's
-# whole tail into one "line" and mangling the links inside it into nonsense
-# targets.  That failure looks like broken links rather than a broken reader,
-# which is a genuinely confusing hour.
+include("${CMAKE_CURRENT_LIST_DIR}/lint-read-lines.cmake")
+
+# Reading a file as lines in CMake silently welds lines together (a stray `[`
+# in Markdown can swallow the rest of the page), so see lint-read-lines.cmake.
 #
 if(NOT DEFINED DOCS_DIR)
     message(FATAL_ERROR "DOCS_DIR must be set")
@@ -56,10 +54,11 @@ set(known_pages "")
 set(known_anchors "")   # entries look like  /result#result-none
 
 foreach(f IN LISTS doc_files)
-    file(STRINGS "${f}" body ENCODING UTF-8)   # UTF-8 matters: see below
+    read_lines("${f}" body)
 
     set(perm "")
     foreach(line IN LISTS body)
+        decode_line(line)
         if(line MATCHES "^permalink:[ \t]*(.+)$")
             set(perm "${CMAKE_MATCH_1}")
             string(STRIP "${perm}" perm)
@@ -72,6 +71,7 @@ foreach(f IN LISTS doc_files)
     list(APPEND known_pages "${perm}")
 
     foreach(line IN LISTS body)
+        decode_line(line)
         if(line MATCHES "{#([A-Za-z0-9_-]+)}")
             list(APPEND known_anchors "${perm}#${CMAKE_MATCH_1}")
         endif()
@@ -127,12 +127,13 @@ list(REMOVE_DUPLICATES scan_files)
 
 foreach(f IN LISTS scan_files)
     get_filename_component(base "${f}" NAME)
-    file(STRINGS "${f}" body ENCODING UTF-8)   # UTF-8 matters: see below
+    read_lines("${f}" body)
 
     get_filename_component(ext "${f}" EXT)
     set(self_perm "")
     if(ext STREQUAL ".md")
         foreach(line IN LISTS body)
+            decode_line(line)
             if(line MATCHES "^permalink:[ \t]*(.+)$")
                 set(self_perm "${CMAKE_MATCH_1}")
                 string(STRIP "${self_perm}" self_perm)
@@ -142,6 +143,7 @@ foreach(f IN LISTS scan_files)
     endif()
 
     foreach(line IN LISTS body)
+        decode_line(line)
         # absolute site URLs (may appear more than once per line)
         string(REGEX MATCHALL "https://needful\\.metaeducation\\.com(/[A-Za-z0-9_#/-]*)?"
                hits "${line}")
@@ -160,17 +162,25 @@ foreach(f IN LISTS scan_files)
             # documentation is the first thing that hits this.)
             string(REGEX REPLACE "`[^`]*`" "" md_line "${line}")
 
-            string(REGEX MATCHALL "\\]\\(/[A-Za-z0-9_#/-]*\\)" hits "${md_line}")
+            # Matches must not carry the `]` of `](`: an unopened `]` stops
+            # CMake splitting the rest of a list, so two links on one line
+            # would come back as one bogus target.  Mark `](` with a control
+            # character instead, and match on that.
+            string(REPLACE "](" "${_LINT_RBRACKET}(" md_line "${md_line}")
+
+            string(REGEX MATCHALL "${_LINT_RBRACKET}\\(/[A-Za-z0-9_#/-]*\\)"
+                hits "${md_line}")
             foreach(h IN LISTS hits)
-                string(REGEX REPLACE "^\\]\\(" "" t "${h}")
+                string(REGEX REPLACE "^.\\(" "" t "${h}")
                 string(REGEX REPLACE "\\)$" "" t "${t}")
                 check_link("${t}" "${base}")
             endforeach()
 
             if(NOT self_perm STREQUAL "")
-                string(REGEX MATCHALL "\\]\\(#[A-Za-z0-9_-]+\\)" hits "${md_line}")
+                string(REGEX MATCHALL "${_LINT_RBRACKET}\\(#[A-Za-z0-9_-]+\\)"
+                    hits "${md_line}")
                 foreach(h IN LISTS hits)
-                    string(REGEX REPLACE "^\\]\\(" "" t "${h}")
+                    string(REGEX REPLACE "^.\\(" "" t "${h}")
                     string(REGEX REPLACE "\\)$" "" t "${t}")
                     check_link("${self_perm}${t}" "${base}")
                 endforeach()

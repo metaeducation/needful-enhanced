@@ -24,21 +24,11 @@ if(NOT EXISTS "${header}")
     message(FATAL_ERROR "needful.h not found at '${header}'")
 endif()
 
-# Reading a file as lines in CMake has two traps, and hitting either makes this
-# lint silently scan less than the whole header while still reporting success:
+# Reading a file as lines in CMake silently loses lines (backslash-continued
+# #defines weld onto the next line), so see lint-read-lines.cmake.
 #
-# * file(READ) + splitting on newline goes wrong on non-ASCII bytes (the em
-#   dashes in the prose came back as `;`), welding many lines into one.
-#   ENCODING UTF-8 on file(STRINGS) is what actually fixes that.
-#
-# * foreach(x IN LISTS) drops empty elements, so every blank line vanishes and
-#   all reported line numbers shift.  CMP0007 NEW plus an index loop keeps them.
-#
-# Measured while writing this: the naive version scanned a 1361-line header as
-# 1285 "lines" and said OK.  The count check below is what makes that loud.
-#
-cmake_policy(SET CMP0007 NEW)   # do not silently drop empty list elements
-file(STRINGS "${header}" lines ENCODING UTF-8)
+include("${CMAKE_CURRENT_LIST_DIR}/lint-read-lines.cmake")
+read_lines("${header}" lines)
 list(LENGTH lines n_lines)
 
 # Independent count, so a future regression in the reading above cannot make
@@ -49,7 +39,7 @@ list(LENGTH newlines n_newlines)
 math(EXPR diff "${n_lines}-${n_newlines}")
 if(diff GREATER 1 OR diff LESS -1)
     message(FATAL_ERROR
-        "line-count mismatch reading needful.h: file(STRINGS) produced "
+        "line-count mismatch reading needful.h: read_lines() produced "
         "${n_lines} lines but the file has ${n_newlines} newlines.  The "
         "scanner would be inspecting only part of the header."
     )
@@ -62,6 +52,7 @@ set(violations "")
 set(idx 0)
 while(idx LESS n_lines)
     list(GET lines ${idx} line)
+    decode_line(line)
     math(EXPR idx "${idx}+1")
     math(EXPR lineno "${idx}")
     set(rest "${line}")
@@ -110,7 +101,7 @@ while(idx LESS n_lines)
 
             if(kind STREQUAL "line")
                 string(STRIP "${line}" trimmed)
-                list(APPEND violations "  line ${lineno}: ${trimmed}")
+                string(APPEND violations "  line ${lineno}: ${trimmed}\n")
                 set(rest "")
                 break()
             elseif(kind STREQUAL "blk")
@@ -146,12 +137,11 @@ while(idx LESS n_lines)
 endwhile()
 
 if(violations)
-    string(REPLACE ";" "\n" pretty "${violations}")
-    message(FATAL_ERROR
+    message(FATAL_ERROR  # violations is a string, not a list (lines hold `;`)
         "needful.h uses `//` outside of a block comment.\n"
         "The header's own comments are slash-star; `//` belongs only inside\n"
         "them (prose, URLs, example code).  Offending lines:\n\n"
-        "${pretty}\n"
+        "${violations}"
     )
 endif()
 
