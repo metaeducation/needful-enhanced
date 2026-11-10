@@ -63,6 +63,9 @@ Need(int*) needs_ptr(void) { return &g_value; }
 Option(int*) maybe_ptr(int yes) { return yes ? &g_value : nullptr; }
 Option(Color) maybe_color(int yes) { return yes ? COLOR_RED : none; }
 NeedfulFallible(int*) fallible_ptr(int yes) { return yes ? &g_value : nullptr; }
+NeedfulFallible(int*) fallible_from_option(int yes) { return maybe_ptr(yes); }
+Option(int*) option_from_fallible(int yes)
+  { return needful_fallible fallible_ptr(yes); }
 
 
 /*=== unreachable family =================================================*/
@@ -372,6 +375,9 @@ int main(void) {
     CHECK(maybe_color(1) == COLOR_RED);
     CHECK(maybe_color(0) == COLOR_0);
     CHECK(fallible_ptr(1) == &g_value);
+    CHECK(fallible_from_option(1) == &g_value);
+    CHECK(option_from_fallible(1) == &g_value);
+    CHECK(option_from_fallible(0) == nullptr);
 
     assert_not_failed (int d = double_if_positive(21));
     CHECK(d == 42);

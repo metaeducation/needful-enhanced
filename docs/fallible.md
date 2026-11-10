@@ -166,6 +166,7 @@ makes you say which one you meant.
 | `tolerate_none(assignment)` | Acknowledges that dropping the none state here is deliberate |
 | `is_none(expr)` | Plain predicate, for when you want to branch yourself |
 | `infallible expr` | Expression-position discharge; asserts engaged, yields `T` |
+| `fallible expr` | Converts to `Option(T)`; a failure becomes an ordinary `none` |
 
 `return_if_none` expands to `return needful_none`, so it may only appear in a
 function whose return type accepts `none` -- an `Option(T)` or a `Result(None)`.
@@ -196,6 +197,41 @@ bug is a large part of why. A regression here now fails the C build too.
 
 Testing against `none` fixes it, because `none` means "disengaged" for every
 `T` that `Option(T)` accepts, not just pointers.
+
+## `Fallible(T)` and `Option(T)` {#option-conversion}
+
+The two share the same missing state -- `none`, which is `T`'s falsey/0 state
+-- but they don't mean the same thing by it. For an `Option(T)`, absence is a
+legitimate answer ("not found" is as valid as "found"). For a `Fallible(T)`,
+absence means the operation **failed**: it's a `Result(T)` with no error
+payload.
+
+So the conversions are asymmetric:
+
+| Conversion | Meaning | Spelling |
+|---|---|---|
+| `Option(T)` => `Fallible(T)` | "for this function, absence is a failure" | implicit |
+| `Fallible(T)` => `Option(T)` | "this failure is just an ordinary absence" | `fallible expr` |
+
+The first only *adds* an obligation, so it needs no ceremony:
+
+```c
+Fallible(Node*) Find_Node_Checked(const char* name) {
+    return Find_Node(name);  // Option(Node*) => Fallible(Node*)
+}
+```
+
+The second removes one, which is the kind of thing that should be visible at
+the call site -- the same reason a `Result(T)` can't silently become an
+`Option(T)`:
+
+```c
+Option(Node*) node = fallible Find_Node_Checked(name);  // failure => none
+```
+
+`fallible` is a compile error on a plain `Option(T)`, so it can't become a
+habit that is harmless everywhere and means nothing anywhere. In C it is a
+no-op, like the other prefix keywords.
 
 ## Mechanics: The Postfix Modulus Trick
 
@@ -384,6 +420,293 @@ int main() {
     // ERROR: Fallible(int*) cannot implicitly decay to int*
     int* raw = get_resource();
     NEEDFUL_UNUSED(raw);
+    return 0;
+}
+```
+
+### `Option(T)` and `Fallible(T)` conversions
+
+Everything that is allowed: `Option(T)` becomes `Fallible(T)` implicitly
+(returned, initialized, or assigned), `fallible` goes the other way, and the
+shared `none` state survives both directions--for enums as well as pointers.
+
+<!-- doctest: positive-test -->
+```cpp
+#include <assert.h>
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+  #include <type_traits>
+#endif
+#define NEEDFUL_FALLIBLE_SHORTHANDS  1
+#define NEEDFUL_OPTION_SHORTHANDS  1
+#define NEEDFUL_NULLPTR_SHIM  1
+#include "needful.h"
+
+typedef enum { COLOR_0, COLOR_RED } Color;  // 0 state is none
+
+static int value = 1020;
+
+Option(int*) find_value(int ok) {
+    return ok ? &value : nullptr;
+}
+
+Fallible(int*) find_value_checked(int ok) {
+    return find_value(ok);  // Option(T) => Fallible(T): return
+}
+
+Fallible(const int*) find_const_checked(int ok) {
+    return find_value_checked(ok);  // Fallible(T) => Fallible(U) still fine
+}
+
+Option(Color) find_color(int ok) {
+    if (ok)
+        return COLOR_RED;
+    return none;
+}
+
+Fallible(Color) find_color_checked(int ok) {
+    return find_color(ok);
+}
+
+Fallible(int*) always_fails(void) {
+    return none;
+}
+
+int take_option(Option(int*) p) {
+    return p ? 1 : 0;
+}
+
+Option(int*) find_value_tolerant(int ok) {
+    return fallible find_value_checked(ok);  // Fallible(T) => Option(T)
+}
+
+int main() {
+    Option(int*) found = fallible find_value_checked(1);
+    assert(found == &value);
+
+    Option(int*) missing = fallible find_value_checked(0);
+    assert(missing == none);  // failure arrives as the same `none` state
+
+    Option(int*) failed = fallible always_fails();
+    assert(failed == none);
+
+    Option(const int*) found_const = fallible find_const_checked(1);
+    assert(found_const == &value);
+
+    assert(take_option(fallible find_value_checked(1)) == 1);
+    assert(find_value_tolerant(0) == none);
+
+    FallibleVar(int*) var = find_value(1);  // Option(T) => Fallible(T): init
+    assert(var == &value);
+    var = find_value(0);  // Option(T) => Fallible(T): assignment
+    assert(var == none);
+
+    Option(Color) color = fallible find_color_checked(1);
+    assert(color == COLOR_RED);
+    Option(Color) no_color = fallible find_color_checked(0);
+    assert(no_color == none);
+
+  #if defined(__cplusplus) && NEEDFUL_CPP_ENHANCED
+    static_assert(  // `fallible` gives back a plain Option(T), not a Fallible
+        std::is_same<
+            decltype(fallible find_value_checked(1)), Option(int*)
+        >::value,
+        "fallible must produce Option(T)"
+    );
+  #endif
+
+    return 0;
+}
+```
+
+### `Fallible(T)` => `Option(T)` without `fallible` is a compile error
+
+<!-- doctest: negative-test -->
+```cpp
+// MATCH-ERROR-TEXT: deleted
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_FALLIBLE_SHORTHANDS  1
+#define NEEDFUL_OPTION_SHORTHANDS  1
+#define NEEDFUL_NULLPTR_SHIM  1
+#include "needful.h"
+
+Fallible(int*) get_resource(void) {
+    return nullptr;
+}
+
+int main() {
+    Option(int*) maybe = get_resource();  // ERROR: needs `fallible`
+    NEEDFUL_UNUSED(maybe);
+    return 0;
+}
+```
+
+### `fallible` on an `Option(T)` is a compile error
+
+<!-- doctest: negative-test -->
+```cpp
+// MATCH-ERROR-TEXT: `fallible` is only for Fallible(T)
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_FALLIBLE_SHORTHANDS  1
+#define NEEDFUL_OPTION_SHORTHANDS  1
+#define NEEDFUL_NULLPTR_SHIM  1
+#include "needful.h"
+
+Option(int*) get_maybe(void) {
+    return nullptr;
+}
+
+int main() {
+    Option(int*) maybe = fallible get_maybe();  // ERROR: already an Option
+    NEEDFUL_UNUSED(maybe);
+    return 0;
+}
+```
+
+### Assigning a `Fallible(T)` to an `Option(T)` is a compile error
+
+<!-- doctest: negative-test -->
+```cpp
+// MATCH-ERROR-TEXT: deleted
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_FALLIBLE_SHORTHANDS  1
+#define NEEDFUL_OPTION_SHORTHANDS  1
+#define NEEDFUL_NULLPTR_SHIM  1
+#include "needful.h"
+
+Fallible(int*) get_resource(void) {
+    return nullptr;
+}
+
+int main() {
+    Option(int*) maybe = none;
+    maybe = get_resource();  // ERROR: needs `fallible`
+    NEEDFUL_UNUSED(maybe);
+    return 0;
+}
+```
+
+### Passing a `Fallible(T)` as an `Option(T)` argument is a compile error
+
+<!-- doctest: negative-test -->
+```cpp
+// MATCH-ERROR-TEXT: deleted
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_FALLIBLE_SHORTHANDS  1
+#define NEEDFUL_OPTION_SHORTHANDS  1
+#define NEEDFUL_NULLPTR_SHIM  1
+#include "needful.h"
+
+Fallible(int*) get_resource(void) {
+    return nullptr;
+}
+
+void take_option(Option(int*) p) {
+    NEEDFUL_UNUSED(p);
+}
+
+int main() {
+    take_option(get_resource());  // ERROR: needs `fallible`
+    return 0;
+}
+```
+
+### Returning a `Fallible(T)` as an `Option(T)` is a compile error
+
+This is the sneakiest leak: the function's caller would get an `Option(T)` it
+is free to ignore, with no trace that the value came from something fallible.
+
+<!-- doctest: negative-test -->
+```cpp
+// MATCH-ERROR-TEXT: deleted
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_FALLIBLE_SHORTHANDS  1
+#define NEEDFUL_OPTION_SHORTHANDS  1
+#define NEEDFUL_NULLPTR_SHIM  1
+#include "needful.h"
+
+Fallible(int*) get_resource(void) {
+    return nullptr;
+}
+
+Option(int*) pass_along(void) {
+    return get_resource();  // ERROR: needs `fallible`
+}
+
+int main() {
+    Option(int*) maybe = pass_along();
+    NEEDFUL_UNUSED(maybe);
+    return 0;
+}
+```
+
+### An explicit C++ cast from `Fallible(T)` to `Option(T)` is a compile error
+
+`fallible` is the one way to spell this, so it can be searched for.
+
+<!-- doctest: negative-test -->
+```cpp
+// MATCH-ERROR-TEXT: deleted
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_FALLIBLE_SHORTHANDS  1
+#define NEEDFUL_OPTION_SHORTHANDS  1
+#define NEEDFUL_NULLPTR_SHIM  1
+#include "needful.h"
+
+Fallible(int*) get_resource(void) {
+    return nullptr;
+}
+
+int main() {
+    Option(int*) maybe = static_cast<Option(int*)>(get_resource());  // ERROR
+    NEEDFUL_UNUSED(maybe);
+    return 0;
+}
+```
+
+### `fallible` on a plain value is a compile error
+
+<!-- doctest: negative-test -->
+```cpp
+// MATCH-ERROR-TEXT: no match for
+// MATCH-ERROR-TEXT: invalid operands to binary expression
+// MATCH-ERROR-TEXT: does not define this operator
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_FALLIBLE_SHORTHANDS  1
+#define NEEDFUL_OPTION_SHORTHANDS  1
+#define NEEDFUL_NULLPTR_SHIM  1
+#include "needful.h"
+
+Fallible(int*) get_resource(void) {
+    return nullptr;
+}
+
+int main() {
+    int* raw = nullptr;
+    Option(int*) maybe = fallible raw;  // ERROR: not a Fallible(T)
+    NEEDFUL_UNUSED(maybe);
     return 0;
 }
 ```

@@ -73,12 +73,23 @@
 // 5. Explicit c_cast() and standard conversions are allowed because they
 //    indicate deliberate extraction.
 //
+// 6. A Fallible(T) may not silently become an Option(T): that would turn a
+//    failure into an ordinary absence without anyone saying so.  It takes
+//    the `fallible` operator.  FallibleWrapper derives from OptionWrapper, so
+//    without these the derived-to-base conversion would allow it.  An exact
+//    match on FallibleWrapper<X> beats that, so these deleted overloads win.
+//    (Binding a `const Option(T)&` to a Fallible(T) is not blocked, as no
+//    constructor is involved--but that's not a C-compatible idiom anyway.)
+//
 
 #undef NeedfulOption
 #define NeedfulOption(T)  needful::OptionWrapper<T>
 
 template<typename>
 struct IsOptionWrapper : std::false_type {};
+
+template<typename T>
+struct NEEDFUL_NODISCARD FallibleWrapper;  // defined below, see [6]
 
 template<typename T>
 struct OptionWrapper {
@@ -120,6 +131,12 @@ struct OptionWrapper {
 
     template<typename U>  // block *prvalue* Need(T) specifically [4]
     OptionWrapper(NeedWrapper<U>&&) = delete;
+
+    template<typename X>  // use `fallible` operator [6]
+    OptionWrapper(const FallibleWrapper<X>&) = delete;
+
+    template<typename X>  // use `fallible` operator [6]
+    OptionWrapper& operator=(const FallibleWrapper<X>&) = delete;
 
     template<typename U>
     explicit operator U() const {
@@ -251,9 +268,32 @@ struct IsWrapperSemantic<OptionWrapper<X>> : std::true_type {};
 // the right place.
 //
 
+// 1. Option(T) => Fallible(T) is implicit: saying absence is a failure only
+//    adds an obligation.  This can't come from inheriting OptionWrapper's
+//    `OptionWrapper(const OptionWrapper<X>&)`: an inherited constructor whose
+//    parameter is a reference to the base is excluded when constructing the
+//    derived class ([over.match.funcs]).  MSVC without /permissive- allows it
+//    anyway, but GCC and Clang don't--so it has to be declared here.
+//
+// 2. OptionWrapper deletes construction from FallibleWrapper<X> (so that a
+//    Fallible(T) can't silently become an Option(T)), and that deleted
+//    constructor would be inherited too.  Declaring one with the same
+//    signature here hides it, so Fallible(T) => Fallible(U) still works.
+//    (It's also an exact match, so it beats [1] for a FallibleWrapper<X>.)
+
 template <typename T>
 struct NEEDFUL_NODISCARD FallibleWrapper : public needful::OptionWrapper<T> {
     using needful::OptionWrapper<T>::OptionWrapper;  // inherit constructors
+
+    template <typename X>  // Option(T) => Fallible(T) [1]
+    FallibleWrapper (const OptionWrapper<X>& other)
+        : needful::OptionWrapper<T> (other.o)
+      {}
+
+    template <typename X>  // hide inherited deleted constructor [2]
+    FallibleWrapper (const FallibleWrapper<X>& other)
+        : needful::OptionWrapper<T> (other.o)
+      {}
 };
 
 #undef NeedfulFallible
@@ -313,8 +353,8 @@ struct IsWrapperSemantic<FallibleWrapper<X>> : std::true_type {};
 #if NEEDFUL_USES_CORRUPT_HELPER
     template<typename T>
     struct CorruptHelper<FallibleWrapper<T>> {
-      static void corrupt(FallibleWrapper<T>& fallible) {
-        Corrupt_If_Needful(fallible.o);
+      static void corrupt(FallibleWrapper<T>& f) {
+        Corrupt_If_Needful(f.o);
       }
     };
 #endif
@@ -333,6 +373,45 @@ struct IsWrapperSemantic<FallibleWrapper<X>> : std::true_type {};
 
 #undef needful_infallible
 #define needful_infallible  needful_unwrap
+
+
+// `fallible` is the explicit Fallible(T) => Option(T) conversion.  It names
+// the claim being made at the call site: this can fail, and a failure is to
+// be treated as an ordinary absence (`none`) from here on.
+//
+//    Option(Foo*) foo = fallible Try_Find_Foo(id);
+//
+// It is rejected on a plain Option(T), so it can't turn into a habit that is
+// harmless everywhere and means nothing anywhere.  (An exact match on the
+// OptionWrapper<T> overload loses to FallibleWrapper<T>'s for a Fallible(T)
+// argument, as identity beats a derived-to-base conversion.)
+
+struct FallibleHelper {};
+constexpr FallibleHelper g_fallible_helper = {};
+
+#undef needful_fallible
+#define needful_fallible \
+    needful::g_fallible_helper +  // lower precedence than %
+
+template<typename T>
+OptionWrapper<T> operator+(
+    FallibleHelper,
+    const FallibleWrapper<T>& f
+){
+    return OptionWrapper<T> {f.o};
+}
+
+template<typename T>
+OptionWrapper<T> operator+(
+    FallibleHelper,
+    const OptionWrapper<T>&
+){
+    static_assert(
+        sizeof(T) != sizeof(T),  // dependent false
+        "`fallible` is only for Fallible(T) => Option(T), not on an Option(T)"
+    );
+    return NoneStruct{};  // unreachable
+}
 
 
 //=//// UNWRAP HOOK FOR Optional(T) ///////////////////////////////////////=//
