@@ -58,8 +58,9 @@ The `match=` shorthand injects `MATCH-ERROR-TEXT` comments automatically:
 
 The HTML comment is **invisible in rendered output** -- Jekyll ignores it.
 Only `tools/extract-doctests.py` reads it to extract the block into
-`tests/doctest-extracted/{positive,negative}/`.  CMake runs the extractor
-at configure time; see `tests/README.md` for the full workflow.
+`doctest-extracted/{positive,negative}/` inside the CMake build directory.
+CMake runs the extractor at configure time; see `tests/README.md` for the
+full workflow.
 
 ## Building the site locally
 

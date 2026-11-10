@@ -273,8 +273,8 @@ jobs:
       working-directory: tests
       run: |
         EXTRA_ARGS=""
-        if [ -d doctest-extracted/negative ]; then
-          EXTRA_ARGS="--extra-dir doctest-extracted/negative"
+        if [ -d build/doctest-extracted/negative ]; then
+          EXTRA_ARGS="--extra-dir build/doctest-extracted/negative"
         fi
         for std in c++11 c++17; do
           echo "=============== negative tests at -std=$std ==============="

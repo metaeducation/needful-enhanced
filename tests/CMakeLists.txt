@@ -39,20 +39,23 @@ message(STATUS "Using needful.h from: ${NEEDFUL_H_DIR}")
 #=[ DOCTEST EXTRACTION ]=======================================================
 #
 # Extract positive and negative tests embedded in docs/*.md into
-# tests/doctest-extracted/{positive,negative}/.  The extractor runs at
+# <build-dir>/doctest-extracted/{positive,negative}/.  The extractor runs at
 # CMake configure time so the generated files are present before compilation.
+# They go in the build directory, not the source tree, so a build directory
+# placed elsewhere (e.g. a temp dir) leaves the checkout untouched.
 #
 # To skip extraction (e.g. when iterating on test code only), pass:
 #   cmake -B build -DNEEDFUL_EXTRACT_DOCTESTS=OFF
 
 option(NEEDFUL_EXTRACT_DOCTESTS "Extract tests embedded in docs/*.md" ON)
 
+set(DOCTEST_OUT "${CMAKE_CURRENT_BINARY_DIR}/doctest-extracted")
+
 if(NEEDFUL_EXTRACT_DOCTESTS)
     find_package(Python3 COMPONENTS Interpreter QUIET)
     if(Python3_FOUND)
         set(EXTRACTOR "${CMAKE_CURRENT_SOURCE_DIR}/../tools/extract-doctests.py")
         set(DOCS_DIR  "${CMAKE_CURRENT_SOURCE_DIR}/../docs")
-        set(DOCTEST_OUT "${CMAKE_CURRENT_SOURCE_DIR}/doctest-extracted")
         execute_process(
             COMMAND "${Python3_EXECUTABLE}" "${EXTRACTOR}"
                     --docs-dir "${DOCS_DIR}"
@@ -324,7 +327,7 @@ endforeach()
 # re-run cmake if docs change.
 
 file(GLOB DOCTEST_POSITIVE_SOURCES
-    "${CMAKE_CURRENT_SOURCE_DIR}/doctest-extracted/positive/*.cpp"
+    "${DOCTEST_OUT}/positive/*.cpp"
 )
 
 foreach(src ${DOCTEST_POSITIVE_SOURCES})
@@ -344,7 +347,7 @@ endforeach()
 # register WILL_FAIL tests in CTest so basic "did it fail?" is tracked.
 
 file(GLOB DOCTEST_NEGATIVE_SOURCES
-    "${CMAKE_CURRENT_SOURCE_DIR}/doctest-extracted/negative/*.cpp"
+    "${DOCTEST_OUT}/negative/*.cpp"
 )
 
 foreach(src ${DOCTEST_NEGATIVE_SOURCES})

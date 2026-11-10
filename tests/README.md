@@ -173,12 +173,16 @@ immediately preceding line:
 ```
 
 The HTML comment is invisible in rendered pages; only `extract-doctests.py`
-reads it.  Run via `tools/extract-doctests.py`, which writes extracted files
-to `tests/doctest-extracted/{positive,negative}/`.  CMake runs it
-automatically at configure time when `NEEDFUL_EXTRACT_DOCTESTS=ON`.
+reads it.  CMake runs `tools/extract-doctests.py` automatically at configure
+time when `NEEDFUL_EXTRACT_DOCTESTS=ON`, writing the extracted files to
+`<build-dir>/doctest-extracted/{positive,negative}/`.  Keeping them in the
+build directory means a build directory outside the checkout leaves the
+source tree untouched.
 
-The `doctest-extracted/` directory is `.gitignore`d -- it is always regenerated
-from source.
+Run standalone, the extractor defaults to `tests/doctest-extracted/` in the
+source tree; pass `--out-dir` to put them elsewhere.  To check negative
+doctests' error text, point `run-negative-tests.py --extra-dir` at the
+`negative/` folder of wherever they were extracted.
 
 
 ## Coverage Goals
