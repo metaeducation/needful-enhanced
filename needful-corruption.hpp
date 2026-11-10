@@ -111,11 +111,11 @@
     #if NEEDFUL_CORRUPTION_CUSTOM_SYNC_HOOKS
     static NEEDFUL_DECLARE_ATOMIC_VAR(countdown) = NEEDFUL_CORRUPTION_SEED;
     NEEDFUL_LOCK_VARIABLE(countdown);
-    const uint_fast8_t out = i_cast(uint_fast8_t, countdown);
+    const uint_fast8_t out = needful_integer_cast(uint_fast8_t, countdown);
     if (out == 0)
-      countdown = i_cast(uint_fast8_t, NEEDFUL_CORRUPTION_DOSE - 1);
+      countdown = needful_integer_cast(uint_fast8_t, NEEDFUL_CORRUPTION_DOSE - 1);
     else
-      countdown = i_cast(uint_fast8_t, out - 1);
+      countdown = needful_integer_cast(uint_fast8_t, out - 1);
     NEEDFUL_UNLOCK_VARIABLE(countdown);
     return out;
 
@@ -132,8 +132,8 @@
     uint_fast8_t old = countdown.load(std::memory_order_relaxed);
     for (;;) {
       const uint_fast8_t next = (old == 0)
-        ? i_cast(uint_fast8_t, NEEDFUL_CORRUPTION_DOSE - 1)
-        : i_cast(uint_fast8_t, old - 1);
+        ? needful_integer_cast(uint_fast8_t, NEEDFUL_CORRUPTION_DOSE - 1)
+        : needful_integer_cast(uint_fast8_t, old - 1);
 
       if (countdown.compare_exchange_weak(
         old,
@@ -155,7 +155,7 @@
 // directly, with a guarded memset fallback for plain data types.
 //
 // 1. memset() fallback is restricted to trivially copyable types (or unions).
-// 2. raw_cast(void*, ...) is intentional for Mem_Fill-style compatibility.
+// 2. needful_raw_cast(void*, ...) is intentional for Mem_Fill-style compatibility.
 // 3. Pseudo-random mode uses a cheap uint_fast8_t countdown.
 // 4. Corrupt_If_Needful is macro-based to avoid extra wrapper calls.
 //
@@ -179,12 +179,12 @@ struct CorruptHelper {
     struct CountdownTag;
     const uint_fast8_t countdown = Next_Corruption_Countdown<CountdownTag>();
     memset(
-        raw_cast(void*, &ref),  // void* cast needed [2]
+        needful_raw_cast(void*, &ref),  // void* cast needed [2]
         countdown,  // countdown does double-duty as the fill byte
         sizeof(T)
     );
   #else
-    memset(raw_cast(void*, &ref), 0xBD, sizeof(T));
+    memset(needful_raw_cast(void*, &ref), 0xBD, sizeof(T));
   #endif
   }
 };
@@ -195,7 +195,7 @@ struct CorruptHelper {
         needful::remove_reference_t<decltype(ref)> \
     >::corrupt(ref)
 
-STATIC_ASSERT(NEEDFUL_USES_CORRUPT_HELPER == 0);
+NEEDFUL_STATIC_ASSERT(NEEDFUL_USES_CORRUPT_HELPER == 0);
 
 #undef NEEDFUL_USES_CORRUPT_HELPER
 #define NEEDFUL_USES_CORRUPT_HELPER  1
@@ -216,10 +216,10 @@ struct CorruptHelper<T*> {  // Pointer (faster than memset() fallback)
           ref = nullptr;  // nullptr occasionally, deterministic
       }
       else {
-          ref = p_cast(T*, i_cast(intptr_t, 0xDECAFBAD));  // fixed value [1]
+          ref = needful_pointer_cast(T*, needful_integer_cast(intptr_t, 0xDECAFBAD));  // fixed value [1]
       }
     #else
-      ref = p_cast(T*, i_cast(intptr_t, 0xDECAFBAD));  // fixed value [1]
+      ref = needful_pointer_cast(T*, needful_integer_cast(intptr_t, 0xDECAFBAD));  // fixed value [1]
     #endif
     }
 
@@ -228,7 +228,7 @@ struct CorruptHelper<T*> {  // Pointer (faster than memset() fallback)
         if (ptr == nullptr)
             return true;  // have to consider nullptr potentially corrupt
       #endif
-        return ptr == p_cast(T*, i_cast(intptr_t, 0xDECAFBAD));
+        return ptr == needful_pointer_cast(T*, needful_integer_cast(intptr_t, 0xDECAFBAD));
     }
 };
 
@@ -247,7 +247,7 @@ struct CorruptHelper<T*> {  // Pointer (faster than memset() fallback)
 template<>
 struct CorruptHelper<bool> {
     static void corrupt(bool& ref) {
-        possibly(NEEDFUL_PSEUDO_RANDOM_CORRUPTIONS);  // ignore it [1]
+        needful_possibly(NEEDFUL_PSEUDO_RANDOM_CORRUPTIONS);  // ignore it [1]
     struct CountdownTag;
     const uint_fast8_t countdown = Next_Corruption_Countdown<CountdownTag>();
         ref = (countdown & 0x1);
