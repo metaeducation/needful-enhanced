@@ -273,7 +273,7 @@ If you are tempted to "fix" one of these, it was deliberate:
 | `panic_if_failed` is not `abort_if_failed` | A failure carries an error payload to report; a disengaged `Option` has nothing to report and can only `NEEDFUL_ABORT()`. A shared prefix would promise a shared exit path that does not exist |
 | The GNU must-use spelling is preferred over `[[nodiscard]]` | `__attribute__` may appear anywhere among declaration specifiers; `[[nodiscard]]` must lead. That is the difference between `static Fallible(int*) f(void)` compiling and not ([detail](/fallible#the-static-restriction)) |
 | Prefix keywords use `+`, extraction uses `%` | They must interlock at adjacent precedence levels; `+` and `%` are the only pair that satisfies every constraint ([detail](/precedence)) |
-| `unwrap`'s tag type lives in `needful-wrapping.hpp` | Both `Need` and `Option` supply an overload, and either file may be switched off independently. Putting it in one would make `unwrap` on the other's type depend on an unrelated toggle |
+| `unwrap` is rejected on a `Need(T)` (use `needed`) | If `unwrap` worked on both, then with only one wrapper enabled the other's type is a plain `T`, so `unwrap` would have to accept any plain `T`, losing the check that you only `unwrap` optionals. Owned by `Option(T)` alone, the check holds whenever `Option` is wrapped. `Need(T)` converts implicitly anyway, so `needed` is rarely required |
 
 ---
 

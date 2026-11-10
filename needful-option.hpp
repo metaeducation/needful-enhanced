@@ -350,9 +350,21 @@ struct IsWrapperSemantic<FallibleWrapper<X>> : std::true_type {};
 //    if (foo)
 //        Some_Function(g_unwrap_helper + foo)
 //
-// 1. See the definition of UnwrapHelper for mechanics of how this "keyword"
-//    is accomplished (and why the `+` operator was chosen specifically).
+// 1. Why `+` (and `%` for Result(T) extraction), and which expressions need
+//    parentheses as a result:  https://needful.metaeducation.com/precedence
 //
+// 2. `unwrap` is Option(T)'s vocabulary alone--Need(T) uses `needed`.  So it
+//    is defined here, and with NEEDFUL_OPTION_USES_WRAPPER off it stays the
+//    C build's no-op.  (See the operator table in %needful-need.hpp for why
+//    sharing it with Need(T) was a bad idea.)
+//
+
+struct UnwrapHelper {};
+constexpr UnwrapHelper g_unwrap_helper = {};
+
+#undef needful_unwrap
+#define needful_unwrap /* Option(T) only [2] */ \
+    needful::g_unwrap_helper +  // lower precedence than % [1]
 
 template<typename T>
 T operator+(  // lower precedence than % [1]
@@ -434,8 +446,10 @@ static constexpr OptionExtractor g_option_extractor{};
 // own vocabulary.  With NEEDFUL_NEED_USES_WRAPPER off, `needful_needed` is a
 // no-op macro and there is no NeededHelper type to overload on, so naming it
 // here made Option(T) fail to compile over a keyword that was not in play.
-// (`unwrap` is different -- it is shared vocabulary, so its helper moved to
-// %needful-wrapping.hpp rather than being conditionalized.)
+//
+// The mirror-image block (`unwrap` on a Need(T)) is also here, as this file
+// is included after %needful-need.hpp and it's the one defining UnwrapHelper.
+// Without it you'd still get an error, but a confusing "no operator+" one.
 //
 #if NEEDFUL_NEED_USES_WRAPPER
     template<typename T>
@@ -446,6 +460,18 @@ static constexpr OptionExtractor g_option_extractor{};
         static_assert(
             sizeof(T) != sizeof(T),  // dependent false
             "cannot use `needed` on an Option(T) -- use `opt` or `unwrap`"
+        );
+        return *static_cast<T*>(nullptr);  // unreachable
+    }
+
+    template<typename T>
+    T operator+(
+        UnwrapHelper,
+        const NeedWrapper<T>&
+    ){
+        static_assert(
+            sizeof(T) != sizeof(T),  // dependent false
+            "cannot use `unwrap` on a Need(T) -- use `needed` (or just use it)"
         );
         return *static_cast<T*>(nullptr);  // unreachable
     }

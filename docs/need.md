@@ -28,9 +28,11 @@ conversion and disallows construction from `nullptr`.
 
 ```c
 #define Need(T)        // => T in C, NeedWrapper<T> in C++
-#define unwrap         // extract the inner value
-#define needed         // assert non-null at the call site
+#define needed         // extract the inner value (errors on an Option)
 ```
+
+Usually you don't need `needed`, since a `Need(T)` converts to `T` implicitly.
+Note that `unwrap` is `Option(T)`'s operator, and is an error on a `Need(T)`.
 
 ## Guarantees (C++ build)
 
@@ -178,6 +180,31 @@ int main() {
     int value = 42;
     Option(int*) maybe_ptr = &value;
     accepts_need(maybe_ptr);  // ERROR: Option(int*) won't convert to Need(int*)
+    return 0;
+}
+```
+
+### `unwrap` is an error on a Need(T)
+
+`unwrap` belongs to `Option(T)`, where it means "I checked, it's present."
+On a `Need(T)` there's nothing to check: use `needed`, or the implicit
+conversion.
+
+<!-- doctest: negative-test -->
+```cpp
+// MATCH-ERROR-TEXT: cannot use `unwrap` on a Need(T)
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_OPTION_SHORTHANDS  1
+#include "needful.h"
+
+int main() {
+    int value = 42;
+    Need(int*) ptr = &value;
+    int* raw = unwrap ptr;  // ERROR: use `needed ptr` (or just `ptr`)
+    NEEDFUL_UNUSED(raw);
     return 0;
 }
 ```

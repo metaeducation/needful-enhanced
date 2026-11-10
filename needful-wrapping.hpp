@@ -271,25 +271,3 @@ struct IsBasicType {
 
 #define NEEDFUL_EXTRACT_INNER(InnerType, wrapper) \
     reinterpret_cast<const InnerType&>(wrapper)
-
-
-//=//// `unwrap` KEYWORD HELPER ///////////////////////////////////////////=//
-//
-// `unwrap` is spelled as a prefix "keyword" by making it the left operand of
-// operator+, so `unwrap foo` parses as `g_unwrap_helper + foo`.  For why `+`
-// (and `%` for Result(T) extraction), and which expressions need parentheses
-// as a result:  https://needful.metaeducation.com/precedence
-//
-// Only the shared tag type lives here.  The overloads live with the types they
-// unwrap: NeedWrapper's in %needful-need.hpp, OptionWrapper's in
-// %needful-option.hpp.  It must be here rather than in either of those,
-// because both supply an overload and either file may be switched off
-// independently--putting it in one would make `unwrap` on the other's type
-// depend on a toggle that has nothing to do with it.
-
-struct UnwrapHelper {};
-constexpr UnwrapHelper g_unwrap_helper = {};
-
-#undef needful_unwrap
-#define needful_unwrap \
-    needful::g_unwrap_helper +  // lower precedence than %

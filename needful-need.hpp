@@ -152,42 +152,26 @@ template<typename T>
 struct NeedfulVoidWaypointSafe<NeedWrapper<T>> : std::true_type {};
 
 
-//=/// UNWRAP HELPER OVERLOAD FOR Need(T) /////////////////////////////////=//
-//
-// `unwrap` is spelled as a prefix "keyword" by making it the left operand of
-// operator+, so `unwrap foo` parses as `g_unwrap_helper + foo`:
-//
-//    Some_Function(unwrap foo)  =>  Some_Function(g_unwrap_helper + foo)
-//
-// The tag type and the macro are in %needful-wrapping.hpp, which is included
-// unconditionally, because `unwrap` is shared vocabulary.  Only this overload
-// is Need's business.  Why `+` here and `%` for Result(T) extraction, and
-// which expressions need parentheses as a result:
-//
-//    https://needful.metaeducation.com/precedence
-
-template<typename T>
-T operator+(  // lower precedence than %
-    UnwrapHelper,
-    const NeedWrapper<T>& need
-){
-    return need.n;  // never allowed to be zero or null
-}
-
-
 //=/// "NEEDED" HELPER CLASS //////////////////////////////////////////////=//
 //
 // The `needed` operator extracts the raw value from Need(T), analogous to how
-// `opt` extracts from Option(T).  The key difference is that `needed` gives a
-// compile-time error on Option(T), making it useful as a static filter:
+// `opt` and `unwrap` extract from Option(T).  Each operator belongs to exactly
+// one of the two types, and is a compile-time error on the other:
 //
 //    | Operator | On Option(T)  | On Need(T) |
 //    |----------|---------------|------------|
 //    | opt      | Extract raw   | Error      |
+//    | unwrap   | Assert+Extract| Error      |
 //    | needed   | Error         | Extract raw|
-//    | unwrap   | Assert+Extract| Extract    |
 //
-// This is useful for building macros that predictably reject optional types.
+// This makes `needed` useful for macros that predictably reject optional
+// types.  (Most code won't need it at all, as Need(T) converts implicitly.)
+//
+// 1. `unwrap` is not accepted on Need(T).  If it were, then a build with only
+//    one of the two wrappers enabled would leave the other's type as a plain
+//    T--and `unwrap` would have to accept plain T's, losing the check that
+//    you only `unwrap` things that are optional.  With `unwrap` belonging
+//    only to Option(T), that check holds whenever Option(T) is wrapped.
 //
 
 struct NeededHelper {};
