@@ -9,34 +9,63 @@ permalink: /faq
 
 ---
 
-## Why does Needful disable the `-Wint-conversion` warning? {#int-conversion-warning}
+## Does Needful disable the `-Wint-conversion` warning? {#int-conversion-warning}
 
-In C, bare `0` is a "null pointer constant" (NPC) and converts implicitly to
-any pointer type. But the comma operator strips that status: `(expr, 0)` is
-just an integer expression that happens to evaluate to zero. Assigning it to
-a pointer is technically an int-to-pointer conversion, which GCC and Clang
-flag with `-Wint-conversion`:
+**No. Not any more, and this page used to say otherwise.**
+
+A C build of `needful.h` changes nothing about your compiler's diagnostics. The
+only `#pragma` left in the header is C++-only, opt-in, and never reached unless
+you set `NEEDFUL_PRECPP17_NODISCARD`.
+
+### What it used to do, and why it stopped
+
+In C, a bare `0` is a *null pointer constant* (NPC) and converts implicitly to
+any pointer type. A comma operator strips that status: `(expr, 0)` is an
+ordinary integer expression that happens to evaluate to zero.
 
 ```c
-SomeType* f(void) { return 0; }          // fine: 0 is a NPC
-SomeType* f(void) { return (expr, 0); }  // warned: not a NPC
+SomeType* f(void) { return 0; }          // fine: 0 is an NPC
+SomeType* f(void) { return (expr, 0); }  // diagnosed: not an NPC
 ```
 
-This matters because `make_failure(...)` expands to a comma expression ending in
-`NEEDFUL_RESULT_0`, and `none` can do the same. Any function returning
-`Result(SomeType*)` or `Option(SomeType*)` would trigger the warning on every
-`return make_failure(...)` or `return none`.
+Needful once shipped a `make_failure(...)` expression that ended in exactly
+that comma, so `return make_failure(...)` in a pointer-returning function was
+an int-to-pointer conversion -- which [GCC 14][gcc14] and [Clang 15][clang15]
+make an **error by default**. The header bought its way out with a file-scope
+`#pragma GCC diagnostic ignored "-Wint-conversion"`.
 
-Needful disables the warning globally in C mode. This is safe:
+That was the wrong trade, for two reasons that only became clear when the
+expansions were actually audited:
 
-- The only code producing these conversions is Needful's own macros.
-- The C++ enhanced build catches any real type mistakes.
-- `nocast` provides the targeted int-to-pointer behavior in C++ when
-  building without the full enhancements.
+- The pragma was **unpopped and file-scope**, so it covered your code after the
+  `#include`, not just Needful's macros.
+- It suppressed mistakes *inside Needful's own vocabulary*. Comparing a
+  `Fallible(SomeEnum)` against `(void*)0` is a constraint violation in C, and
+  the pragma is precisely why that bug once
+  [compiled silently on GCC and Clang](/fallible#the-none-comparison) while
+  hard-erroring under enhancement.
 
-If you want the warning back for non-Needful code, set
-`#define NEEDFUL_DISABLE_INT_WARNING 0` and add your own pragma push/pop
-around call sites that use `make_failure()` or `none`.
+And it turned out **one construct out of nine** ever needed it. Everything else
+that returns a zero expands to a bare `0`:
+
+| construct | expands to | int-to-pointer? |
+|---|---|---|
+| `return make_failure(e)` *(removed)* | `return ((assert), (set), 0);` | **yes** |
+| `return_fail(e)` | `return 0;` | no |
+| `return none` | `return 0;` | no |
+| `return_if_none(x)` | `return 0;` | no |
+| `return_if_failed(s)` | `return 0;` | no |
+| `unreachable` | `return 0;` | no |
+| `extract_failure(e)` | comma, but ends in the error *pointer* | no |
+| `Option(T*) o = none` | `T* o = 0;` | no |
+
+So the fix was never a pragma. It was a spelling: failure signalling became a
+statement, `make_failure` was removed, and the suppression came out with it.
+See [there is no `make_failure`](/result#no-make-failure) -- including the
+recipe if you want the expression form back in your own project.
+
+[gcc14]: https://gcc.gnu.org/gcc-14/porting_to.html
+[clang15]: https://releases.llvm.org/15.0.0/tools/clang/docs/ReleaseNotes.html
 
 ---
 
@@ -121,10 +150,10 @@ modern CI system.
 
 ## Why is there no `nocast_0` shorthand (only `needful_nocast_0`)? {#nocast-0-no-shorthand}
 
-`nocast_0` is plumbing -- it's used internally by `make_failure(...)` and `none`
+`nocast_0` is plumbing -- it's used internally by `return_fail(...)` and `none`
 to produce a generic zero. Exposing it as a short name would imply it's a
 common user-facing API, which it isn't. Users working with options and results
-should use `none` (for `Option` and `Fallible`) or `make_failure(...)` (for
+should use `none` (for `Option` and `Fallible`) or `return_fail(...)` (for
 `Result`).
 
 The asymmetry with `nocast` (which *does* have an unprefixed shorthand) is

@@ -56,11 +56,17 @@ not against `nullptr` or `(void*)0`. The reason is the three-mode invariant.
 to `bool`. So `Option(SomeEnum)` is perfectly ordinary -- and comparing an enum
 against `(void*)0` is a constraint violation in C and an error in C++.
 
-That alone would be a portability bug. What makes it a *three-mode* bug is
-this: `needful.h` suppresses `-Wint-conversion` in C builds
-([why](/faq#int-conversion-warning)). So on GCC and Clang, the enum mistake
-would **compile silently as C** and fail only under enhancement -- exactly the
-C/C++ divergence Needful exists to prevent.
+That alone would be a portability bug. It was also, historically, a *three-mode*
+bug: `needful.h` used to suppress `-Wint-conversion` in C builds, so on GCC and
+Clang the enum mistake **compiled silently as C** and failed only under
+enhancement -- exactly the C/C++ divergence Needful exists to prevent, produced
+by Needful itself.
+
+That suppression is gone ([why](/faq#int-conversion-warning)), so the mistake
+is now diagnosed in mode 1 as well. Note what that does and does not change:
+the pragma made the bug *worse*, it did not make it. Comparing an enum against
+`(void*)0` is wrong on its own terms, and the reasoning below stands
+independently of any diagnostic setting.
 
 So `none` gets one spelling that means the same thing three times:
 
@@ -105,13 +111,11 @@ numbered footnotes live. Hence:
 **`needful.h` has no numbered footnotes.** If you find yourself writing
 `[1]`, the explanation has outgrown the header. Move it here and leave a link.
 
-Two exceptions are load-bearing and stay in the header as lettered notes,
-because they must be read *before* you `#include`:
+One exception is load-bearing and stays in the header as a lettered note,
+because it must be read *before* you `#include`:
 
-- **[A]** `-Wint-conversion` is globally disabled in C mode. A user must know
-  a warning was turned off on their behalf.
+- **[A]** `NEEDFUL_ASSERT` / `NEEDFUL_ABORT` hooks. Actionable configuration.
 
-- **[B]** `NEEDFUL_ASSERT` / `NEEDFUL_ABORT` hooks. Actionable configuration.
 
 ### Other header conventions
 
@@ -169,7 +173,7 @@ types, wrappers, structural annotations, or user-supplied hooks use PascalCase
 (e.g., `NeedfulOption(T)`, `NeedfulSink`, `Needful_Get_Failure`,
 `NeedfulResult(T)`).
 
-- **snake_case for Operative Macros:** Constructs that execute code, evaluate assertions, or control flow use snake_case (e.g., `needful_return_if_failed`, `needful_make_failure`, `needful_cast`).
+- **snake_case for Operative Macros:** Constructs that execute code, evaluate assertions, or control flow use snake_case (e.g., `needful_return_if_failed`, `needful_return_fail`, `needful_cast`).
 
 - **Internal State Variables:** Scoped dummy variables injected by macros use aggressive underscores (e.g., `_done_`) or the `NEEDFUL_UNIQUE_NAME` generator
 to avoid shadowing or colliding with user scope.
@@ -263,7 +267,7 @@ If you are tempted to "fix" one of these, it was deliberate:
 
 | Looks wrong | Why it is that way |
 |---|---|
-| `-Wint-conversion` globally suppressed in C | `make_failure(...)` and `none` are comma expressions, and the comma operator strips `0` of its null-pointer-constant status ([detail](/faq#int-conversion-warning)) |
+| Signalling failure is a statement, with no `make_failure(...)` expression | An expression form has to end in a comma operator, which strips `0` of its null-pointer-constant status and makes `return` an int-to-pointer conversion. That is what forced the old `-Wint-conversion` suppression. Deleting it is what lets a C build of `needful.h` leave your diagnostics alone ([detail](/result#no-make-failure)) |
 | `needful_is_none` has doubled parentheses | Suppresses "suggest parentheses around assignment used as truth value" -- callers pass assignments by design |
 | `assert_not_none` evaluates into a local first | `NEEDFUL_ASSERT` compiles away under `NDEBUG`; putting `_expr_` inside it would silently drop the caller's assignment |
 | `panic_if_failed` is not `abort_if_failed` | A failure carries an error payload to report; a disengaged `Option` has nothing to report and can only `NEEDFUL_ABORT()`. A shared prefix would promise a shared exit path that does not exist |

@@ -176,7 +176,7 @@ claim in debug builds; the second admits it may well be none and says you have
 decided not to care. Older versions of Needful only had the second, spelled
 `tolerate_if_nullptr`, and it was quietly doing both jobs.
 
-### Why `none` and not `nullptr`
+### Why `none` and not `nullptr` {#the-none-comparison}
 
 These used to be spelled `return_if_nullptr`, `abort_if_nullptr`, and
 `tolerate_if_nullptr`, and they tested with `== nullptr`. That was wrong in a
@@ -186,10 +186,13 @@ exists to catch.
 `Fallible(T)` is built on `Option(T)`, which requires only that `T` be
 explicitly convertible to `bool`. A `Fallible(SomeEnum)` is perfectly ordinary
 -- and comparing an enum against `(void*)0` is a constraint violation in C and a
-hard error in C++. Worse: `needful.h` globally suppresses `-Wint-conversion` in
-C builds (see the [FAQ](/faq#int-conversion-warning)), so on GCC and Clang that
-mistake compiled **silently** as C and blew up only under C++ enhancement. A
-C/C++ divergence, inside Needful's own vocabulary.
+hard error in C++. Worse: `needful.h` used to globally suppress
+`-Wint-conversion` in C builds, so on GCC and Clang that mistake compiled
+**silently** as C and blew up only under C++ enhancement. A C/C++ divergence,
+inside Needful's own vocabulary.
+
+That suppression has since been [removed](/faq#int-conversion-warning) -- this
+bug is a large part of why. A regression here now fails the C build too.
 
 Testing against `none` fixes it, because `none` means "disengaged" for every
 `T` that `Option(T)` accepts, not just pointers.

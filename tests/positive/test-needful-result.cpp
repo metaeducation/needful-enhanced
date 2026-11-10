@@ -15,7 +15,7 @@
 #include "needful.h"
 
 #define Result  NeedfulResult
-#define fail     needful_make_failure
+#define fail     needful_return_fail
 #define trap     needful_return_if_failed
 #define require  needful_panic_if_failed
 #define assume   needful_assert_not_failed
@@ -45,7 +45,7 @@ void test_result_wrapper_types() {
 
 Result(int) risky_add(int a, int b) {
     if (a < 0 or b < 0)
-        return fail ("negative input");
+        fail ("negative input");
     return a + b;
 }
 
@@ -78,7 +78,7 @@ void test_trap_propagates() {
 
 Result(int) maybe_fail(bool should_fail) {
     if (should_fail)
-        return fail ("deliberate failure");
+        fail ("deliberate failure");
     return 99;
 }
 
@@ -147,7 +147,7 @@ void test_rescue_no_error() {
 
 Result(const char*) maybe_string(bool fail_it) {
     if (fail_it)
-        return fail ("no string");
+        fail ("no string");
     return "hello";
 }
 

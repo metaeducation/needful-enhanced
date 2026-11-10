@@ -172,7 +172,6 @@ All of these are defined **before** including `needful.h`.
 | `NEEDFUL_NULLPTR_SHIM` | inherits `ALL_SHORTHANDS` | Define `nullptr` in C builds |
 | `NEEDFUL_ASSERT(expr)` | `assert(expr)` | Route Needful's runtime checks somewhere else |
 | `NEEDFUL_ABORT()` | `abort()` | Route `abort_if_none()` somewhere else |
-| `NEEDFUL_DISABLE_INT_WARNING` | `1` | Suppress `-Wint-conversion` in C ([why](/faq#int-conversion-warning)) |
 | `NEEDFUL_PRECPP17_NODISCARD` | `0` | Use `[[nodiscard]]` below C++17 where compilers allow it |
 | `NEEDFUL_FALLIBLE_C23_MUSTUSE` | `0` | Use C23 `[[nodiscard]]` in C; [breaks `static`](/fallible#the-static-restriction) |
 | `NEEDFUL_DOES_CORRUPTIONS` | `0` | Scramble dead variables in debug builds |

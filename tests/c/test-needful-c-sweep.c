@@ -95,17 +95,24 @@ int dead_end_user(int x) {
 /*=== Result(T) ==========================================================*/
 
 Result(int) double_if_positive(int x) {
-    if (x < 0) return make_failure("negative input");
+    if (x < 0) return_fail ("negative input");
     return x * 2;
 }
 
+/* The pointer-returning case, and the reason failure signalling is a statement.
+** An expression form ending in a comma operator would cost 0 its null-pointer-
+** constant status, making `return <that>` an int-to-pointer conversion--which
+** GCC 14 and Clang 15 treat as an error by default.  return_fail() expands
+** to a bare `return 0;` instead, which is why needful.h no longer has to
+** suppress -Wint-conversion.  This function is what that has to stay clean on.
+*/
 Result(int*) result_pointer(int x) {
-    if (x < 0) return make_failure("negative input");
+    if (x < 0) return_fail ("negative input");
     return &g_value;
 }
 
 Result(None) result_none(int x) {
-    if (x < 0) return make_failure("negative input");
+    if (x < 0) return_fail ("negative input");
     return none;
 }
 
@@ -174,9 +181,10 @@ int* uses_infallible(void) {
 
 /* The none vocabulary must work on a Fallible(T) whose T is not a pointer.
 ** This is the case the old *_if_nullptr spelling could not express: an enum
-** compared against (void*)0 is a constraint violation, and needful.h's own
-** -Wint-conversion suppression meant GCC/Clang stayed silent about it in C
-** while the C++ enhanced build hard-errored.
+** compared against (void*)0 is a constraint violation.  It used to be a
+** C/C++ divergence too--needful.h's own -Wint-conversion suppression kept
+** GCC/Clang silent about it in C while the enhanced build hard-errored.  With
+** the suppression gone, a regression here is caught in the C build as well.
 */
 typedef enum { SWEEP_NONE_0 = 0, SWEEP_RED = 1 } SweepColor;
 

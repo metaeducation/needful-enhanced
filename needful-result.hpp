@@ -35,21 +35,28 @@
 // translation unit for a stock single-threaded implementation, or write your
 // own over thread-local storage.
 //
-//=//// make_failure(...) /////////////////////////////////////////////////=//
+//=//// return_fail(...) //////////////////////////////////////////////////=//
 //
-// Sets the global error state and evaluates to NEEDFUL_RESULT_0, which is
-// constructible as the T of any Result(T).  It is not a statement: you return
-// it, and Result0Struct is [[nodiscard]] so that forgetting the `return` is
-// caught rather than silently setting an error and falling through.
+// Sets the global error state and returns NEEDFUL_RESULT_0, which is
+// constructible as the T of any Result(T).  It is a STATEMENT: it performs
+// the `return` itself rather than producing a value for you to return.
 //
 //     if (bad_condition)
-//         return make_failure (Error_Bad_Thing());
+//         return_fail (Error_Bad_Thing());
+//
+// There is deliberately no `make_failure(...)` expression form.  Such a macro
+// has to end in a comma operator, which strips 0 of its null-pointer-constant
+// status and turns `return` into an int-to-pointer conversion--an error by
+// default on GCC 14 and Clang 15.  Shipping one is what forced needful.h to
+// globally suppress -Wint-conversion in C builds; deleting it is what let that
+// suppression be removed.  See %docs/result.md#no-make-failure, which also has
+// the recipe if a project wants the expression form back.
 //
 //=//// panic(...) ////////////////////////////////////////////////////////=//
 //
 // For conditions no caller should be asked to handle.  Reports the error and
-// ends the process; it does not propagate and cannot be caught.  Unlike
-// make_failure() this IS a statement, and is not used with `return`.
+// ends the process; it does not propagate and cannot be caught.  Like
+// return_fail() this is a statement, and is not used with `return`.
 //
 //     if (catastrophic_condition)
 //         panic (Error_Catastrophe());
@@ -112,7 +119,7 @@
 //         }
 //         // code common to the failing and non-failing case
 //         if (err)
-//             return make_failure (unwrap err);  // manual propagation
+//             return_fail (unwrap err);  // manual propagation
 //         // ... code continues if no failure ...
 //     }
 //
@@ -170,12 +177,12 @@
 // that C originally had with permissive 0 conversions, but more tightly
 // controlled through a special type.
 //
-// 1. The main purpose of permissive zero is to be the polymorphic return
-//    value of `make_failure(...)`, used as `return make_failure(...)`, which
-//    is able to make the T in any Result(T) type.  Making it [[nodiscard]]
-//    helps catch cases where someone omits the `return`, a mistake
-//    (easy to make, as `panic (...)` looks similar and takes an error but
-//    is *not* used with return.)
+// 1. The main purpose of permissive zero is to be the polymorphic value that
+//    `return_fail(...)` returns, which is able to make the T in any
+//    Result(T) type.  It stays [[nodiscard]] defensively: nothing in the
+//    vocabulary produces one outside a `return` any more, so this now guards
+//    a project that defines its own expression-form make_failure() (see
+//    %docs/result.md#no-make-failure) rather than a spelling Needful ships.
 //
 
 struct NEEDFUL_NODISCARD Result0Struct {  // [[nodiscard]] is good [1]
@@ -197,7 +204,7 @@ struct NEEDFUL_NODISCARD Result0Struct {  // [[nodiscard]] is good [1]
 //    for anything that is a Result(T) in the case of a failure.  But rather
 //    than allow Result to be constructed from any integer in the C++
 //    checked build, it's narrowly constructible from Result0Struct,
-//    which is what `return make_failure(...)` returns.
+//    which is what `return_fail(...)` returns.
 //
 
 // IsResultWrapper is used in ResultWrapper's own SFINAE (to prevent

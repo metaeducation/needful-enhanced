@@ -18,7 +18,7 @@ Instead of this:
 ```c
 Error* Some_Func(int* result, int x) {
     if (x < 304)
-        return make_failure("the value is too small");
+        return Make_Error("the value is too small");  // your own error type
     *result = x + 20;
     return nullptr;
 }
@@ -36,7 +36,7 @@ You write this:
 ```c
 Result(int) Some_Func(int x) {
     if (x < 304)
-        return make_failure("the value is too small");
+        return_fail ("the value is too small");
     return x + 20;
 }
 
@@ -57,7 +57,7 @@ Result(int) Other_Func(void) {
 
 | Operation | Meaning |
 |---|---|---|
-| `return make_failure(...)` | Return a failure, storing the error in thread-local state |
+| `return_fail (...)` | Signal a failure, storing the error in thread-local state |
 | `return_if_failed (stmt)` | Execute `stmt`; if it failed, propagate the failure upward |
 | `panic_if_failed (stmt)` | Like above, but panics rather than propagating |
 | `assert_not_failed (stmt)` | Execute `stmt`; assert no failure occurred (debug) |
@@ -68,6 +68,44 @@ Result(int) Other_Func(void) {
 A quick and dirty way to write `return failed;` and not have to come up with
 an error might be useful in some codebases.  We don't try to define that here,
 because it's open ended as to what you'd use for your error value type.
+
+## Choosing Between `panic` and `return_fail` {#panic-vs-fail}
+
+Both of them end the current function. The difference is whether the caller is
+*allowed to disagree*, and it is a design decision rather than a stylistic one.
+The clearest formulation of the test comes from Ren-C, the language Needful was
+extracted from, which draws the same distinction in its own error model:
+
+> Do you feel that the call is fundamentally malformed (in the way a type
+> checking error on a parameter would be thought of as a mistake), or did you
+> understand what was asked clearly... but just couldn't do it?
+>
+> -- [PANIC vs. RETURN FAIL in Ren-C][renc-panic-fail]
+
+Applied here:
+
+| | `panic (e)` | `return_fail (e)` |
+|---|---|---|
+| what it says | this call is malformed | I understood, and could not comply |
+| who decides | you do, finally | the caller does |
+| can it be handled | no -- it does not return | yes -- `catch_if_failed`, or propagate |
+| typical cause | a broken invariant, a bad argument | a missing file, a parse error, a full disk |
+
+The practical test: **if a reasonable caller might want to recover, it is not a
+panic.** Reaching for `panic` because an error is *inconvenient to plumb* is
+how a library becomes unusable inside someone else's error handling -- the
+caller has no way to disagree with you, and nowhere to put a recovery.
+
+The same axis runs through the discharge macros, which is why they come in
+pairs: `return_if_failed` propagates a failure the caller may still handle,
+while `panic_if_failed` converts one into a condition nobody can. Use the
+second only where you are asserting that a failure here means the program's
+assumptions are already broken.
+
+Needful does not enforce this distinction -- it only gives you both spellings.
+Choosing between them is the part that needs a person.
+
+[renc-panic-fail]: https://rebol.metaeducation.com/t/panic-vs-return-fail-the-age-of-definitional-errors/1852
 
 ## One Error Channel, Intentionally
 
@@ -122,10 +160,85 @@ int result = Some_Func(30) catch_if_failed (Error* e) {
 This is standard C99. `needful_catch_if_failed` expands into a `for` loop that
 runs exactly once, scoping the error variable to the block.
 
+## There Is No `make_failure(...)` {#no-make-failure}
+
+Signalling a failure is a **statement**. There is no expression form, and that
+is a deliberate deletion rather than an omission -- an earlier version of
+Needful shipped one:
+
+```c
+#define needful_make_failure(...) \
+    (Needful_Assert_Not_Failing(), \
+        Needful_Set_Failure(__VA_ARGS__), \
+        NEEDFUL_RESULT_0)     // <-- the problem is this comma
+```
+
+In C, a bare `0` is a *null pointer constant* and converts implicitly to any
+pointer type. A comma operator strips that status: `(expr, 0)` is an ordinary
+integer expression that happens to evaluate to zero. So
+`return make_failure(...)` inside a function returning `Result(SomeType*)` was
+an **int-to-pointer conversion**, which [GCC 14][gcc14] and [Clang 15][clang15]
+make an error by default.
+
+Needful used to buy its way out with a file-scope
+`#pragma GCC diagnostic ignored "-Wint-conversion"`. That pragma is gone, and
+its removal is worth more than tidiness:
+
+- It applied to **your** code after the `#include`, not only to Needful's
+  macros. A genuine `ptr = some_int;` bug in your own source was silenced too.
+- It hid mistakes *inside Needful's own vocabulary*. Comparing a
+  `Fallible(SomeEnum)` against `(void*)0` is a constraint violation in C, and
+  the suppression is why that bug once
+  [compiled silently on GCC and Clang](/fallible#the-none-comparison) while
+  hard-erroring under enhancement. Exactly the C/C++ divergence Needful exists
+  to prevent.
+
+`return_fail(...)` returns a bare `NEEDFUL_RESULT_0`, so no suppression is
+needed anywhere, and **`needful.h` now changes nothing about your compiler's
+diagnostics in a C build.**
+
+Nothing else in the library was affected: `none`, `return_if_none`,
+`return_if_failed`, `unreachable` and `Option(T) o = none` all expand to a bare
+`0` and always did. `make_failure` was the only one.
+
+### If you want it back anyway
+
+You can have it. Define it yourself, and re-enable the suppression you are
+choosing to need:
+
+```c
+#include "needful.h"
+
+#define make_failure(...) \
+    (Needful_Assert_Not_Failing(), \
+        Needful_Set_Failure(__VA_ARGS__), \
+        NEEDFUL_RESULT_0)
+
+#if !defined(__cplusplus) && (defined(__GNUC__) || defined(__clang__))
+    #pragma GCC diagnostic ignored "-Wint-conversion"  /* the price */
+#endif
+```
+
+That is the whole of what Needful used to do on your behalf. The point of
+moving it here is that it is now *your* pragma, in *your* header, with *your*
+name on the decision -- and you can scope it with `push`/`pop` in a way a
+single-header library could not.
+
+Be aware of what you are paying for it. Besides the two costs above, the
+expression form reintroduces a mistake the statement form makes impossible:
+writing `make_failure(...)` and forgetting the `return`, which sets the error
+state and then falls through. `panic(...)` sits right beside it in the
+vocabulary, takes an error, and is *not* used with `return` -- so the two are
+easy to confuse. In the enhanced C++ build a `[[nodiscard]]` on `Result0Struct`
+catches it; in a C build nothing does.
+
+[gcc14]: https://gcc.gnu.org/gcc-14/porting_to.html
+[clang15]: https://releases.llvm.org/15.0.0/tools/clang/docs/ReleaseNotes.html
+
 ## Defining Project-Specific Aliases
 
 `NEEDFUL_RESULT_SHORTHANDS` strips the `needful_` prefix, giving names like
-`make_failure`, `return_if_failed`, `catch_if_failed`, etc. These are
+`return_fail`, `return_if_failed`, `catch_if_failed`, etc. These are
 readable and unambiguous without being keyword-like.
 
 If your project wants to go further and use keyword-style names, define
@@ -134,7 +247,7 @@ possible choices:
 
 
 ```c
-#define fail     needful_make_failure
+#define fail     needful_return_fail
 #define trap     needful_return_if_failed
 #define require  needful_panic_if_failed
 #define assume   needful_assert_not_failed
@@ -158,7 +271,7 @@ The two vocabularies are deliberately parallel:
 
 | intent | `Result(T)` | `Fallible(T)` |
 |---|---|---|
-| signal it | `return make_failure(e)` | `return none` |
+| signal it | `return_fail (e)` | `return none` |
 | propagate it | `return_if_failed (stmt)` | `return_if_none (stmt)` |
 | die on it | `panic_if_failed (stmt)` | `abort_if_none (stmt)` |
 | assert impossible | `assert_not_failed (stmt)` | `assert_not_none (stmt)` |
@@ -222,13 +335,19 @@ about a *wrapper type* rather than about a function's return value, and C has
 no way to express that. So a pure-C build gives you the vocabulary, the
 propagation, and the runtime assertions -- but not one compile-time check.
 
-| build | must extract the result | `return` not forgotten on `make_failure` | won't decay to `T` |
-|---|---|---|---|
-| C -- any compiler, any standard | ✗ | ✗ | ✗ |
-| C++ -- no enhancement | ✗ | ✗ | ✗ |
-| C++ -- `NEEDFUL_CPP_ENHANCED`, C++11/14 | ✗ | ✗ | ✅ |
-| C++ -- enhanced, C++11/14 + `NEEDFUL_PRECPP17_NODISCARD` | ✅ | ✅ | ✅ |
-| C++ -- `NEEDFUL_CPP_ENHANCED`, **C++17+** | ✅ | ✅ | ✅ |
+| build | must extract the result | won't decay to `T` |
+|---|---|---|
+| C -- any compiler, any standard | ✗ | ✗ |
+| C++ -- no enhancement | ✗ | ✗ |
+| C++ -- `NEEDFUL_CPP_ENHANCED`, C++11/14 | ✗ | ✅ |
+| C++ -- enhanced, C++11/14 + `NEEDFUL_PRECPP17_NODISCARD` | ✅ | ✅ |
+| C++ -- `NEEDFUL_CPP_ENHANCED`, **C++17+** | ✅ | ✅ |
+
+This table used to carry a third column: *"`return` not forgotten"*. It is gone
+because the mistake is gone. Signalling a failure is
+[a statement, not an expression](#no-make-failure), so there is no `return` to
+omit -- in **any** build, C included. That is the only guarantee in this page
+that the pure-C row gets for free.
 
 The first two rows are why Needful's pitch is *"C for production, C++ for
 stronger checks"* rather than *"C is enough"*. If you never run a checked C++
@@ -283,11 +402,7 @@ and there is nothing to work around.
 The C++11/14 row is the trap. `ResultWrapper` and `Result0Struct` are both
 declared `NEEDFUL_NODISCARD`, which has no *standard* spelling before C++17 and
 quietly becomes nothing -- so the build still refuses to let a `Result(T)` decay
-into a `T`, but stops noticing when you drop one entirely, or when you write
-`make_failure(...)` and forget the `return`. That last one is the mistake the
-`[[nodiscard]]` on `Result0Struct` exists to catch, and it is easy to make
-because `panic(...)` sits right beside it, takes an error, and is *not* used
-with `return`.
+into a `T`, but stops noticing when you drop one entirely.
 
 **Run the enhanced build at C++17 or higher** if you can. If you are pinned
 below it, `-DNEEDFUL_PRECPP17_NODISCARD=1` recovers the whole set. Compilers
@@ -354,14 +469,14 @@ The long name is used because it states the threading assumption explicitly.
 ## `Result(None)` -- Fallible Functions With No Return Value {#result-none}
 
 C does not allow `return value;` in a `void`-returning function, which means
-`Result(void)` can't work: you can't write `return needful_make_failure(...)` because there's
-nothing legal to return. `None` is a unit type defined precisely to fill this
-gap:
+`Result(void)` can't work: `return_fail(...)` has to return *something*, and
+in a `void` function there is nothing legal to return. `None` is a unit type
+defined precisely to fill this gap:
 
 ```c
 Result(None) Do_Something(void) {
     if (some_condition)
-        return needful_make_failure("something went wrong");
+        return_fail ("something went wrong");
     return none;  // success: return the unit value
 }
 ```
@@ -379,13 +494,13 @@ checks that you handled the result rather than silently discarding it.
 - [Operator Precedence](/precedence) -- why the `Result` call must come last in the statement
 
 - [`Option(T)`](/option) -- nullable values without an error
-- [FAQ: Why does `needful_make_failure(...)` disable the int-conversion warning?](/faq#int-conversion-warning)
+- [FAQ: Why does Needful not disable the int-conversion warning?](/faq#int-conversion-warning)
 
 ---
 
 ## Compile-Time Tests
 
-### Basic `return_if_failed` / `make_failure` / `assert_not_failed` usage
+### Basic `return_if_failed` / `return_fail` / `assert_not_failed` usage
 
 <!-- doctest: positive-test -->
 ```cpp
@@ -401,7 +516,7 @@ checks that you handled the result rather than silently discarding it.
 
 Result(int) double_if_positive(int x) {
     if (x < 0)
-        return make_failure("negative input");
+        return_fail ("negative input");
     return x * 2;
 }
 
@@ -437,11 +552,11 @@ int main() {
 // use some simple default hooks
 #include "needful.h"
 
-#define fail  make_failure  // project-local keyword-style alias
+#define fail  return_fail  // project-local keyword-style alias
 
 Result(int) compute(int x) {
     if (x < 0)
-        return fail ("negative");
+        fail ("negative");
     return x * 2;
 }
 
