@@ -180,6 +180,41 @@ to avoid shadowing or colliding with user scope.
 
 Shorthands (`Option`, `return_if_failed`) preserve the exact casing of their `needful_` prefixed parents.
 
+### Shorthands are plain aliases, not forwarding macros {#shorthand-aliases}
+
+Every shorthand is an object-like alias:
+
+```c
+#define cast /* (T,...) */  needful_cast
+```
+
+...rather than a function-like macro that forwards its arguments:
+
+```c
+#define cast(T,...)  needful_cast(T, __VA_ARGS__)  // NOT how it's done
+```
+
+The parameter list lives in a comment, because spelling it out in the macro
+causes problems:
+
+- **Commas in C++ template arguments.** The preprocessor splits arguments on
+  every top-level comma, including the one in `Pair<int, int>*`.  A fixed-arity
+  forwarder like `known(T,expr)` then gets the wrong argument count.  A
+  variadic one only survives by gluing the pieces back together, so its named
+  `T` is not actually T.
+- **MSVC's traditional preprocessor** passes a forwarded `__VA_ARGS__` to the
+  next macro as a *single* argument (unless built with `/Zc:preprocessor`), so
+  a forwarder can silently change arity on one compiler.
+- **Uniformity.** The prefix "keywords" (`unwrap`, `nocast`, `downcast`, ...)
+  take no parentheses at all, so they can only be aliases.  Making every
+  shorthand the same kind of alias means one rule for all of them.
+- **Cost.** Each forwarding layer rescans its arguments and adds another
+  "expanded from macro" line to every diagnostic.  In macro-heavy code that
+  adds up in both compile time and error readability.
+
+An alias costs nothing: it is replaced by the `needful_` name, which is then
+expanded exactly as if you had written it yourself.
+
 ### The Zero-Dependency Footprint {#zero-dependency}
 
 "Zero dependency" in Needful is scoped, and the scope matters:
