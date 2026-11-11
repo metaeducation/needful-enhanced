@@ -160,6 +160,59 @@ int result = Some_Func(30) catch_if_failed (Error* e) {
 This is standard C99. `needful_catch_if_failed` expands into a `for` loop that
 runs exactly once, scoping the error variable to the block.
 
+## Statement Macros Need Braces {#scope-guard}
+
+`return_if_failed`, `panic_if_failed` and `assert_not_failed` expand to
+*several* statements, not one. They can't be wrapped in `do { } while (0)`,
+because the statement you pass may declare a variable that has to stay
+visible afterward:
+
+```c
+return_if_failed (int n = Parse_Number(text));
+Use_Number(n);  // n must still be in scope here
+```
+
+So in an unbraced branch only the first statement would be conditional, and
+the rest would run unconditionally:
+
+```c
+if (flag)
+    return_if_failed (Do_Something());  // WRONG: compile error, see below
+```
+
+To make that a compile error instead of a silent bug, each macro starts with
+`NEEDFUL_SCOPE_GUARD`:
+
+```c
+typedef int _statement_must_be_in_braces_123;
+(void)sizeof(_statement_must_be_in_braces_123);
+```
+
+- **In C**, a declaration isn't a statement, so it can't be the body of an
+  unbraced `if`/`else`/`while`/`for`: syntax error.
+- **In C++**, a declaration *is* a statement, so the `typedef` becomes the
+  whole `if` body, scoped to it. The `sizeof` that follows then names an
+  undeclared type: error, mentioning `_statement_must_be_in_braces_`.
+
+A `typedef` declares no object and `sizeof` is a compile-time constant, so
+nothing is generated, even in unoptimized builds. That's why the check is on
+in every build, release included. (An earlier version declared a dummy `int`
+instead, and only in debug builds, since an object isn't guaranteed to be
+free: e.g. GCC/Clang's `-ftrivial-auto-var-init` hardening initializes it.)
+
+Limitations:
+
+- **MSVC compiling C** accepts a declaration as an `if` body as an extension,
+  so it doesn't catch this. MSVC's C++ mode and GCC/Clang in either language
+  do, so a CI build catches it.
+- **The name comes from `__LINE__`**, so two of these macros on one source
+  line declare the same typedef. C11 and C++ allow that; C99 does not.
+- A `case` label directly before one also needs braces (in C before C23, a
+  label can't precede a declaration).
+
+Alternatives that don't work: `_Static_assert` is also a declaration, but in
+C++ it's a legal `if` body with nothing after it to fail (and C99 lacks it).
+
 ## There Is No `make_failure(...)` {#no-make-failure}
 
 Signalling a failure is a **statement**. There is no expression form, and that
@@ -563,6 +616,39 @@ Result(int) compute(int x) {
 int main() {
     int n = compute(5);  // ERROR: Result(int) is not implicitly int
     NEEDFUL_UNUSED(n);
+    return 0;
+}
+```
+
+### An unbraced statement macro is a compile error, even in release builds
+
+<!-- doctest: negative-test -->
+```cpp
+// MATCH-ERROR-TEXT: _statement_must_be_in_braces_
+
+#define NDEBUG  // the scope guard is checked in release builds too
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_RESULT_SHORTHANDS  1
+#include "needful.h"
+#include "needful-result-hooks-singlethreaded.h"
+
+Result(int) half(int x) {
+    if (x % 2)
+        return_fail ("odd");
+    return x / 2;
+}
+
+Result(int) quarter(int x, int flag) {
+    int n = 0;
+    if (flag)
+        return_if_failed (n = half(x));  // ERROR: needs braces
+    return n / 2;
+}
+
+int main() {
     return 0;
 }
 ```
