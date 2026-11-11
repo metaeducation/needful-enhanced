@@ -156,6 +156,25 @@ jobs:
         done
 
 
+    # The ready-made Result(T) hook pairs live next to needful.h in the needful
+    # repository, and the tests compile them in.  Same API fetch as above (and
+    # for the same caching reasons); curl's own retries cover a not-yet-visible
+    # new file.
+    #
+    - name: Fetch Result(T) Hook Files
+      run: |
+        for f in needful-result-hooks-singlethreaded.h needful-result-hooks-singlethreaded.c \
+                 needful-result-hooks-threadlocal.h needful-result-hooks-threadlocal.c; do
+          curl -fsSL --retry 4 --retry-delay 30 --retry-all-errors \
+            -H "Accept: application/vnd.github.raw" \
+            -H "Authorization: Bearer ${{ github.token }}" \
+            -H "Cache-Control: no-cache" \
+            "https://api.github.com/repos/metaeducation/needful/contents/$f?ref=main" \
+            -o "$NEEDFUL_H_DIR/$f"
+          echo "Fetched $f: $(wc -c < "$NEEDFUL_H_DIR/$f") bytes"
+        done
+
+
   #====# TOOLCHAIN SETUP #=====================================================#
 
     # By default you can't call MSVC from the command line; this action sets
@@ -228,7 +247,9 @@ jobs:
           echo "=== -std=$std ==="
           ${{ matrix.cc }} -std=$std -Wall -Wextra -Wpedantic \
             -I "$NEEDFUL_H_DIR" \
-            c/test-needful-c-sweep.c -o "/tmp/c-sweep-$std"
+            c/test-needful-c-sweep.c \
+            "$NEEDFUL_H_DIR/needful-result-hooks-singlethreaded.c" \
+            -o "/tmp/c-sweep-$std"
           "/tmp/c-sweep-$std"
         done
 
@@ -244,7 +265,8 @@ jobs:
           echo "=== /std:$std ==="
           cl //nologo //TC //std:$std //W4 \
             //I"$(cygpath -w "$NEEDFUL_H_DIR")" \
-            //Fe:"c-sweep-$std.exe" c/test-needful-c-sweep.c
+            //Fe:"c-sweep-$std.exe" c/test-needful-c-sweep.c \
+            "$(cygpath -w "$NEEDFUL_H_DIR")\\needful-result-hooks-singlethreaded.c"
           "./c-sweep-$std.exe"
         done
 

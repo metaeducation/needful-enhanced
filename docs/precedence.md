@@ -169,9 +169,8 @@ Give it a named variable and use that.
 #endif
 #define NEEDFUL_OPTION_SHORTHANDS  1
 #define NEEDFUL_RESULT_SHORTHANDS  1
-#define NEEDFUL_DECLARE_SINGLETHREADED_RESULT_HOOKS  1
-// use some simple default hooks
 #include "needful.h"
+#include "needful-result-hooks-singlethreaded.h"  // simple default hooks
 
 struct Node { int field; };
 

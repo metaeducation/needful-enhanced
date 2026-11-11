@@ -31,9 +31,9 @@
 //   * Needful_Test_And_Clear_Failure
 //   * Needful_Panic_Abruptly
 //
-// Define `NEEDFUL_DECLARE_SINGLETHREADED_RESULT_HOOKS` to 1 in exactly one
-// translation unit for a stock single-threaded implementation, or write your
-// own over thread-local storage.
+// The needful repository has ready-made .h/.c pairs of these, over a single
+// global slot (needful-result-hooks-singlethreaded) or one slot per thread
+// (needful-result-hooks-threadlocal).  Or write your own for your error type.
 //
 //=//// return_fail(...) //////////////////////////////////////////////////=//
 //

@@ -1,6 +1,6 @@
 // test-needful-result.cpp
 // Tests for Result(T): trap/except/assume/rescue error propagation flow,
-// and NEEDFUL_DECLARE_SINGLETHREADED_RESULT_HOOKS for self-contained testing.
+// using needful-result-hooks-singlethreaded.h/.c (linked in by CMake).
 //
 // Build: needs NEEDFUL_CPP_ENHANCED=1 and the directory containing
 // needful.h in the include path.
@@ -11,8 +11,8 @@
 #include <stdlib.h>
 
 #define NEEDFUL_CPP_ENHANCED  1
-#define NEEDFUL_DECLARE_SINGLETHREADED_RESULT_HOOKS 1
 #include "needful.h"
+#include "needful-result-hooks-singlethreaded.h"
 
 #define Result  NeedfulResult
 #define fail     needful_return_fail

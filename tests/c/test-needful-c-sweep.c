@@ -22,10 +22,9 @@
 **
 **=//// NOTES /////////////////////////////////////////////////////////////=//
 **
-** A. NEEDFUL_DECLARE_SINGLETHREADED_RESULT_HOOKS defines storage and function
-**    bodies, so it may only appear in one translation unit.  That is fine here
-**    because this test is a single file, but it is why this cannot simply be
-**    #included into a larger fixture.
+** A. The Result(T) hooks come from needful-result-hooks-singlethreaded.h/.c
+**    in the needful repository, and CMake links the .c in--so this also
+**    checks that pair works from a plain C program.
 **
 ** B. Corruption is turned on so that Corrupt_If_Needful() and
 **    Assert_Corrupted_If_Needful() are real code rather than no-ops.  The
@@ -34,10 +33,9 @@
 */
 
 #define NEEDFUL_DEFINE_ALL_SHORTHANDS  1
-#define NEEDFUL_DECLARE_SINGLETHREADED_RESULT_HOOKS  1
-/* one TU only, see [A] */
 #define NEEDFUL_DOES_CORRUPTIONS       1  /* see [B] */
 #include "needful.h"
+#include "needful-result-hooks-singlethreaded.h"  /* see [A] */
 
 #include <stdio.h>
 #include <stdint.h>

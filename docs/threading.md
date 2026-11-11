@@ -20,25 +20,25 @@ macro-only and unchanged by this page.
 `Result(T)` assumes there is one "pending failure" slot. In real threaded
 programs, that slot should be thread-local.
 
-The built-in `NEEDFUL_DECLARE_SINGLETHREADED_RESULT_HOOKS` implementation is
-intentionally single-threaded and is for prototyping/tests only.
+The needful repository has two ready-made `.h`/`.c` pairs of hooks (see
+[setting up the hooks](/result#setup-result-hooks)):
 
-For threaded programs, provide custom hooks over TLS storage:
+- `needful-result-hooks-singlethreaded.h/.c` -- one global slot.  Fine for
+  single-threaded programs, wrong for threaded ones.
+- `needful-result-hooks-threadlocal.h/.c` -- one slot per thread, so threads can't see
+  or clear each other's failures.
 
-```c
-static _Thread_local const char* tls_failure;
+The thread-local pair needs only thread-local *storage*, not a threading
+library: it uses C11's `_Thread_local` or C++11's `thread_local` (falling back
+to `__thread` or `__declspec(thread)` on older compilers).  `<threads.h>` is
+not involved, which is just as well, since C++ can't use it.
 
-const char* Needful_Test_And_Clear_Failure(void) {
-    const char* e = tls_failure;
-    tls_failure = NULL;
-    return e;
-}
-
-#define Needful_Get_Failure()        tls_failure
-#define Needful_Set_Failure(error)   (tls_failure = (error))
-```
-
-In C++, use `thread_local` instead of `_Thread_local`.
+If your project has its own error type, write your own hooks in the same
+shape: a `static` thread-local slot in one source file, with all four hooks as
+functions over it.  Don't expose the thread-local *variable* in a header if
+it might be defined in C and used from C++: C++ reaches an `extern`
+thread-local through a generated wrapper function that a C definition never
+gets, and macOS's linker rejects the result (Linux's happens to tolerate it).
 
 ## 2) Corruption Countdown State (`NEEDFUL_DOES_CORRUPTIONS`)
 
@@ -115,7 +115,7 @@ not a blanket include for all enhanced builds.
 For most teams:
 
 1. Keep the default corruption atomic mode.
-2. Implement thread-local `Result(T)` hooks.
+2. Use `needful-result-hooks-threadlocal.h/.c` (or your own thread-local hooks).
 3. Run enhanced builds in CI with warnings-as-errors.
 
 Only reach for lock hooks if project policy requires one shared lock domain,

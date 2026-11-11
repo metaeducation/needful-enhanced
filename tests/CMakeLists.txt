@@ -80,6 +80,32 @@ endif()
 enable_testing()
 
 
+#=[ READY-MADE Result(T) HOOKS ]==============================================
+#
+# Result(T) needs four hooks for its failure storage.  The needful repository
+# ships two ready-made .h/.c pairs next to needful.h, which the tests use (and
+# so also check).  They're compiled as C, which exercises their extern "C"
+# linkage when linked into the C++ tests.
+#
+# Static libraries, so a test that never touches Result(T) pulls in nothing.
+
+add_library(needful-result-hooks-singlethreaded STATIC
+    "${NEEDFUL_H_DIR}/needful-result-hooks-singlethreaded.c"
+)
+target_include_directories(needful-result-hooks-singlethreaded
+    PUBLIC "${NEEDFUL_H_DIR}"
+)
+
+add_library(needful-result-hooks-threadlocal STATIC
+    "${NEEDFUL_H_DIR}/needful-result-hooks-threadlocal.c"
+)
+target_include_directories(needful-result-hooks-threadlocal
+    PUBLIC "${NEEDFUL_H_DIR}"
+)
+
+find_package(Threads REQUIRED)
+
+
 #=[ INSTALLATION SMOKE TESTS ]===============================================
 #
 # These verify the intended consumer layout in a temporary directory:
@@ -197,6 +223,9 @@ add_test(
 
 add_executable(test-needful-c-sweep c/test-needful-c-sweep.c)
 target_include_directories(test-needful-c-sweep PRIVATE "${NEEDFUL_H_DIR}")
+target_link_libraries(test-needful-c-sweep
+    PRIVATE needful-result-hooks-singlethreaded
+)
 add_test(NAME test-needful-c-sweep COMMAND test-needful-c-sweep)
 
 add_executable(test-corrupt-assert-fires c/test-corrupt-assert-fires.c)
@@ -228,8 +257,27 @@ foreach(test_name ${POSITIVE_TESTS})
     add_executable(${test_name} positive/${test_name}.cpp)
     target_compile_definitions(${test_name} PRIVATE NEEDFUL_CPP_ENHANCED=1)
     target_include_directories(${test_name} PRIVATE "${NEEDFUL_H_DIR}")
+    target_link_libraries(${test_name}
+        PRIVATE needful-result-hooks-singlethreaded
+    )
     add_test(NAME ${test_name} COMMAND ${test_name})
 endforeach()
+
+# Linked separately: it needs the thread-local pair (whose symbols clash with
+# the single-threaded one) and a threads library.
+#
+add_executable(test-needful-result-hooks-threadlocal
+    positive/test-needful-result-hooks-threadlocal.cpp
+)
+target_compile_definitions(test-needful-result-hooks-threadlocal
+    PRIVATE NEEDFUL_CPP_ENHANCED=1
+)
+target_link_libraries(test-needful-result-hooks-threadlocal
+    PRIVATE needful-result-hooks-threadlocal Threads::Threads
+)
+add_test(NAME test-needful-result-hooks-threadlocal
+    COMMAND test-needful-result-hooks-threadlocal
+)
 
 
 #=[ NEGATIVE TESTS ]===========================================================
@@ -336,6 +384,9 @@ foreach(src ${DOCTEST_POSITIVE_SOURCES})
     add_executable(${target_name} "${src}")
     target_compile_definitions(${target_name} PRIVATE NEEDFUL_CPP_ENHANCED=1)
     target_include_directories(${target_name} PRIVATE "${NEEDFUL_H_DIR}")
+    target_link_libraries(${target_name}
+        PRIVATE needful-result-hooks-singlethreaded
+    )
     add_test(NAME "${target_name}" COMMAND ${target_name})
 endforeach()
 

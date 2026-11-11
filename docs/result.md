@@ -450,21 +450,23 @@ void       Needful_Panic_Abruptly(ErrorType* error);
 *(Needful_Assert_Not_Failing() used to be a fifth hook.  needful.h now
 derives it from Needful_Get_Failure() so it honors NEEDFUL_ASSERT.)*
 
-For prototyping, define `NEEDFUL_DECLARE_SINGLETHREADED_RESULT_HOOKS 1`
-**before** including `needful.h` to get a built-in `const char*`-based
-implementation:
+Or use one of the ready-made `const char*`-based implementations in the
+[needful repository](https://github.com/metaeducation/needful), next to
+`needful.h`. Each is a `.h`/`.c` pair: include the header wherever `Result(T)`
+is used, and compile the `.c` into your program once.
+
+| Files | Failure storage |
+|---|---|
+| `needful-result-hooks-singlethreaded.h/.c` | One global slot: single-threaded programs and prototypes |
+| `needful-result-hooks-threadlocal.h/.c` | One slot per thread ([threading](/threading)) |
 
 ```c
-#define NEEDFUL_DECLARE_SINGLETHREADED_RESULT_HOOKS 1
 #include "needful.h"
+#include "needful-result-hooks-singlethreaded.h"
 ```
 
-> **Note:** `NEEDFUL_DECLARE_SINGLETHREADED_RESULT_HOOKS` defines storage and
-> implementations inline. Only define it in **one** translation unit per
-> program.
-
-The long name is used because it states the threading assumption explicitly.
-`NEEDFUL_DECLARE_RESULT_HOOKS` remains accepted as a compatibility alias.
+Both use only standard C (plus thread-local storage for the second), so
+`Result(T)` works in a plain C build with no other setup.
 
 ## `Result(None)` -- Fallible Functions With No Return Value {#result-none}
 
@@ -510,9 +512,8 @@ checks that you handled the result rather than silently discarding it.
   #define NEEDFUL_CPP_ENHANCED  1
 #endif
 #define NEEDFUL_RESULT_SHORTHANDS  1
-#define NEEDFUL_DECLARE_SINGLETHREADED_RESULT_HOOKS  1
-// use some simple default hooks
 #include "needful.h"
+#include "needful-result-hooks-singlethreaded.h"  // simple default hooks
 
 Result(int) double_if_positive(int x) {
     if (x < 0)
@@ -548,9 +549,8 @@ int main() {
   #define NEEDFUL_CPP_ENHANCED  1
 #endif
 #define NEEDFUL_RESULT_SHORTHANDS  1
-#define NEEDFUL_DECLARE_SINGLETHREADED_RESULT_HOOKS  1
-// use some simple default hooks
 #include "needful.h"
+#include "needful-result-hooks-singlethreaded.h"  // simple default hooks
 
 #define fail  return_fail  // project-local keyword-style alias
 

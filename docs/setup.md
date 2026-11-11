@@ -181,7 +181,6 @@ All of these are defined **before** including `needful.h`.
 | `NEEDFUL_CORRUPTION_ASSUME_SINGLE_THREADED` | `0` | Use non-atomic corruption countdown state (only for truly single-threaded processes) |
 | `NEEDFUL_DECLARE_ATOMIC_VAR(name)` + `NEEDFUL_LOCK_VARIABLE(var)` + `NEEDFUL_UNLOCK_VARIABLE(var)` | unset | Project synchronization path for corruption countdowns; define all three or none |
 | `NEEDFUL_DONT_INCLUDE_STDARG_H` | unset | Suppress the `<stdarg.h>` include (for `v_cast()`) |
-| `NEEDFUL_DECLARE_SINGLETHREADED_RESULT_HOOKS` | unset | Emit single-threaded default `Result(T)` hooks in this one TU |
 | `NEEDFUL_<X>_USES_WRAPPER` | `NEEDFUL_CPP_ENHANCED` | Turn one wrapper family off: `NEED`, `OPTION`, `RESULT`, `CONTRAS` |
 | `NEEDFUL_CAST_CALLS_HOOKS` | `NEEDFUL_CPP_ENHANCED` | Run `CastHook` validation on `cast()` |
 | `NEEDFUL_FAST_CAST_IS_SLOW` | unset | Make `fast_cast()` hookable, for debugging a hot path |

@@ -219,21 +219,10 @@ There are two separate threading concerns:
 - `Result(T)` failure-state hooks
 - enhanced corruption countdown state (when `NEEDFUL_DOES_CORRUPTIONS=1`)
 
-For `Result(T)`, the `NEEDFUL_DECLARE_SINGLETHREADED_RESULT_HOOKS` built-in
-implementation is single-threaded. In threaded programs, provide your own
-hook implementations using `thread_local` storage (C11 `_Thread_local` or
-C++11 `thread_local`):
-
-```c
-static _Thread_local const char* tls_failure;
-
-const char* Needful_Test_And_Clear_Failure(void) {
-    const char* e = tls_failure;
-    tls_failure = nullptr;
-    return e;
-}
-// ... other hooks ...
-```
+For `Result(T)`, use the ready-made `needful-result-hooks-threadlocal.h/.c` pair from
+the needful repository, which keeps one pending failure per thread (C11
+`_Thread_local` or C++11 `thread_local`). Or write your own hooks over
+thread-local storage for your own error type.
 
 For corruption in enhanced C++ builds, the default is now thread-safe via
 atomics, with optional project lock hooks or explicit single-thread mode.
