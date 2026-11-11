@@ -160,6 +160,44 @@ quietly disables part of what you think you are checking:
 Both points are covered in detail, per compiler and per standard, under
 [which builds actually check this](/fallible#enforcement).
 
+## Enhanced Builds Have Their Own ABI {#abi}
+
+**Don't link code built with `NEEDFUL_CPP_ENHANCED` against code built
+without it**, or with different `NEEDFUL_*_USES_WRAPPER` settings. Treat the
+enhanced build as a separate configuration: build and link *everything* in
+it, or only compile it as a check and ship the plain build.
+
+In the plain build `Option(int)` *is* an `int`. In the enhanced build it's a
+C++ class holding an `int`, and calling conventions don't always treat those
+the same. For example, x64 MSVC returns any class with constructors through a
+hidden pointer, regardless of its size:
+
+| `Option(int) f(void)` | Plain build | Enhanced build |
+|---|---|---|
+| Return value | in `eax` | caller passes a hidden pointer; value stored through it |
+| Other arguments | normal registers | shifted by one register |
+
+Parameters of wrapped type happened to be passed the same way in that test,
+but returns weren't, and no compiler flag changes MSVC's rule. Other
+platforms differ: 32-bit x86 Linux also returns structs through memory, while
+x86-64 Linux/macOS and ARM64 usually return small trivially-copyable structs
+in registers (so a mismatch may *seem* to work there, until it doesn't).
+
+How a mismatch shows up depends on the boundary:
+
+- **C++-linkage functions** fail to link, since the wrapper types are part of
+  the mangled names. Loud, so not a real danger.
+- **`extern "C"` functions returning a wrapper** are rejected by MSVC (error
+  C2526). GCC and Clang accept them (Clang warns with
+  `-Wreturn-type-c-linkage`), and a mismatch is then silent.
+- **Anything the linker never checks** is silent: tables of function
+  pointers, plugins loaded with `dlopen()`/`LoadLibrary()`, and callbacks.
+
+If your project has such a boundary (a plugin interface, or an API exported
+through a table), consider recording at build time whether
+`NEEDFUL_CPP_ENHANCED` was on, and having the two sides compare it when they
+connect, so a mismatch is reported instead of corrupting return values.
+
 ## Configuration Switches {#configuration-switches}
 
 All of these are defined **before** including `needful.h`.
