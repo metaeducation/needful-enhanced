@@ -58,6 +58,9 @@ enhancement files alongside `needful.h`. *(Put this directory in your
 [C++11 or later][cpp11-baseline].  The macros grow teeth: type mismatches
 become compile errors.
 
+If the C++ compiler rejects your C before any Needful check runs, that is
+expected on a first attempt: see [Building C as C++](/c-as-cpp).
+
 For CI to enforce those checks reliably, run the checked build with warnings
 as errors (`-Werror` / `/WX`).
 
@@ -97,7 +100,8 @@ Two of these are worth a second look, because their names undersell them:
 - **[`nocast`](/nocast)** is what makes "just compile my C as C++" survive
   contact with a real codebase. Without it, step 2 above buries you in errors
   about `void*` returns from `malloc()` and `int`-to-enum assignments that C
-  was perfectly happy with.
+  was perfectly happy with. The incompatibilities it does not cover, and the
+  fix for each, are in [Building C as C++](/c-as-cpp).
 
 - **[Comment macros](/comments)** are the only part of Needful with no
   equivalent in Rust, C++, or anything else -- and the only part that asks for
@@ -173,6 +177,14 @@ dependencies," and that is true of the shipping build. The *checking* build
 wants `needful-enhanced/` cloned next to it and version-matched. It is a
 deliberate trade -- but it is the point where the simple story stops being
 simple.
+
+**Your C may not parse as C++ yet.** C is not a subset of C++. A `goto` over
+an initialization, a designated initializer written out of order, a variable
+named `new`: each one stops the checked build before Needful has looked at
+anything. [`nocast`](/nocast) covers the two most common breaks, and
+[Building C as C++](/c-as-cpp) has a workaround for most of the rest. Bringing
+an existing codebase across is still real work, and a few constructs have no
+workaround at all.
 
 **It is a dialect.** There are a couple hundred macros. The vocabulary you
 actually need is more like twenty-five, but the cast family alone has fifteen

@@ -25,6 +25,7 @@ front matter.
 | `faq.md` | `/faq` | Frequently asked questions and design rationale |
 | `design.md` | `/design` | **Read this before editing `needful.h`** -- the three-build-mode invariant, what belongs in the header, and what looks like a bug but isn't |
 | `setup.md` | `/setup` | Installing needful-enhanced, enabling `NEEDFUL_CPP_ENHANCED`, full switch inventory |
+| `c-as-cpp.md` | `/c-as-cpp` | Building C as C++ -- which C constructs a C++ compiler rejects, and the workaround for each |
 | `threading.md` | `/threading` | Threading model for `Result(T)` hooks and corruption behavior |
 
 ## Embedded compile-time tests

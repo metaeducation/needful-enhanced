@@ -142,6 +142,11 @@ No source changes are needed between the two. In the C build, Needful stays a
 transparent macro layer. In the checked C++ build, the same source gets the
 extra type enforcement.
 
+That holds once the source parses as C++. For a codebase that does not yet,
+[Building C as C++](/c-as-cpp) lists what breaks and the fix for each, and
+shows how to run the checked build as a
+[syntax-only pass](/c-as-cpp#lint-pass) that never has to link.
+
 Two details in that second line are load-bearing, and leaving either out
 quietly disables part of what you think you are checking:
 

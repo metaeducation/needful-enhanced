@@ -269,3 +269,19 @@ Example `.clang-format-ignore` fragment:
 ```
 
 Note: clang-format itself does not automatically apply `.gitignore` rules.
+
+---
+
+## My C code does not compile as C++. Can I still use Needful? {#c-does-not-compile-as-cpp}
+
+Yes, in two ways.
+
+The vocabulary and the [comment macros](/comments) work in plain C and need no
+C++ build at all. You get the documentation value immediately, and the checks
+later.
+
+For the checks, the C++ build only has to *parse* your code, not ship it or
+even link it. Most of what stops a C++ compiler has a small, mechanical fix,
+and the fix is usually better C as well. [Building C as C++](/c-as-cpp) lists
+each construct and its workaround, and explains how to bring files across one
+at a time.
