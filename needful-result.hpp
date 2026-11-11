@@ -232,8 +232,8 @@ struct NEEDFUL_NODISCARD ResultWrapper {
             and needful_is_convertible_v(U, T)  // implicit cast okay
         >
     >
-    ResultWrapper(U&& something) : r {something} {}
-
+    ResultWrapper(U&& something) : r (something) {}
+                                  // ^-- not `r {something}`, avoid narrowing
     template <
         typename U,
         typename = enable_if_t<
