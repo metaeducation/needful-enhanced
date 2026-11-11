@@ -93,10 +93,10 @@ jobs:
     #
     # Fetched through the API rather than raw.githubusercontent.com.  The raw
     # host sits behind a Varnish cache with `Cache-Control: max-age=300`, so
-    # pushing needful.h and running this workflow inside that five-minute window
-    # serves the *previous* copy with no sign anything is stale -- the byte count
-    # and the HTTP 200 both look perfectly normal.  (This is not hypothetical; it
-    # cost a confusing CI failure.)
+    # pushing needful.h and running this workflow inside that five-minute
+    # window serves the *previous* copy with no sign anything is stale -- the
+    # byte count and the HTTP 200 both look perfectly normal.  (This is not
+    # hypothetical; it cost a confusing CI failure.)
     #
     # The API is not a cure, only an improvement: it is also cached, at
     # `max-age=60`.  A five-fold smaller window, but still a window -- which is
@@ -110,15 +110,17 @@ jobs:
     # unauthenticated API calls share a 60/hour budget across all of Actions.)
     #
     # The fetched file is then checked for NUL bytes before anything is
-    # configured or compiled.  needful.h is hand-copied into the repository that
-    # publishes it, and a shared-folder copy once produced a file of exactly the
-    # right length whose tail was NUL padding -- committed and served without
-    # complaint, surfacing only as hundreds of "null character ignored" warnings
-    # from a compiler that otherwise carried on.  See run-header-integrity.cmake.
+    # configured or compiled.  needful.h is hand-copied into the repository
+    # that publishes it, and a shared-folder copy once produced a file of
+    # exactly the right length whose tail was NUL padding -- committed and
+    # served without complaint, surfacing only as hundreds of "null character
+    # ignored" warnings from a compiler that otherwise carried on.
+    #
+    # (See run-header-integrity.cmake)
     #
     # A failed check is retried rather than fatal on the first attempt: if the
-    # cause is a stale intermediary rather than a damaged commit, waiting is the
-    # cure.  A genuinely damaged upstream still fails, just a few minutes later.
+    # cause is a stale intermediary rather than a damaged commit, waiting is
+    # the cure.  A genuinely damaged upstream still fails, a few minutes later.
     #
     - name: Fetch And Verify needful.h
       run: |
@@ -175,7 +177,7 @@ jobs:
         done
 
 
-  #====# TOOLCHAIN SETUP #=====================================================#
+  #====# TOOLCHAIN SETUP #====================================================#
 
     # By default you can't call MSVC from the command line; this action sets
     # up the environment.
@@ -203,32 +205,41 @@ jobs:
       run: python tools/check-no-raw-assert.py
 
 
-  #====# BUILD AND TEST STEPS #================================================#
+  #====# BUILD AND TEST STEPS #===============================================#
 
-    - name: Configure Tests With CMake
+    # The whole suite is configured, built and run once per C++ standard, each
+    # in its own build directory (tests/build-cxx11, tests/build-cxx17, ...).
+    #
+    # One standard is not enough, because the language's own rules differ
+    # between them.  Two real examples:
+    #
+    #   c++17  is where NEEDFUL_NODISCARD becomes [[nodiscard]].
+    #
+    #   c++20  stopped treating a class with a deleted constructor as an
+    #          aggregate, which broke `Holder<T>{value}` in downcast.  That
+    #          went unnoticed while this suite only built as C++11.
+    #
+    # Positive tests are compiled to binaries by the build; negative tests are
+    # compiled (and expected to fail) during ctest itself.  --output-on-failure
+    # prints compiler output for any negative test that unexpectedly compiled.
+    #
+    # (On MSVC, 11 builds as C++14: that is the lowest /std: it offers.)
+    #
+    - name: Configure, Build And Test At Each C++ Standard
       working-directory: tests
       run: |
-        cmake -B build \
-          -G "${{ matrix.cmake-generator }}" \
-          -DCMAKE_C_COMPILER="${{ matrix.cc }}" \
-          -DCMAKE_CXX_COMPILER="${{ matrix.cxx }}" \
-          -DNEEDFUL_H_DIR="$NEEDFUL_H_DIR"
-
-
-    # Positive tests are compiled to binaries here; negative tests are
-    # compiled (and expected to fail) during ctest itself, not here.
-    #
-    - name: Build Positive Tests
-      working-directory: tests
-      run: cmake --build build
-
-
-    # --output-on-failure prints compiler output for any failing negative test
-    # that unexpectedly succeeded in compiling.
-    #
-    - name: Run All Tests (CTest)
-      working-directory: tests
-      run: ctest --test-dir build -V --output-on-failure
+        for std in 11 17 20; do
+          echo "::group::C++$std"
+          cmake -B "build-cxx$std" \
+            -G "${{ matrix.cmake-generator }}" \
+            -DCMAKE_C_COMPILER="${{ matrix.cc }}" \
+            -DCMAKE_CXX_COMPILER="${{ matrix.cxx }}" \
+            -DNEEDFUL_H_DIR="$NEEDFUL_H_DIR" \
+            -DNEEDFUL_TEST_CXX_STANDARD="$std"
+          cmake --build "build-cxx$std"
+          ctest --test-dir "build-cxx$std" -V --output-on-failure
+          echo "::endgroup::"
+        done
 
 
     # CTest above builds tests/c/ at whatever C standard CMake picked.  This
@@ -277,10 +288,10 @@ jobs:
     # because of a typo in the test file.  With --match-error-text, any test
     # lacking a MATCH-ERROR-TEXT comment is also a hard failure.
     #
-    # Pass --extra-dir to also check any negative doctests extracted from docs/.
+    # Pass --extra-dir to also check any negative doctests extracted from docs/
     #
-    # Run at both language levels.  They check different things, and running
-    # only one leaves a real hole either way:
+    # Run at each language level.  They check different things, and running
+    # only one leaves a real hole:
     #
     #   c++11  is the documented floor, so the rejections Needful promises
     #          (Option won't decay to T, Need blocks bool, ...) must hold there.
@@ -291,14 +302,17 @@ jobs:
     #          not failed, on the c++11 pass.  Without a c++17 pass it would
     #          simply never be checked.
     #
+    #   c++20  changed which classes count as aggregates, so a rejection that
+    #          depends on a wrapper's constructors could change there.
+    #
     - name: Verify Negative Tests Failed For The Right Reason
       working-directory: tests
       run: |
         EXTRA_ARGS=""
-        if [ -d build/doctest-extracted/negative ]; then
-          EXTRA_ARGS="--extra-dir build/doctest-extracted/negative"
+        if [ -d build-cxx11/doctest-extracted/negative ]; then
+          EXTRA_ARGS="--extra-dir build-cxx11/doctest-extracted/negative"
         fi
-        for std in c++11 c++17; do
+        for std in c++11 c++17 c++20; do
           echo "=============== negative tests at -std=$std ==============="
           python run-negative-tests.py \
             --match-error-text \
