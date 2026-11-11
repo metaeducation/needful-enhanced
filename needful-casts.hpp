@@ -98,7 +98,7 @@
     #undef needful_valist_cast
     #define needful_valist_cast(T,expr) \
         (reinterpret_cast< \
-            needful::ValistPointerCastHelper<decltype(expr),T>::type \
+            typename needful::ValistPointerCastHelper<decltype(expr),T>::type \
         >(expr))
 #endif
 
@@ -628,6 +628,11 @@ Hookable_Cast_Helper(const FromWrapperRef& from_wrapper)
 
   #if NEEDFUL_CAST_CALLS_HOOKS
     using ConstFrom = needful_constify_t(InnerFrom);  // hooks see raw type
+    static_assert(
+        CastHook<ConstFrom, ConstTo>::legal
+        or IsBasePtrOf<ConstFrom, ConstTo>::value
+        or IsVoidPtrCast<ConstFrom, ConstTo>::value,
+        "cast: source type not accepted for this target type");
     CastHook<ConstFrom, ConstTo>::Validate_Bits(inner);
   #endif
 
@@ -750,8 +755,6 @@ struct UpcastHelper {
     struct NEEDFUL_NODISCARD BaseName##Holder { /* NODISCARD needed [3] */ \
         From f; /* trivially constructible only (fastest for debug) */\
         \
-        BaseName##Holder() = delete; /* to trivially construct w/Result(T) */ \
-        \
         template< /* "downcast" means "reverse is_convertible" [2] */ \
             typename To, \
             typename = enable_if_t< \
@@ -769,7 +772,7 @@ struct UpcastHelper {
         template<typename T> \
         BaseName##Holder<remove_reference_t<T>> \
         operator+(const T& value) const { /* + lower than % [4] */ \
-            return BaseName##Holder<T>{value}; \
+            return BaseName##Holder<remove_reference_t<T>>{value}; \
         } \
     }; \
     \
@@ -942,5 +945,5 @@ struct FunctionPointerCastHelper {
 #undef needful_function_cast
 #define needful_function_cast(T,expr) \
     (reinterpret_cast< \
-        needful::FunctionPointerCastHelper<T,decltype(expr)>::type \
+        typename needful::FunctionPointerCastHelper<T,decltype(expr)>::type \
     >(expr))
