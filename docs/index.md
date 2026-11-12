@@ -32,7 +32,7 @@ The key trick is architectural, not magical: the same source can be compiled
 in multiple modes, and the macros change role from transparent vocabulary to
 strict checking wrappers.
 
-Your C code stays C. The C++ compiler just *checks* it harder.
+Your C code stays C. The C++ compiler can just *check* it harder.
 
 From a security perspective, Needful is straightforward to evaluate: whether
 release builds use C or C++, if `NEEDFUL_CPP_ENHANCED` is off you are running
