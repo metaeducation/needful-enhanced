@@ -175,15 +175,6 @@ code {
   gap: 0.35rem;
   padding-right: $sp-2;
 
-  .needful-footer-glyphs {
-    font-family: "STIX Two Math", "Cambria Math", "Latin Modern Math",
-      "Noto Serif", "Times New Roman", serif;
-    font-size: 1.05rem;
-    letter-spacing: 0.08em;
-    color: $needful-gold;
-    opacity: 0.8;
-  }
-
   .needful-footer-motto {
     font-family: $needful-display-font-family;
     font-style: italic;
@@ -677,21 +668,6 @@ td {
     font-style: italic;
     text-align: center;
     color: $needful-sage;
-
-    &::before,
-    &::after {
-      font-style: normal;
-      color: $needful-gold;
-      opacity: 0.75;
-    }
-
-    &::before {
-      content: "\2200x.\2203y \00a0\00a0";  // ∀x.∃y
-    }
-
-    &::after {
-      content: "\00a0\00a0 \03bbx.\2203y";  // λx.∃y
-    }
   }
 }
 
