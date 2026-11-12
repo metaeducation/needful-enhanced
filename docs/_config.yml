@@ -52,3 +52,21 @@ aux_links:
     - "https://github.com/metaeducation/needful-enhanced"
   "needful.h (raw)":
     - "https://raw.githubusercontent.com/metaeducation/needful/refs/heads/main/needful.h"
+
+# GitHub Pages only runs a fixed set of plugins unless asked for more.
+# jekyll-sitemap is on its allowed list but not on by default: it writes
+# /sitemap.xml from `url` above, and a /robots.txt pointing at it.
+plugins:
+  - jekyll-sitemap
+
+# Keep non-pages out of the sitemap: the notes for people editing these docs,
+# and the search-console ownership file.
+defaults:
+  - scope:
+      path: "README.md"
+    values:
+      sitemap: false
+  - scope:
+      path: "google5a96c048c7bff038.html"
+    values:
+      sitemap: false
