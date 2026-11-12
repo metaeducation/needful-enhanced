@@ -16,6 +16,7 @@ and in C++ builds they can run validation hooks.
 | Cast | Use For |
 |---|---|
 | `cast(T, expr)` | Safe default; runs debug-build validation hooks |
+| `generic_cast(T, expr)` | `cast()` that also accepts upcasts; for generic macros only ([detail](#generic-cast)) |
 | `raw_cast(T, expr)` | Unhooked; data not yet valid (fresh `malloc()`, uninitialized) |
 | `fast_cast(T, expr)` | Unhooked; data is valid but hook overhead is unacceptable on hot path |
 | `m_cast(T, expr)` | Remove const: `const T*` → `T*` |
@@ -232,6 +233,42 @@ assignment-safe conversions and mirrors source constness onto `T`.
 If you use clang-format with Needful syntax, see the
 [clang-format FAQ note](/faq#clang-format-needful).
 
+## `generic_cast` for Generic Macros {#generic-cast}
+
+A hook can restrict which types may be cast to a target, by defining `legal`
+(see Hooks, above). When it does, `cast()` rejects upcasts along with
+everything else not on the list:
+
+```cpp
+Derived* d = ...;
+Base* b = cast(Base*, d);   // ERROR: source type not accepted
+Base* b = d;                // what you meant: the conversion is implicit
+```
+
+That is deliberate. A cast you didn't need is usually a sign you
+misunderstood what type you had, and being told so is worth more than the
+convenience.
+
+But a generic macro doesn't know what it was handed:
+
+```cpp
+#define Assert_Is_Float(n)  assert(Is_Float(generic_cast(Number*, (n))))
+```
+
+If `n` is a `void*`, that is a cast worth checking. If it is a `Float*`, it is
+an upcast. The macro needs one spelling that accepts both, and that is
+`generic_cast()`:
+
+- An upcast (or a cast to the same type) is accepted without consulting the
+  hook's `legal` list. The hook's `Validate_Bits()` still runs.
+- Anything else behaves exactly like `cast()`: same legality check, same
+  runtime validation.
+
+Before this existed, the only option for such a macro was `c_cast()`, which
+gives up the hooks altogether.
+
+Don't use it where you know the types. `cast()` tells you more.
+
 ## `m_cast` for Mutability
 
 `m_cast()` is friendlier than C++'s `const_cast<>` in that you can use it to
@@ -405,6 +442,138 @@ int main() {
     Option(const Derived*) cdown = cast(Option(const Derived*), csome);
     assert((unwrap cdown)->x == 30);
 
+    return 0;
+}
+```
+
+### `generic_cast` accepts upcasts that a restrictive hook rejects
+
+<!-- doctest: positive-test -->
+```cpp
+#include <assert.h>
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_CAST_SHORTHANDS  1
+#include "needful.h"
+
+struct BaseStruct { int x; };
+typedef struct BaseStruct Base;
+
+#if NEEDFUL_CPP_ENHANCED
+  struct Derived : Base {};  // no extra fields -- same layout
+
+  namespace needful {  // a hook that restricts what may be cast to Base*
+    template<typename F>
+    struct CastHook<const F*, const Base*> {
+        static const bool legal = false;  // nothing but void* (always legal)
+        static void Validate_Bits(const F* p) { NEEDFUL_UNUSED(p); }
+    };
+  }
+#else
+  typedef Base Derived;  // Derived identical to Base if not enhanced
+#endif
+
+#define Get_X(p)  (generic_cast(const Base*, (p))->x)  // a generic macro
+
+int main() {
+    Derived derived;
+    derived.x = 10;
+    Derived* d = &derived;
+    Base* b = d;  // implicit: no cast needed when you know the types
+    void* v = d;
+    const Derived* cd = d;
+
+    assert(Get_X(d) == 10);   // upcast: allowed by generic_cast
+    assert(Get_X(b) == 10);   // same type
+    assert(Get_X(v) == 10);   // void*: a real cast, legal as with cast()
+    assert(Get_X(cd) == 10);  // constness passes through
+
+    Base* from_void = cast(Base*, v);  // cast() itself is unchanged
+    assert(from_void->x == 10);
+    return 0;
+}
+```
+
+### `cast` of an upcast is a compile error under a restrictive hook
+
+<!-- doctest: negative-test -->
+```cpp
+// MATCH-ERROR-TEXT: cast: source type not accepted for this target type
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_CAST_SHORTHANDS  1
+#include "needful.h"
+
+struct BaseStruct { int x; };
+typedef struct BaseStruct Base;
+
+#if NEEDFUL_CPP_ENHANCED
+  struct Derived : Base {};  // no extra fields -- same layout
+
+  namespace needful {  // a hook that restricts what may be cast to Base*
+    template<typename F>
+    struct CastHook<const F*, const Base*> {
+        static const bool legal = false;  // nothing but void* (always legal)
+        static void Validate_Bits(const F* p) { NEEDFUL_UNUSED(p); }
+    };
+  }
+#else
+  typedef Base Derived;  // Derived identical to Base if not enhanced
+#endif
+
+int main() {
+    Derived derived;
+    Derived* d = &derived;
+  #if NEEDFUL_CPP_ENHANCED
+    Base* b = cast(Base*, d);  // ERROR: an upcast, write `Base* b = d;`
+  #else
+    Base* b = d;
+  #endif
+    NEEDFUL_UNUSED(b);
+    return 0;
+}
+```
+
+### `generic_cast` still rejects unrelated types
+
+<!-- doctest: negative-test -->
+```cpp
+// MATCH-ERROR-TEXT: cast: source type not accepted for this target type
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_CAST_SHORTHANDS  1
+#include "needful.h"
+
+struct BaseStruct { int x; };
+typedef struct BaseStruct Base;
+
+#if NEEDFUL_CPP_ENHANCED
+  struct Derived : Base {};  // no extra fields -- same layout
+
+  namespace needful {  // a hook that restricts what may be cast to Base*
+    template<typename F>
+    struct CastHook<const F*, const Base*> {
+        static const bool legal = false;  // nothing but void* (always legal)
+        static void Validate_Bits(const F* p) { NEEDFUL_UNUSED(p); }
+    };
+  }
+#else
+  typedef Base Derived;  // Derived identical to Base if not enhanced
+#endif
+
+struct Unrelated { int y; };
+
+int main() {
+    struct Unrelated u;
+    struct Unrelated* up = &u;
+    Base* b = generic_cast(Base*, up);  // ERROR: not an upcast, not legal
+    NEEDFUL_UNUSED(b);
     return 0;
 }
 ```

@@ -693,6 +693,88 @@ Hookable_Cast_Helper(const FromWrapperRef& from_wrapper)
         needful::Hookable_Cast_Helper<T>(expr))  // func: universal refs [A]
 
 
+//=//// generic_cast(): cast() THAT ALSO ALLOWS UPCASTS ///////////////////=//
+//
+// When a CastHook restricts which types may be cast to a target (by defining
+// `legal`), cast() refuses an upcast (Derived* => Base*) unless the hook
+// lists it.  That's on purpose: the conversion is implicit, so writing a
+// cast for it usually means a misunderstanding, and "you didn't need a cast
+// here" is worth being told.
+//
+// But a generic macro doesn't know what it was handed:
+//
+//     #define Assert_Is_Float(n)  assert(Is_Float(generic_cast(Number*, (n))))
+//
+// If `n` is a void* that's a cast worth checking, and if it's a Float* it's
+// an upcast.  The macro needs one spelling that takes both.  That used to
+// mean c_cast(), which gives up the hooks entirely.  generic_cast() doesn't:
+//
+// * An upcast (or same-type cast) is accepted without consulting the hook's
+//   `legal` list.  The hook's Validate_Bits() still runs.
+//
+// * Anything else is exactly cast(): same legality check, same validation.
+//
+// Don't use it outside generic code.  If you know the types, cast() tells
+// you more.
+//
+// 1. Only raw pointers get the upcast allowance.  Wrapped types (Option(T*)
+//    and such) go straight to cast().
+//
+// 2. The trailing return type is spelled out rather than deduced.  Deducing
+//    it would make compilers instantiate the body where the cast is written,
+//    and so use CastHook before a client's specializations are seen.
+//
+
+template<typename From, typename To, typename Enable = void>
+struct IsUpcastPtr : std::false_type {};  // [1]
+
+template<typename F, typename T>
+struct IsUpcastPtr<F*, T*, enable_if_t<
+    std::is_class<F>::value and std::is_class<T>::value
+>> : std::is_base_of<remove_const_t<T>, remove_const_t<F>> {};
+
+template<
+    typename To,
+    typename FromRef,
+    typename ResultType = needful_merge_const_t(  // lenient cast
+        remove_reference_t<FromRef>, To
+    )
+>
+enable_if_t<
+    IsUpcastPtr<decay_t<FromRef>, To>::value,
+    ResultType
+>
+Generic_Cast_Helper(FromRef&& from)
+{
+    using ConstTo = needful_constify_t(To);
+
+  #if NEEDFUL_CAST_CALLS_HOOKS
+    using ConstFrom = needful_constify_t(decay_t<FromRef>);
+    CastHook<ConstFrom, ConstTo>::Validate_Bits(static_cast<ConstFrom>(from));
+  #endif
+
+    return needful_mutable_cast_unchecked(
+        ResultType,  // passthru const on const mismatch (lenient)
+        needful_c_cast(ConstTo, std::forward<FromRef>(from))
+    );
+}
+
+template<typename To, typename FromRef>
+auto Generic_Cast_Helper(FromRef&& from)
+    -> enable_if_t<  // spelled out, not deduced [2]
+        not IsUpcastPtr<decay_t<FromRef>, To>::value,
+        decltype(Hookable_Cast_Helper<To>(std::forward<FromRef>(from)))
+    >
+{
+    return Hookable_Cast_Helper<To>(std::forward<FromRef>(from));
+}
+
+#undef needful_generic_cast
+#define needful_generic_cast(T,expr) \
+    (NEEDFUL_DUMMY_INSTANCE(needful::ValistCastBlocker<decltype(expr), T>), \
+        needful::Generic_Cast_Helper<T>(expr))
+
+
 //=//// RIGID CAST FORMS /////////////////////////////////////////////////=//
 //
 // By default, cast() and raw_cast() are lenient, meaning if you try to cast

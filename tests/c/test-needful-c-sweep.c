@@ -280,6 +280,7 @@ static int cast_sweep(void) {
     const int* cip = &i;
 
     int* p1 = cast(int*, vp);
+    int* p1g = generic_cast(int*, vp);
     int* p2 = raw_cast(int*, vp);
     int* p3 = fast_cast(int*, vp);
     int* p4 = c_cast(int*, vp);
@@ -293,7 +294,7 @@ static int cast_sweep(void) {
     CHECK(p1 == &i);  CHECK(p2 == &i);  CHECK(p3 == &i);
     CHECK(p4 == &i);  CHECK(p5 == &i);  CHECK(p6 == &i);
     CHECK(c1 == COLOR_RED);  CHECK(c2 == COLOR_RED);
-    CHECK(n != 0);  CHECK(p7 == nullptr);
+    CHECK(n != 0);  CHECK(p7 == nullptr);  CHECK(p1g == &i);
     return 0;
 }
 
