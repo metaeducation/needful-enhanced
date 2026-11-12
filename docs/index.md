@@ -97,6 +97,7 @@ catch bugs. No code changes needed between them!
 | [`Need(T)`](/need) | Non-null/non-zero type; blocks boolean coercion |
 | [`Option(T)`](/option) | Rust-like optional with same size as `T` |
 | [`Fallible(T)`](/fallible) | Must-use Option(T) for return types; `FallibleVar(T)` elsewhere |
+| [`Status(T)`](/status) | Zero-means-okay return code: must-use, and `if (status)` won't compile |
 | [`Result(T)`](/result) | Multiplexed error + return value; auto-propagation via `return_if_failed` |
 | [`cast()` family](/cast) | Visible, hookable, semantically-named casts |
 | [`nocast`](/nocast) | Restores C's implicit `void*` and enum conversions in a C++ build |

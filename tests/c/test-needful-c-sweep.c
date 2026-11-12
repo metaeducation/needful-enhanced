@@ -221,6 +221,47 @@ Option(SweepColor) uses_return_if_none_enum(int yes) {
     }
 #endif
 
+/*=== Status(T) ===========================================================*/
+
+static int raw_status_api(int n) { return n; }  /* not annotated */
+
+NeedfulStatus(int) status_step(int n) {
+    if (n < 0)
+        return -1;
+    return okay;
+}
+
+NeedfulStatus(SweepColor) status_enum(int n) {
+    if (n < 0)
+        return SWEEP_RED;
+    return okay;
+}
+
+NeedfulStatus(int) status_chain(int n) {
+    return_if_not_okay (int, status_step(n));
+    return_if_not_okay (int, raw_status_api(0));
+    return okay;
+}
+
+int status_checks(void) {
+    StatusVar(int) rc = status_chain(1);
+    StatusVar(SweepColor) color = status_enum(-1);
+    if (! is_okay(rc))
+        return 1;
+    rc = status_chain(-1);
+    if (is_okay(rc) || status_code(rc) != -1)
+        return 2;
+    if (is_okay(color) || status_code(color) != SWEEP_RED)
+        return 3;
+    assert_okay (rc = status_chain(5));  /* must run rc= even under NDEBUG */
+    if (! is_okay(rc))
+        return 4;
+    abort_if_not_okay (status_chain(5));
+    tolerate_not_okay (status_chain(-1));
+    rc = okay;
+    return is_okay(rc) ? 0 : 5;
+}
+
 /* FallibleVar(T) is the annotation-free spelling, for the positions where
 ** Fallible(T) is deliberately illegal.  Same type, different legality.
 */
@@ -403,6 +444,7 @@ int main(void) {
     CHECK(! is_none(fallible_ptr(1)));
 
     CHECK(uses_return_if_none_enum(1) == SWEEP_RED);
+    CHECK(status_checks() == 0);
     CHECK(uses_return_if_none_enum(0) == SWEEP_NONE_0);
     CHECK(is_none(fallible_enum(0)));
     CHECK(! is_none(fallible_enum(1)));

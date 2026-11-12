@@ -40,6 +40,7 @@ front matter.
 | `need.md` | `/need` | `Need(T)` -- non-null/non-zero type |
 | `option.md` | `/option` | `Option(T)` -- Rust-like optional |
 | `fallible.md` | `/fallible` | `Fallible(T)` -- must-use Option(T), and the `*_none` discharge vocabulary |
+| `status.md` | `/status` | `Status(T)` -- zero-means-okay return codes: must-use, no truth value, and the `*_okay` vocabulary |
 | `result.md` | `/result` | `Result(T)` -- cooperative error propagation |
 | `cast.md` | `/cast` | Cast family: `cast`, `m_cast`, `raw_cast`, etc. |
 | `nocast.md` | `/nocast` | `nocast`, `needful_nocast_0` -- C/C++ portability bridges |

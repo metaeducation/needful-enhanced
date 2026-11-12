@@ -274,6 +274,10 @@ namespace needful {  //=//// BEGIN `needful::` NAMESPACE //////////////////=//
     #include "needful-option.hpp"
   #endif
 
+  #if NEEDFUL_STATUS_USES_WRAPPER
+    #include "needful-status.hpp"
+  #endif
+
   #if NEEDFUL_RESULT_USES_WRAPPER
     #include "needful-result.hpp"
   #endif

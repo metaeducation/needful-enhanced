@@ -238,7 +238,7 @@ All of these are defined **before** including `needful.h`.
 |---|---|---|
 | `NEEDFUL_CPP_ENHANCED` | `0` | Pull in `needful-enhanced/`; requires C++11+ |
 | `NEEDFUL_DEFINE_ALL_SHORTHANDS` | `0` | Alias every `needful_xxx` as plain `xxx` |
-| `NEEDFUL_<GROUP>_SHORTHANDS` | inherits the above | Per-group aliases: `OPTION`, `CAST`, `RESULT`, `FALLIBLE`, `CONTRA`, `KNOWN`, `COMMENT`, `STATIC_ASSERT`, `USAGE` |
+| `NEEDFUL_<GROUP>_SHORTHANDS` | inherits the above | Per-group aliases: `OPTION`, `CAST`, `RESULT`, `FALLIBLE`, `STATUS`, `CONTRA`, `KNOWN`, `COMMENT`, `STATIC_ASSERT`, `USAGE` |
 | `NEEDFUL_NO_NULLPTR_SHIM` | `0` | Don't define `nullptr` in pre-C23 C builds ([why it's on](#nullptr)) |
 | `NEEDFUL_ASSERT(expr)` | `assert(expr)` | Route Needful's runtime checks somewhere else |
 | `NEEDFUL_ABORT()` | `abort()` | Route `abort_if_none()` somewhere else |
@@ -251,7 +251,7 @@ All of these are defined **before** including `needful.h`.
 | `NEEDFUL_CORRUPTION_ASSUME_SINGLE_THREADED` | `0` | Use non-atomic corruption countdown state (only for truly single-threaded processes) |
 | `NEEDFUL_DECLARE_ATOMIC_VAR(name)` + `NEEDFUL_LOCK_VARIABLE(var)` + `NEEDFUL_UNLOCK_VARIABLE(var)` | unset | Project synchronization path for corruption countdowns; define all three or none |
 | `NEEDFUL_DONT_INCLUDE_STDARG_H` | unset | Suppress the `<stdarg.h>` include (for `v_cast()`) |
-| `NEEDFUL_<X>_USES_WRAPPER` | `NEEDFUL_CPP_ENHANCED` | Turn one wrapper family off: `NEED`, `OPTION`, `RESULT`, `CONTRAS` |
+| `NEEDFUL_<X>_USES_WRAPPER` | `NEEDFUL_CPP_ENHANCED` | Turn one wrapper family off: `NEED`, `OPTION`, `STATUS`, `RESULT`, `CONTRAS` |
 | `NEEDFUL_CAST_CALLS_HOOKS` | `NEEDFUL_CPP_ENHANCED` | Run `CastHook` validation on `cast()` |
 | `NEEDFUL_FAST_CAST_IS_SLOW` | unset | Make `fast_cast()` hookable, for debugging a hot path |
 | `NEEDFUL_ICAST_SLOW_BUILD` | `0` | Make `i_cast()` the checked integer cast rather than `c_cast()` |
