@@ -119,13 +119,34 @@ right below it. That makes this the tightest pair available, and tighter is
 better here: the tighter a keyword binds, the more of the surrounding
 expression is "looser" and so works without parentheses.
 
-Needful originally used `+` for the keywords and `%` for extraction, one level
-down. That worked, but `unwrap x * 2`, `y + unwrap x` and
-`unwrap a + unwrap b` all needed parentheses. It also drew warnings: GCC's
-`-Wparentheses` (part of `-Wall`) complains about an unparenthesized `+` next
-to a shift or a bitwise operator, and it could not tell the keyword's `+` from
-a real one, so `unwrap x << 1` stopped a `-Werror` build. It has no such
-warning for `*`.
+### Historical note: it used to be `+` and `%` {#history}
+
+Until November 2026, Needful used `+` for the keywords and `%` for
+extraction: the same design, one precedence level lower. If you are reading
+older code, comments or discussions that say `g_unwrap_helper + foo` or
+`% g_result_extractor`, that is why.
+
+It worked, but it cost more parentheses and it drew a warning:
+
+| expression | with `+` / `%` | with `*` / `->*` |
+|---|---|---|
+| `unwrap x * 2` | error | works |
+| `y + unwrap x` | error | works |
+| `unwrap a + unwrap b` | error | works |
+| `return_if_failed (r = 2 * Compute())` | error | works |
+| `unwrap x << 1` | GCC warning | works |
+
+The warning is what prompted the change. GCC's `-Wparentheses` (part of
+`-Wall`) flags an unparenthesized `+` used as the operand of a shift,
+and it could not tell the keyword's `+` from a real one. So
+`unwrap x << 1` stopped any GCC build using `-Werror`. GCC has no such warning
+for `*`, and the tests on this page keep it that way: they use those
+expressions unparenthesized, built with `-Wall -Wextra -Werror`.
+
+The move made one thing stricter. `nocast a % b` used to mean
+`nocast (a % b)`, because `%` bound tighter than the keyword's `+`. Now the
+keyword takes only `a`, and the rest is a compile error. Write the
+parentheses. (The same goes for `*` and `/`, and for `downcast`.)
 
 ## The extraction rule: put the call last
 
@@ -164,6 +185,14 @@ Parenthesizing does not help here, because the problem is not precedence.
 `downcast` needs somewhere for the result to *land*: a typed variable, a typed
 function parameter, or a `return` in a function with a declared return type.
 Give it a named variable and use that.
+
+For the same reason, arithmetic has to go *inside* the keyword's reach, not
+after it. The proxy can't be multiplied or added to:
+
+```c
+Color c = nocast (n % 3);     /* OK: the whole expression is converted */
+Color c = nocast n % 3;       /* ERROR: (nocast n) % 3, a proxy % 3 */
+```
 
 ## Related
 
