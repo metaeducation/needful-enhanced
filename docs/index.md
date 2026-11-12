@@ -20,7 +20,7 @@ permalink: /
   <li><span>Your C stays C</span></li>
 </ul>
 
-Needful is a [single-file, header-only library][needful-repo] that brings
+Needful is a [single-file, header-only library][needful-h-github] that brings
 `Option(T)`, `Result(T)`, non-null `Need(T)`, type-safe casts, and executable
 comment annotations to C codebases.
 
@@ -222,6 +222,7 @@ Common gotchas and design rationale are collected in the [FAQ](/faq).
 Threaded integration details are collected in [Threading](/threading).
 
 [needful-h-raw]: https://raw.githubusercontent.com/metaeducation/needful/refs/heads/main/needful.h
+[needful-h-github]: https://github.com/metaeducation/needful/blob/main/needful.h
 [needful-repo]: https://github.com/metaeducation/needful/
 [needful-enhanced-repo]: https://github.com/metaeducation/needful-enhanced/
 [cpp11-baseline]: https://needful.metaeducation.com/faq#cpp11-baseline
