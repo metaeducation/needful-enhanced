@@ -30,6 +30,7 @@ void test_lenient_known_mutable() {
     int* result = lenient_known(int*, p);
     assert(result == p);
     assert(*result == 10);
+    NEEDFUL_UNUSED(result);
 }
 
 void test_lenient_known_const_passthrough() {
@@ -40,6 +41,7 @@ void test_lenient_known_const_passthrough() {
     const int* result = lenient_known(int*, cp);
     assert(result == cp);
     assert(*result == 42);
+    NEEDFUL_UNUSED(result);
 }
 
 

@@ -70,6 +70,7 @@ void test_trap_propagates() {
         // but call_risky_trap itself trapped and re-propagated, so:
         const char* e = Needful_Test_And_Clear_Failure();
         assert(e != nullptr);
+        NEEDFUL_UNUSED(r);  // only the failure state is being tested here
     }
 }
 

@@ -26,18 +26,21 @@ void test_possibly() {
     int x = 10;
     possibly(x > 0);        // documents that x might be > 0
     possibly(x < 100);      // documents that x might be < 100
+    NEEDFUL_UNUSED(x);
 }
 
 void test_impossible() {
     int x = 10;
     impossible(x > 1000);   // documents this can't happen given constraints
     impossible(x < 0);
+    NEEDFUL_UNUSED(x);
 }
 
 void test_definitely() {
     int x = 10;
     definitely(x > 0);      // documents this is an invariant
     definitely(x == 10);
+    NEEDFUL_UNUSED(x);
 }
 
 void test_bool_constrained_with_pointer() {
@@ -46,6 +49,7 @@ void test_bool_constrained_with_pointer() {
     possibly(p != nullptr);
     definitely(p);
     impossible(p == nullptr);
+    NEEDFUL_UNUSED(p);
 }
 
 
@@ -103,6 +107,7 @@ void test_static_assert() {
 void test_static_assert_lvalue() {
     int x = 10;
     NEEDFUL_STATIC_ASSERT_LVALUE(x);  // x is an lvalue: passes
+    NEEDFUL_UNUSED(x);
 }
 
 
