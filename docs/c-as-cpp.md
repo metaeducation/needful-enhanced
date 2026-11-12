@@ -11,10 +11,16 @@ The checked build asks a C++ compiler to read your C. C is not a subset of
 C++, so the first attempt on an existing codebase usually fails before Needful
 has checked anything.
 
-This page lists the C constructs a C++ compiler rejects and gives a fix for
-each. [`nocast`](/nocast) covers the two most common ones. The rest need a
-small source change, and most of those changes are improvements to the C as
-well.
+**Before fixing anything, check whether the file needs to be in the checked
+build at all.** A file that uses no Needful types can simply [stay
+C](#leave-as-c), and that is often the whole answer for the files that would
+be the most work: big tables of designated initializers, generated code,
+vendored sources.
+
+For the files you do want checked, this page lists the C constructs a C++
+compiler rejects and gives a fix for each. [`nocast`](/nocast) covers the two
+most common ones. The rest need a small source change, and most of those
+changes are improvements to the C as well.
 
 The results here were checked with GCC 13 and Clang 18 at C++11, C++17 and
 C++20. Notes about MSVC were not re-verified for this page.
@@ -32,14 +38,72 @@ g++ -x c++ -std=c++17 -fsyntax-only -Werror -DNEEDFUL_CPP_ENHANCED=1 file.c
 
 (`/Zs` is the MSVC spelling of `-fsyntax-only`.)
 
-**It does not have to cover every file.** Start with one translation unit.
-A file that leans on something with no workaround can stay out of the checked
-build. It gets no checking, and nothing else is affected. The headers that a
-checked file includes do have to parse as C++.
+**It does not have to cover every file.** Start with one translation unit,
+and [leave as C](#leave-as-c) whatever isn't worth converting. The headers
+that a checked file includes do have to parse as C++.
 
-**If you do link it, link all of it.** Running your tests under the enhanced
-build is worth doing, but enhanced and plain objects [must not be
-mixed](/setup#abi).
+**If you do link it, mind the boundary.** Running your tests under the
+enhanced build is worth doing. Files left as C can be linked into it, so long
+as no Needful type crosses between them and the checked files: [the rule is
+below](#leave-as-c).
+
+## Leaving Whole Files as C {#leave-as-c}
+
+The checked build is per file. Nothing obliges you to push every `.c` file
+through the C++ compiler, and the files that fight it hardest are often the
+ones with the least to gain.
+
+The typical case is a file that is mostly data: command tables, opcode
+tables, configuration defaults, written as page after page of
+
+```c
+{ .name = "get", .arity = 2, .flags = CMD_READONLY, .proc = getCommand },
+```
+
+Such a file may hold nearly all of a project's designated initializers, and
+use no `Option(T)` or `Result(T)` anywhere. Converting it would be all cost
+and no benefit. Leave it out, and none of the
+[designated initializer](#designated-initializers) rules apply to it.
+
+**A file can stay C if Needful's wrapped types don't cross its boundary.**
+That is: the functions it defines for others, the functions it calls, and the
+structs it shares don't use `Option(T)`, `Need(T)`, `Result(T)`, `Sink(T)` and
+the like. Those are plain types in a C build and C++ classes in the enhanced
+build, so the two sides would [disagree about them](/setup#abi). Plain `int`,
+pointers, and ordinary structs are the same on both sides.
+
+What that means in each kind of checked build:
+
+- **Syntax-only check** (the usual case). Just don't run the pass on that
+  file. There is nothing to link, so nothing else to do.
+
+- **Linked enhanced build** (to run tests under it). Compile that file with
+  the C compiler as you always have, and link it with the C++ objects. The
+  declarations the two sides share need C linkage when C++ reads them, which
+  is the ordinary mixed-language header:
+
+  ```c
+  #ifdef __cplusplus
+  extern "C" {
+  #endif
+
+  extern const struct Command g_command_table[];
+  int Lookup_Command(const char* name);
+
+  #ifdef __cplusplus
+  }
+  #endif
+  ```
+
+**If the awkward code is scattered, gather it.** When the designated
+initializers (or anything else with no good fix) are spread through files
+that you *do* want checked, moving them into a file of their own is often less
+work than rewriting them, and usually a reasonable way to organize the code
+anyway. A table and the functions it points to don't have to live together:
+the table file only needs their prototypes.
+
+The cost is only what you'd expect: a file left as C gets no checking. Keep
+logic out of it, and it has little to check.
 
 ## Quick Reference {#quick-reference}
 
@@ -48,7 +112,7 @@ mixed](/setup#abi).
 | `T* p = malloc(n);` | invalid conversion from `void*` | [`nocast`](/nocast) |
 | Enum set from an `int` expression, or `e++` | invalid conversion from `int` | [`nocast` or `i_cast`](#enums) |
 | Identifier named `new`, `class`, `this`, `not`... | syntax error | [Rename](#keywords) |
-| `{ .y = 2, .x = 1 }` | designator order | [Declaration order](#designated-initializers) |
+| `{ .y = 2, .x = 1 }` | designator order | [Declaration order](#designated-initializers), or [leave the file as C](#leave-as-c) |
 | `{ .in.a = 1 }` | nested designator | [Nested braces](#designated-initializers) |
 | `{ [RED] = "red" }` | varies by compiler | [See below](#array-designators) |
 | `goto cleanup;` over `int h = ...;` | jump crosses initialization | [Scope the variable](#jumps) |
@@ -136,6 +200,9 @@ checks. Keep the `#define` tightly around the one include. Redefining a
 keyword across a standard header is undefined behavior.
 
 ## Designated Initializers {#designated-initializers}
+
+(If most of them are in a few table-like files, consider [leaving those
+files as C](#leave-as-c) and skipping this section.)
 
 C++ only gained designated initializers in C++20, and in a narrower form than
 C99. What each compiler accepts:

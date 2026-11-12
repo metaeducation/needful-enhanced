@@ -172,6 +172,11 @@ without it**, or with different `NEEDFUL_*_USES_WRAPPER` settings. Treat the
 enhanced build as a separate configuration: build and link *everything* in
 it, or only compile it as a check and ship the plain build.
 
+(The precise rule is about what crosses between the two. A file compiled as
+plain C can be linked into an enhanced build if no wrapped type appears in
+anything it shares with the enhanced files: see
+[Leaving Whole Files as C](/c-as-cpp#leave-as-c).)
+
 In the plain build `Option(int)` *is* an `int`. In the enhanced build it's a
 C++ class holding an `int`, and calling conventions don't always treat those
 the same. For example, x64 MSVC returns any class with constructors through a
