@@ -111,9 +111,42 @@ void test_mutability_cast_upcast() {
     NEEDFUL_UNUSED(b);
 }
 
+void test_nested_const_casts() {
+    int value = 10;
+    const int* slot = &value;
+    void* data = &slot;
+    const void* const_data = data;
+
+    const int** result = needful_lenient_hookable_cast(const int**, data);
+    assert(result == &slot);
+    assert(*result == &value);
+    STATIC_ASSERT_SAME(
+        decltype(needful_lenient_hookable_cast(const int**, const_data)),
+        const int* const*
+    );
+    const int* const* const_result =
+        needful_lenient_hookable_cast(const int**, const_data);
+    assert(const_result == &slot);
+
+    const int* const* protected_slot = &slot;
+    STATIC_ASSERT_SAME(
+        decltype(needful_mutable_cast(const int**, protected_slot)),
+        const int**
+    );
+    const int** mutable_slot =
+        needful_mutable_cast(const int**, protected_slot);
+    assert(mutable_slot == &slot);
+
+    NeedfulOption(void*) optional_data = data;
+    NeedfulOption(const int**) optional_result =
+        needful_lenient_hookable_cast(const int**, optional_data);
+    assert(optional_result.o == &slot);
+}
+
 int main() {
     test_cast_types();
     test_cast_macro_commas();
     test_mutability_cast_upcast();
+    test_nested_const_casts();
     return 0;
 }

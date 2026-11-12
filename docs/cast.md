@@ -243,6 +243,18 @@ const Derived* d = ...;
 Base* b = m_cast(Base*, d);
 ```
 
+It also works at any depth of pointer. You name the type you want, with
+`const` wherever you want it kept, and `m_cast()` adds or removes the rest:
+
+```cpp
+const int* const* p = ...;
+int** a = m_cast(int**, p);              // strip all of it
+const int** b = m_cast(const int**, p);  // strip just one level
+```
+
+What it won't do is anything that isn't about mutability: a downcast or a
+cast to an unrelated type is a compile error.
+
 If using NEEDFUL_CPP_ENHANCED, the mutable cast can work on "wrapped"
 types as well, removing constness through the wrapper.  See the enhanced
 feature `NEEDFUL_DECLARE_WRAPPED_FIELD()` for more details.
@@ -298,11 +310,59 @@ int main() {
 }
 ```
 
+### `m_cast` changes const at any pointer level
+
+<!-- doctest: positive-test -->
+```cpp
+#include <assert.h>
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_CAST_SHORTHANDS  1
+#include "needful.h"
+
+struct BaseStruct { int x; };
+typedef struct BaseStruct Base;
+
+#if NEEDFUL_CPP_ENHANCED
+  struct Derived : Base {};  // no extra fields -- same layout
+#else
+  typedef Base Derived;  // Derived identical to Base if not enhanced
+#endif
+
+int main() {
+    int value = 10;
+    const int* slot = &value;
+    const int* const* p = &slot;
+
+    int** a = m_cast(int**, p);              // strip const at both levels
+    const int** b = m_cast(const int**, p);  // strip only the outer one
+    int* const* c = m_cast(int* const*, p);  // strip only the inner one
+    assert(**a == 10 && **b == 10 && **c == 10);
+
+    const int** q = &slot;
+    int** d = m_cast(int**, q);  // const only below the top level
+    assert(**d == 10);
+
+    Derived derived;
+    derived.x = 20;
+    const Derived* cd = &derived;
+    const Derived* const* cdp = &cd;
+
+    Base* base = m_cast(Base*, cd);    // unconst and upcast together
+    Base** bp = m_cast(Base**, cdp);   // ...at two levels
+    assert(base->x == 20 && (*bp)->x == 20);
+
+    return 0;
+}
+```
+
 ### `m_cast` to an unrelated type is a compile error
 
 <!-- doctest: negative-test -->
 ```cpp
-// MATCH-ERROR-TEXT: upcast() cannot implicitly convert
+// MATCH-ERROR-TEXT: m_cast() can only change constness and upcast
 
 #ifdef __cplusplus
   #define NEEDFUL_CPP_ENHANCED  1

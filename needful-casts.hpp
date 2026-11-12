@@ -129,17 +129,32 @@
 
 //=//// m_cast(): MUTABILITY CAST /////////////////////////////////////////=//
 //
-// The mutability cast works on regular types, but also on wrapped types...
-// so long as the wrapping struct has a static field called `::wrapped_type`.
-// (See %needful-wrapping.hpp for more information on this convention.)
+// m_cast(T, expr) does any mutability change you ask for.  It adds or removes
+// const at any level of a pointer, in any combination, and can upcast at the
+// same time:
 //
-// m_cast() is stylized so that it does not need to invoke any functions,
-// because even constexpr functions have cost in debug builds.  If the type
-// you are casting is not a wrapper, it should be able to do its work
-// entirely at compile-time...even in debug builds!  This is accomplished
-// by needful_upcast-ing the wrapper type to its extracted type, then running a
-// const_cast on that type, then static casting again to the target type.
-// This can be made to work for both pointers and wrapped pointers.
+//     const int* const* p = ...;
+//     int** a = m_cast(int**, p);              // strip all of it
+//     const int** b = m_cast(const int**, p);  // strip just one level
+//
+//     const Derived* d = ...;
+//     Base* base = m_cast(Base*, d);           // unconst and upcast
+//
+// It only refuses what isn't about mutability (downcasts, unrelated types).
+//
+// It calls no functions, since even constexpr functions cost something in
+// debug builds.  It's three casts, innermost first:
+//
+//  (a) Cast expr to T with const at every level.  C++ would do that
+//      conversion implicitly, for every constness variant of T and anything
+//      upcastable to one...and for nothing else.  So the static_assert that
+//      the conversion exists is the whole legality check.
+//
+//  (b) const_cast that to T, removing whichever consts T didn't ask for.
+//
+//  (c) static_cast, which only matters if T is a wrapper: (a) and (b) are
+//      done on the type inside it (see `wrapped_type`, %needful-wrapping.hpp)
+//      and this rewraps the result.
 //
 // 1. It's possible for m_cast() to be arity-1 and auto-detect the type, with
 //    the C version just casting to void*.  That would drop all type checking
@@ -148,12 +163,31 @@
 //    of making it arity-2 but able to do an arbitrary upcast is a good middle
 //    ground that makes it more useful.
 //
+// 2. This extra const_cast (to T with no const at all) looks redundant with
+//    step (b), and in standard C++ it is.  But when every cast in the chain
+//    is to the type expr already has, e.g. m_cast(const char*, a_const_char_ptr),
+//    MSVC treats the result as the original variable (an lvalue) and not a
+//    new value.  Going by way of a different type prevents that.
+//
+
+template<typename From, typename To>  // To is already unwrapped
+struct MutableCastHelper {
+    using type = needful_deep_constify_t(To);
+
+    static_assert(
+        needful_is_deep_pointer_convertible_v(From, type),
+        "m_cast() can only change constness and upcast"
+    );
+};
 
 #undef needful_mutable_cast
 #define needful_mutable_cast(T,expr) /* not arity-1 on purpose! [1] */ \
-    (static_cast<T>(const_cast< \
-        needful_unconstify_t(needful_unwrapped_type(T)) \
-    >(needful_upcast(needful_constify_t(needful_unwrapped_type(T)), (expr)))))
+    (static_cast<T>(const_cast<needful_unwrapped_type(T)>( \
+        const_cast<needful_unconstify_t(needful_unwrapped_type(T))>( /* [2] */ \
+            (typename needful::MutableCastHelper< \
+                needful::remove_reference_t<decltype(expr)>, \
+                needful_unwrapped_type(T) \
+            >::type)(expr)))))
 
 
 //=//// CastHook DEFINITION ///////////////////////////////////////////////=//

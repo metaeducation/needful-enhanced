@@ -105,6 +105,35 @@ struct ConstifyHelper<T, TopLevel, enable_if_t<
         needful::remove_reference_t<T>, true>::unconsted
 
 
+//=//// DEEP CONSTIFY: CONST AT EVERY POINTER LEVEL ///////////////////////=//
+//
+// Where needful_constify_t() adds one level (int** => int* const*), this
+// adds const at every level (int** => const int* const*).
+//
+// Why that's useful: C++ implicitly converts a pointer to the version of
+// itself with const at every level, but not to versions with only some
+// (`int** => const int**` is an error).  So this is the one type that every
+// constness variant of T can reach, which is how m_cast() accepts them all.
+//
+// (add_const is a no-op on function types, so function pointers pass through)
+//
+
+template<typename T>
+struct DeepConstifyHelper {  // not a pointer: the level above adds the const
+    using type = T;
+};
+
+template<typename T>
+struct DeepConstifyHelper<T*> {
+    using type = typename std::add_const<
+        typename DeepConstifyHelper<remove_const_t<T>>::type
+    >::type*;
+};
+
+#define needful_deep_constify_t(T) \
+    typename needful::DeepConstifyHelper<T>::type
+
+
 //=//// IsConstIrrelevantForType: DODGE GCC WARNINGS //////////////////////=//
 //
 // It would be nice if we could just mirror const onto things without
