@@ -169,6 +169,13 @@
 //    MSVC treats the result as the original variable (an lvalue) and not a
 //    new value.  Going by way of a different type prevents that.
 //
+// 3. The cast helpers below use the unchecked form.  They've done their own
+//    legality checks, and their source can be a wrapper like Option(const T*)
+//    whose conversion to its pointer is `explicit`: the C-style cast in step
+//    (a) can perform that, but the static_assert only accepts *implicit*
+//    conversions and would reject it.  (Which means m_cast() itself can't
+//    take a wrapper as its source, only produce one as its result.)
+//
 
 template<typename From, typename To>  // To is already unwrapped
 struct MutableCastHelper {
@@ -180,14 +187,18 @@ struct MutableCastHelper {
     );
 };
 
-#undef needful_mutable_cast
-#define needful_mutable_cast(T,expr) /* not arity-1 on purpose! [1] */ \
+#define needful_mutable_cast_unchecked(T,expr) /* the three casts [3] */ \
     (static_cast<T>(const_cast<needful_unwrapped_type(T)>( \
         const_cast<needful_unconstify_t(needful_unwrapped_type(T))>( /* [2] */ \
-            (typename needful::MutableCastHelper< \
-                needful::remove_reference_t<decltype(expr)>, \
-                needful_unwrapped_type(T) \
-            >::type)(expr)))))
+            (needful_deep_constify_t(needful_unwrapped_type(T)))(expr)))))
+
+#undef needful_mutable_cast
+#define needful_mutable_cast(T,expr) /* not arity-1 on purpose! [1] */ \
+    needful_mutable_cast_unchecked(T, \
+        (typename needful::MutableCastHelper< \
+            needful::remove_reference_t<decltype(expr)>, \
+            needful_unwrapped_type(T) \
+        >::type)(expr))
 
 
 //=//// CastHook DEFINITION ///////////////////////////////////////////////=//
@@ -563,7 +574,7 @@ Hookable_Cast_Helper(FromRef&& from)  // && is why helper is a function! [A]
     CastHook<ConstFrom, ConstTo>::Validate_Bits(static_cast<ConstFrom>(from));
   #endif
 
-    return needful_mutable_cast(
+    return needful_mutable_cast_unchecked(
         ResultType,  // passthru const on const mismatch (lenient)
         needful_c_cast(ConstTo, std::forward<FromRef>(from))
     );
@@ -617,7 +628,7 @@ Hookable_Cast_Helper(const FromWrapperRef& from_wrapper)
     CastHook<ConstFrom, ConstTo>::Validate_Bits(inner);
   #endif
 
-    CastResult cast_inner = needful_mutable_cast(  // rewrap, keep semantics
+    CastResult cast_inner = needful_mutable_cast_unchecked(  // rewrap
         CastResult,
         needful_c_cast(ConstTo, inner)
     );
@@ -670,7 +681,7 @@ Hookable_Cast_Helper(const FromWrapperRef& from_wrapper)
     CastHook<ConstFrom, ConstTo>::Validate_Bits(inner);
   #endif
 
-    return needful_mutable_cast(
+    return needful_mutable_cast_unchecked(
         ResultType,  // passthru const on const mismatch (lenient)
         needful_c_cast(ConstTo, inner)
     );

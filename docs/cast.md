@@ -358,6 +358,57 @@ int main() {
 }
 ```
 
+### `cast` to and from wrapped types
+
+`cast()` goes through `m_cast()` internally, including when the value being
+cast is a wrapper such as `Option(T)`. (This is a regression test: a legality
+check added to `m_cast()` once rejected these, since a wrapper only converts
+to its contents explicitly.)
+
+<!-- doctest: positive-test -->
+```cpp
+#include <assert.h>
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_CAST_SHORTHANDS  1
+#define NEEDFUL_OPTION_SHORTHANDS  1
+#include "needful.h"
+
+struct BaseStruct { int x; };
+typedef struct BaseStruct Base;
+
+#if NEEDFUL_CPP_ENHANCED
+  struct Derived : Base {};  // no extra fields -- same layout
+#else
+  typedef Base Derived;  // Derived identical to Base if not enhanced
+#endif
+
+#define NO_BASE  cast(Option(Base*), nullptr)  // a typed "none" constant
+
+int main() {
+    Option(Base*) none_base = NO_BASE;
+    assert(! none_base);
+
+    Derived derived;
+    derived.x = 30;
+    Base* b = &derived;
+
+    Option(Base*) some = cast(Option(Base*), b);     // raw -> wrapper
+    assert(some);
+
+    Option(Derived*) down = cast(Option(Derived*), some);  // wrapper -> wrapper
+    assert((unwrap down)->x == 30);
+
+    Option(const Base*) csome = some;
+    Option(const Derived*) cdown = cast(Option(const Derived*), csome);
+    assert((unwrap cdown)->x == 30);
+
+    return 0;
+}
+```
+
 ### `m_cast` to an unrelated type is a compile error
 
 <!-- doctest: negative-test -->
