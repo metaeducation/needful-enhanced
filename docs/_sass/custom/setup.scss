@@ -1,0 +1,53 @@
+//
+// File: %setup.scss  (just-the-docs hook, imported before color schemes)
+//
+//=============================================================================//
+//
+// Palette and typography for the Needful site.  This file is imported before
+// every color scheme, so the $needful-* variables are visible to
+// custom.scss in all of the theme's generated stylesheets.
+//
+// Typography for the Needful site.  Faces are loaded in
+// _includes/head_custom.html from Google Fonts:
+//
+//   Playfair Display  - headings and the wordmark (bold, high-contrast serif,
+//                       echoing the lettering on the banner)
+//   Source Sans 3     - body text
+//   JetBrains Mono    - code (ligatures are disabled in custom.scss so that
+//                       `->*` and `*` render literally)
+//
+
+$needful-display-font-family: "Playfair Display", "Georgia", "Times New Roman",
+  serif;
+
+$body-font-family: "Source Sans 3", "Source Sans Pro", system-ui, -apple-system,
+  "Segoe UI", roboto, "Helvetica Neue", arial, sans-serif;
+
+$mono-font-family: "JetBrains Mono", "SFMono-Regular", menlo, consolas,
+  monospace;
+
+$body-line-height: 1.5;
+$content-line-height: 1.7;
+$border-radius: 6px;
+
+// Core palette (used by color_schemes/needful.scss and custom/custom.scss)
+
+$needful-green-900: #10261f;  // deepest: code gutters, shadows
+$needful-green-800: #14302a;  // code block background
+$needful-green-700: #173a2e;  // sidebar / header band
+$needful-green-600: #1f4a3c;  // page background
+$needful-green-500: #295245;  // raised surfaces (tables, search)
+$needful-green-400: #336354;  // borders, dividers
+$needful-green-300: #4f8068;  // muted rules
+$needful-sage:      #9fc1ad;  // secondary text, comments
+
+$needful-saffron:   #f5b35e;  // links, keywords
+$needful-marigold:  #ffbf6b;  // hover
+$needful-orange:    #d9752e;  // accent bars, buttons
+$needful-rust:      #933a10;  // deep accent
+$needful-gold:      #cc934e;  // ornament lines, small caps
+$needful-amber:     #e8c27a;  // types, numbers
+
+$needful-cream:     #f3e3b0;  // headings, wordmark
+$needful-parchment: #e8dfc8;  // body text
+

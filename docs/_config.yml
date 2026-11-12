@@ -10,6 +10,30 @@ baseurl: ""
 # https://just-the-docs.com
 remote_theme: just-the-docs/just-the-docs@v0.10.0
 
+# "Needful" look: deep green with saffron accents, matching the banner art.
+# Variables: _sass/color_schemes/needful.scss.  Fonts: _sass/custom/setup.scss
+# (loaded by _includes/head_custom.html).  Ornaments: _sass/custom/custom.scss.
+color_scheme: needful
+favicon_ico: "/assets/images/favicon.ico"
+callouts_level: loud  # light text on tinted background (we are a dark scheme)
+callouts:
+  note:
+    title: Note
+    color: green
+  tip:
+    title: Tip
+    color: yellow
+  warning:
+    title: Warning
+    color: red
+  important:
+    title: Important
+    color: purple
+
+enable_copy_code_button: true
+back_to_top: true
+back_to_top_text: "Back to top"
+
 # Syntax highlighting
 highlighter: rouge
 

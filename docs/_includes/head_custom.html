@@ -1,0 +1,12 @@
+{%- comment -%}
+  just-the-docs hook: extra tags for <head>.  Loads the web fonts named in
+  _sass/custom/setup.scss and sets icons / browser chrome color.
+{%- endcomment -%}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;1,400;1,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="icon" type="image/png" sizes="192x192" href="{{ '/assets/images/needful-mark.png' | relative_url }}">
+<link rel="apple-touch-icon" href="{{ '/assets/images/needful-mark.png' | relative_url }}">
+<meta name="theme-color" content="#173a2e">
+<meta property="og:image" content="{{ '/assets/images/needful-banner.jpg' | absolute_url }}">
+<meta name="twitter:card" content="summary_large_image">

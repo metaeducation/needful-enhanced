@@ -1,0 +1,741 @@
+//
+// File: %custom.scss  (just-the-docs hook, imported last)
+//
+//=============================================================================//
+//
+// Decorative styling for the Needful documentation site: ornamental rules,
+// the sidebar mandala watermark, warm syntax highlighting, the homepage hero,
+// and so on.  The palette variables ($needful-*) come from
+// _sass/color_schemes/needful.scss; fonts come from _sass/custom/setup.scss.
+//
+// Everything here is cosmetic.  Deleting this file leaves a plain but working
+// dark-green just-the-docs site.
+//
+
+// stylelint-disable selector-no-type, selector-max-type, max-nesting-depth
+
+//=== Ornaments (inline SVG so there is nothing extra to load) ===============//
+
+// Faint four-pointed stars sprinkled over the page background.
+$needful-sparkle-tile: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'><g fill='%23f5b35e' fill-opacity='0.05'><path d='M48 30l3.2 14.8L66 48l-14.8 3.2L48 66l-3.2-14.8L30 48l14.8-3.2z'/><circle cx='8' cy='8' r='1.6'/><circle cx='88' cy='88' r='1.6'/></g></svg>");
+
+// Gold star used in the middle of horizontal rules.
+$needful-star: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='%23cc934e' d='M12 2l2.6 7.4L22 12l-7.4 2.6L12 22l-2.6-7.4L2 12l7.4-2.6z'/></svg>");
+
+$needful-hairline: rgba($needful-gold, 0.4);
+$needful-shadow:
+  0 1px 2px rgba($needful-green-900, 0.5),
+  0 8px 24px rgba($needful-green-900, 0.35);
+
+//=== Page chrome ============================================================//
+
+body {
+  background-color: $needful-green-600;
+  background-image: $needful-sparkle-tile;
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  color: $needful-green-900;
+  background: rgba($needful-marigold, 0.85);
+}
+
+code,
+kbd,
+pre {
+  font-variant-ligatures: none; // keep `->*` and `*` literal
+  font-feature-settings: "liga" 0, "calt" 0;
+}
+
+//=== Sidebar ================================================================//
+
+.side-bar {
+  background-color: $needful-green-700;
+  background-image: linear-gradient(
+    180deg,
+    $needful-green-700 0%,
+    darken($needful-green-700, 2%) 100%
+  );
+  border-right-color: $needful-hairline !important;
+
+  @include mq(md) {
+    overflow: hidden;
+
+    // Mandala watermark peeking in from the lower-right corner.
+    &::after {
+      position: absolute;
+      right: -7rem;
+      bottom: -7rem;
+      z-index: -1;
+      width: 22rem;
+      height: 22rem;
+      pointer-events: none;
+      content: "";
+      background: url("../images/needful-mark.png") center / contain no-repeat;
+      opacity: 0.09;
+      filter: saturate(0.8);
+    }
+  }
+}
+
+.site-header {
+  border-bottom: 1px solid $needful-hairline !important;
+}
+
+.site-title {
+  gap: 0.7rem;
+  color: $needful-cream;
+
+  &:hover {
+    background-image: linear-gradient(
+      -90deg,
+      rgba($needful-green-500, 1) 0%,
+      rgba($needful-green-500, 0.6) 80%,
+      rgba($needful-green-500, 0) 100%
+    );
+  }
+}
+
+.needful-mark {
+  flex: 0 0 auto;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 2px $needful-green-700,
+    0 0 0 3px rgba($needful-gold, 0.7),
+    0 2px 6px rgba($needful-green-900, 0.6);
+}
+
+.needful-wordmark {
+  font-family: $needful-display-font-family;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  line-height: 1;
+  text-transform: uppercase;
+  color: $needful-cream;
+  text-shadow: 0 1px 0 rgba($needful-green-900, 0.6);
+}
+
+.site-nav {
+  @include mq(md) {
+    padding-top: $sp-6;
+  }
+}
+
+.nav-list .nav-list-item {
+  .nav-list-link {
+    color: $needful-parchment;
+    transition: color 120ms ease, background-color 120ms ease;
+
+    &:hover {
+      color: $needful-cream;
+      background-image: linear-gradient(
+        -90deg,
+        rgba($needful-green-500, 1) 0%,
+        rgba($needful-green-500, 0.5) 80%,
+        rgba($needful-green-500, 0) 100%
+      );
+    }
+
+    &.active {
+      color: $needful-marigold;
+      font-weight: 600;
+      background-image: linear-gradient(
+        -90deg,
+        rgba($needful-green-500, 1) 0%,
+        rgba($needful-green-500, 0.6) 80%,
+        rgba($needful-green-500, 0) 100%
+      );
+      box-shadow: inset 3px 0 0 $needful-orange;
+    }
+  }
+
+  .nav-list-expander {
+    color: $needful-gold;
+  }
+}
+
+.site-footer {
+  color: $needful-sage;
+}
+
+.needful-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding-right: $sp-2;
+
+  .needful-footer-glyphs {
+    font-family: "STIX Two Math", "Cambria Math", "Latin Modern Math",
+      "Noto Serif", "Times New Roman", serif;
+    font-size: 0.95rem;
+    letter-spacing: 0.08em;
+    color: $needful-gold;
+    opacity: 0.8;
+  }
+
+  .needful-footer-motto {
+    font-family: $needful-display-font-family;
+    font-style: italic;
+    color: $needful-sage;
+  }
+
+  a {
+    color: $needful-sage;
+    text-decoration-color: rgba($needful-sage, 0.4);
+
+    &:hover {
+      color: $needful-marigold;
+    }
+  }
+}
+
+//=== Top header (search + aux links) ========================================//
+
+.main-header {
+  border-bottom: 1px solid $needful-hairline !important;
+}
+
+.search-input {
+  color: $needful-parchment;
+
+  &::placeholder {
+    color: rgba($needful-sage, 0.75);
+  }
+}
+
+.search-label .search-icon {
+  color: $needful-gold;
+}
+
+.search-results {
+  border: 1px solid $needful-green-400;
+  border-top: 0;
+}
+
+.search-result-title {
+  color: $needful-cream;
+}
+
+.aux-nav .site-button {
+  font-family: $body-font-family;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: $needful-gold;
+
+  &:hover {
+    color: $needful-marigold;
+    background-image: linear-gradient(
+      -90deg,
+      rgba($needful-green-500, 1) 0%,
+      rgba($needful-green-500, 0.8) 100%
+    );
+  }
+}
+
+.site-button .icon {
+  color: $needful-gold;
+}
+
+//=== Content typography =====================================================//
+
+.main-content {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: $needful-display-font-family;
+    font-weight: 700;
+    color: $needful-cream;
+
+    code {
+      font-size: 0.85em;
+      font-weight: 600;
+      color: inherit;
+      background: transparent;
+      border: 0;
+      padding: 0;
+    }
+  }
+
+  h1 {
+    font-size: 2.35rem;
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: 0.005em;
+    margin-bottom: 0.9em;
+
+    // Saffron rule fading to gold, like the banner's border filigree.
+    &::after {
+      display: block;
+      width: 100%;
+      height: 3px;
+      margin-top: 0.45em;
+      content: "";
+      background: linear-gradient(
+        90deg,
+        $needful-orange 0%,
+        $needful-gold 45%,
+        rgba($needful-gold, 0) 100%
+      );
+      border-radius: 2px;
+    }
+  }
+
+  h2 {
+    font-size: 1.55rem;
+    padding-bottom: 0.3em;
+    margin-top: 2.2em;
+    border-bottom: 1px solid $needful-hairline;
+  }
+
+  h3 {
+    font-size: 1.2rem;
+    margin-top: 1.8em;
+    color: $needful-amber;
+  }
+
+  h4 {
+    font-family: $body-font-family;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: $needful-gold;
+  }
+
+  h5,
+  h6 {
+    font-family: $body-font-family;
+    font-weight: 600;
+    color: $needful-parchment;
+  }
+
+  a:not([class]) {
+    color: $needful-saffron;
+    text-decoration-color: rgba($needful-saffron, 0.45);
+
+    &:hover {
+      color: $needful-marigold;
+      text-decoration-color: $needful-marigold;
+    }
+  }
+
+  strong {
+    color: $needful-cream;
+  }
+
+  ul > li::before {
+    color: $needful-gold;
+  }
+
+  ol > li::before {
+    color: $needful-gold;
+    font-weight: 600;
+  }
+
+  // Ornamental divider: hairlines with a gold star in the gap.
+  hr {
+    display: flex;
+    align-items: center;
+    height: 1.2rem;
+    margin: 2.25rem 0;
+    overflow: visible;
+    background: $needful-star center / 0.8rem 0.8rem no-repeat;
+    border: 0;
+
+    &::before,
+    &::after {
+      flex: 1;
+      height: 1px;
+      content: "";
+      background: $needful-hairline;
+    }
+
+    &::before {
+      margin-right: 1.4rem;
+    }
+
+    &::after {
+      margin-left: 1.4rem;
+    }
+  }
+
+  blockquote {
+    padding: 0.2rem 0 0.2rem 1.1rem;
+    margin-left: 0;
+    font-family: $needful-display-font-family;
+    font-size: 1.02em;
+    font-style: italic;
+    color: $needful-sage;
+    border-left: 3px solid $needful-gold;
+  }
+
+  dt {
+    color: $needful-amber;
+  }
+}
+
+.anchor-heading svg {
+  color: $needful-gold;
+}
+
+//=== Code ===================================================================//
+
+:not(pre, figure) > code {
+  color: $needful-cream;
+  background-color: $needful-green-800;
+  border-color: rgba($needful-green-400, 0.9);
+}
+
+div.highlighter-rouge,
+figure.highlight {
+  position: relative;
+  margin-bottom: 1.25rem;
+  background-color: $needful-green-800;
+  border: 1px solid $needful-green-400;
+  border-left: 3px solid $needful-orange;
+  border-radius: $border-radius;
+  box-shadow: $needful-shadow;
+
+  pre.highlight,
+  pre {
+    background-color: transparent;
+  }
+
+  code {
+    color: $needful-parchment;
+  }
+}
+
+.code-copy-btn,
+.highlight .code-copy-btn {
+  color: $needful-sage;
+  background: rgba($needful-green-700, 0.8);
+  border: 1px solid $needful-green-400;
+
+  &:hover {
+    color: $needful-marigold;
+  }
+}
+
+// Rouge token colors: warm ink on dark green.  These override the
+// OneLight/OneDark rules that just-the-docs imports, since this file is
+// compiled after them.
+.highlight {
+  .c,
+  .c1,
+  .cm,
+  .cs {
+    font-style: italic;
+    color: $needful-sage;
+  }
+
+  .cp,
+  .cpf {
+    color: $needful-gold;
+  }
+
+  .k,
+  .kd,
+  .kr,
+  .kc,
+  .kp,
+  .kv,
+  .kn {
+    color: $needful-saffron;
+  }
+
+  .kt,
+  .nc,
+  .nn,
+  .nb {
+    color: $needful-amber;
+  }
+
+  .s,
+  .s1,
+  .s2,
+  .sb,
+  .sc,
+  .sd,
+  .se,
+  .sh,
+  .si,
+  .sx,
+  .sr,
+  .ss {
+    color: #b8d9a0;
+  }
+
+  .m,
+  .mi,
+  .mf,
+  .mh,
+  .mo,
+  .mb,
+  .mx,
+  .il {
+    color: #f3c66f;
+  }
+
+  .nf,
+  .fm {
+    color: $needful-cream;
+  }
+
+  .n,
+  .nv,
+  .na,
+  .ni,
+  .nl,
+  .nt,
+  .nx,
+  .no,
+  .py {
+    color: $needful-parchment;
+  }
+
+  .o,
+  .ow,
+  .p {
+    color: #d7c9a7;
+  }
+
+  .gh,
+  .gu {
+    font-weight: 700;
+    color: $needful-cream;
+  }
+
+  .gi {
+    color: #b8d9a0;
+    background: transparent;
+  }
+
+  .gd {
+    color: #ef9b5c;
+    background: transparent;
+  }
+
+  .ge {
+    font-style: italic;
+  }
+
+  .gs {
+    font-weight: 700;
+  }
+
+  // Rouge marks unrecognized tokens as errors; never paint them red.
+  .err {
+    color: inherit;
+    background: transparent;
+  }
+
+  .w {
+    color: inherit;
+  }
+
+  .lineno,
+  .gl {
+    color: $needful-sage;
+    opacity: 0.7;
+  }
+}
+
+//=== Tables =================================================================//
+
+.table-wrapper {
+  border: 1px solid $needful-green-400;
+  box-shadow: $needful-shadow;
+}
+
+th {
+  font-family: $body-font-family;
+  font-size: 0.72rem !important;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: $needful-gold;
+  background-color: $needful-green-700;
+}
+
+td {
+  background-color: $needful-green-500;
+}
+
+tbody tr:nth-child(even) td {
+  background-color: mix($needful-green-500, $needful-green-600, 55%);
+}
+
+thead th {
+  border-bottom: 1px solid $needful-hairline;
+}
+
+th,
+td {
+  border-left-color: rgba($needful-green-400, 0.7);
+}
+
+//=== Buttons, labels, callouts ==============================================//
+
+.btn {
+  color: $needful-cream;
+  background-color: $needful-green-500;
+  border: 1px solid $needful-green-400;
+
+  &:hover,
+  &:active {
+    color: $needful-marigold;
+    background-color: lighten($needful-green-500, 3%);
+  }
+
+  &:focus,
+  &:focus:hover {
+    box-shadow: 0 0 0 3px rgba($needful-saffron, 0.35);
+  }
+}
+
+.btn-primary {
+  color: $needful-green-900;
+  background-color: $needful-orange;
+  border-color: $needful-rust;
+
+  &:hover,
+  &:active {
+    color: $needful-green-900;
+    background-color: $needful-marigold;
+  }
+}
+
+.label:not(g),
+.label-blue:not(g),
+.label-green:not(g),
+.label-purple:not(g),
+.label-red:not(g) {
+  color: $needful-green-900;
+  font-weight: 700;
+}
+
+.label-yellow:not(g) {
+  color: $needful-green-900;
+}
+
+//=== Homepage hero ==========================================================//
+
+.needful-hero {
+  margin: 0 0 1.5rem;
+
+  img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border: 1px solid rgba($needful-gold, 0.55);
+    border-radius: 10px;
+    box-shadow:
+      0 0 0 4px $needful-green-700,
+      0 0 0 5px rgba($needful-gold, 0.35),
+      0 18px 40px rgba($needful-green-900, 0.55);
+  }
+
+  figcaption {
+    margin-top: 1.1rem;
+    font-family: $needful-display-font-family;
+    font-size: 1.1rem;
+    font-style: italic;
+    text-align: center;
+    color: $needful-sage;
+
+    &::before,
+    &::after {
+      font-style: normal;
+      color: $needful-gold;
+      opacity: 0.75;
+    }
+
+    &::before {
+      content: "\2200x.\2203y \00a0\00a0";  // ∀x.∃y
+    }
+
+    &::after {
+      content: "\00a0\00a0 \03bbx.\2203y";  // λx.∃y
+    }
+  }
+}
+
+// The three one-line promises under the hero, as pills.  Scoped under
+// .main-content so these outrank the theme's list and link rules.
+.main-content .needful-pillars {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  justify-content: center;
+  padding: 0;
+  margin: 0 0 1.75rem;
+  list-style: none;
+
+  li {
+    margin: 0;
+
+    &::before {
+      content: none !important;
+    }
+  }
+
+  li a,
+  li span {
+    display: inline-block;
+    padding: 0.35rem 0.95rem;
+    font-weight: 600;
+    color: $needful-cream;
+    text-decoration: none;
+    background: rgba($needful-green-500, 0.8);
+    border: 1px solid rgba($needful-gold, 0.45);
+    border-radius: 999px;
+    box-shadow: 0 2px 6px rgba($needful-green-900, 0.35);
+    transition: border-color 120ms ease, color 120ms ease;
+  }
+
+  li a:hover {
+    color: $needful-marigold;
+    border-color: $needful-marigold;
+  }
+}
+
+//=== Page footer ============================================================//
+
+.main-content .needful-colophon {
+  font-size: 0.8rem;
+  color: $needful-sage;
+
+  a {
+    color: $needful-sage;
+
+    &:hover {
+      color: $needful-marigold;
+    }
+  }
+}
+
+// stylelint-enable selector-no-type, selector-max-type, max-nesting-depth
+
+// Keeps a real <h1> in the document for accessibility and search indexing
+// while the banner image carries the visible title.
+.needful-visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

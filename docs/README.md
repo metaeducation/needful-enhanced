@@ -3,6 +3,32 @@
 This directory is the source for [needful.metaeducation.com](https://needful.metaeducation.com),
 built with Jekyll and the [just-the-docs](https://just-the-docs.com) theme.
 
+## Look and feel
+
+The site uses a custom just-the-docs color scheme named `needful`: deep green
+with saffron and gold accents, matching the banner art in `assets/images/`.
+Everything theme-related lives in these files:
+
+| File | Role |
+|---|---|
+| `_config.yml` | Selects `color_scheme: needful`, favicon, callouts, copy button |
+| `_sass/color_schemes/needful.scss` | Maps the palette onto the theme's named color slots |
+| `_sass/custom/setup.scss` | The palette (`$needful-*`) and font families (Playfair Display, Source Sans 3, JetBrains Mono) |
+| `_sass/custom/custom.scss` | Ornaments: heading rules, star dividers, sidebar mandala, syntax colors, homepage hero |
+| `_includes/head_custom.html` | Google Fonts link, icons, social preview image |
+| `_includes/title.html` | Sidebar wordmark with the mandala mark |
+| `_includes/nav_footer_custom.html` | Sidebar footer ("Do the needful.") |
+| `_includes/footer_custom.html` | Page footer colophon |
+| `assets/images/needful-banner.jpg` | Hero image on the homepage |
+| `assets/images/needful-mark.png`, `favicon.ico` | Mandala crop from the banner |
+
+Callouts are configured as `note`, `tip`, `warning`, and `important`:
+
+```markdown
+{: .warning }
+> Text of the callout.
+```
+
 ## Page inventory
 
 Listed in sidebar order, which is set by `nav_order` in each page's YAML

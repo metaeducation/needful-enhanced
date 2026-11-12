@@ -5,11 +5,20 @@ nav_order: 1
 permalink: /
 ---
 
-# Needful
+<h1 class="needful-visually-hidden">Needful</h1>
 
-**[One header.][needful-h-raw]**
-**[Zero-dependency shipping builds.](/design#zero-dependency)**
-**Rust-grade type checking for C.**
+<figure class="needful-hero">
+  <img src="{{ '/assets/images/needful-banner.jpg' | relative_url }}"
+       alt="Needful (C &amp; C++): Need(T), Sink(T)"
+       width="1536" height="1024">
+  <figcaption>Rust-grade type checking for C, at zero runtime cost.</figcaption>
+</figure>
+
+<ul class="needful-pillars">
+  <li><a href="https://raw.githubusercontent.com/metaeducation/needful/refs/heads/main/needful.h">One header</a></li>
+  <li><a href="{{ '/design#zero-dependency' | relative_url }}">Zero-dependency shipping builds</a></li>
+  <li><span>Your C stays C</span></li>
+</ul>
 
 Needful is a [single-file, header-only library][needful-repo] that brings
 `Option(T)`, `Result(T)`, non-null `Need(T)`, type-safe casts, and executable

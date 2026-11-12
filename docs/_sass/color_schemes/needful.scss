@@ -1,0 +1,70 @@
+//
+// File: %needful.scss  (color scheme for just-the-docs)
+//
+//=============================================================================//
+//
+// "Needful" color scheme: deep banyan green with saffron/marigold accents and
+// parchment text, matching the site banner (docs/assets/images/).
+//
+// Selected by `color_scheme: needful` in docs/_config.yml.  just-the-docs
+// imports light.scss first (all `!default`), then this file, so plain
+// assignments here win.  Decorative styling lives in _sass/custom/custom.scss;
+// this file only maps the palette onto the theme's named variables.
+//
+
+$color-scheme: dark;
+
+// The $needful-* palette is defined in _sass/custom/setup.scss, because
+// just-the-docs compiles custom.scss into every stylesheet (including the
+// stock light/dark ones), and those must see the variables too.
+
+// Remap the theme's generic hues so labels and callouts stay on-palette.
+
+$grey-dk-000: $needful-sage;
+$grey-dk-100: #c9c0a7;
+$grey-dk-200: $needful-green-400;
+$grey-dk-250: $needful-green-500;
+$grey-dk-300: $needful-green-700;
+$grey-lt-000: $needful-parchment;
+$grey-lt-100: $needful-green-400;
+$grey-lt-200: $needful-green-400;
+$grey-lt-300: $needful-green-300;
+
+$purple-000: $needful-saffron;
+$purple-100: $needful-orange;
+$purple-200: $needful-rust;
+$purple-300: $needful-rust;
+$blue-000: $needful-saffron;
+$blue-100: $needful-orange;
+$blue-200: $needful-rust;
+$blue-300: $needful-rust;
+$green-000: #cfe7cb;
+$green-100: #7fb08a;
+$green-200: #3f7f5c;
+$green-300: #2a5f45;
+$yellow-000: #fbe9bd;
+$yellow-100: $needful-amber;
+$yellow-200: $needful-gold;
+$yellow-300: #8a5a16;
+$red-000: #f6c3a0;
+$red-100: #ef9b5c;
+$red-200: $needful-orange;
+$red-300: $needful-rust;
+
+// just-the-docs named slots
+
+$body-background-color: $needful-green-600;
+$body-heading-color: $needful-cream;
+$body-text-color: $needful-parchment;
+$link-color: $needful-saffron;
+$nav-child-link-color: $needful-sage;
+$sidebar-color: $needful-green-700;
+$base-button-color: $needful-green-500;
+$btn-primary-color: $needful-orange;
+$code-background-color: $needful-green-800;
+$code-linenumber-color: $needful-sage;
+$feedback-color: $needful-green-500;
+$table-background-color: $needful-green-500;
+$search-background-color: $needful-green-700;
+$search-result-preview-color: $needful-sage;
+$border-color: $needful-green-400;
