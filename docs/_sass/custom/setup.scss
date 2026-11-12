@@ -30,6 +30,27 @@ $body-line-height: 1.5;
 $content-line-height: 1.7;
 $border-radius: 6px;
 
+// Type scale.  just-the-docs defaults to 16px body text on desktop and 14px
+// for navigation, tables and captions, which reads small next to a typical
+// article page.  These bump the whole scale by roughly 20% (19px body) while
+// keeping the theme's relative hierarchy.  Everything is in rem, so a reader
+// zooming out still gets proportionally smaller text.
+
+$font-size-1: 0.7rem;
+$font-size-1-sm: 0.75rem;
+$font-size-2: 0.8rem;      // h4 (uppercased), small labels
+$font-size-3: 0.9375rem;   // nav links, tables, captions (15px)
+$font-size-4: 1.0625rem;   // body on narrow screens (17px)
+$font-size-5: 1.1875rem;   // body on desktop (19px), h3
+$font-size-6: 1.35rem;     // h2
+$font-size-7: 1.7rem;
+$font-size-8: 2.2rem;      // h1
+$font-size-9: 2.5rem;
+$font-size-10: 2.9rem;
+$font-size-10-sm: 3.2rem;
+
+$content-width: 52rem;
+
 // Core palette (used by color_schemes/needful.scss and custom/custom.scss)
 
 $needful-green-900: #10261f;  // deepest: code gutters, shadows

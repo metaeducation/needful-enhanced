@@ -48,6 +48,11 @@ pre {
   font-feature-settings: "liga" 0, "calt" 0;
 }
 
+// Inline code at 0.75em (the theme default) is hard to read at body size.
+code {
+  font-size: 0.85em;
+}
+
 //=== Sidebar ================================================================//
 
 .side-bar {
@@ -99,8 +104,8 @@ pre {
 
 .needful-mark {
   flex: 0 0 auto;
-  width: 2.4rem;
-  height: 2.4rem;
+  width: 2.6rem;
+  height: 2.6rem;
   border-radius: 50%;
   box-shadow:
     0 0 0 2px $needful-green-700,
@@ -110,7 +115,7 @@ pre {
 
 .needful-wordmark {
   font-family: $needful-display-font-family;
-  font-size: 1.35rem;
+  font-size: 1.5rem;
   font-weight: 800;
   letter-spacing: 0.16em;
   line-height: 1;
@@ -126,6 +131,8 @@ pre {
 }
 
 .nav-list .nav-list-item {
+  font-size: 1rem !important;
+
   .nav-list-link {
     color: $needful-parchment;
     transition: color 120ms ease, background-color 120ms ease;
@@ -171,7 +178,7 @@ pre {
   .needful-footer-glyphs {
     font-family: "STIX Two Math", "Cambria Math", "Latin Modern Math",
       "Noto Serif", "Times New Roman", serif;
-    font-size: 0.95rem;
+    font-size: 1.05rem;
     letter-spacing: 0.08em;
     color: $needful-gold;
     opacity: 0.8;
@@ -222,7 +229,7 @@ pre {
 
 .aux-nav .site-button {
   font-family: $body-font-family;
-  font-size: 0.72rem;
+  font-size: 0.8rem;
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -266,7 +273,7 @@ pre {
   }
 
   h1 {
-    font-size: 2.35rem;
+    font-size: 2.6rem;
     font-weight: 800;
     line-height: 1.15;
     letter-spacing: 0.005em;
@@ -290,21 +297,21 @@ pre {
   }
 
   h2 {
-    font-size: 1.55rem;
+    font-size: 1.85rem;
     padding-bottom: 0.3em;
     margin-top: 2.2em;
     border-bottom: 1px solid $needful-hairline;
   }
 
   h3 {
-    font-size: 1.2rem;
+    font-size: 1.4rem;
     margin-top: 1.8em;
     color: $needful-amber;
   }
 
   h4 {
     font-family: $body-font-family;
-    font-size: 0.78rem;
+    font-size: 0.85rem;
     font-weight: 700;
     letter-spacing: 0.14em;
     text-transform: uppercase;
@@ -330,6 +337,19 @@ pre {
 
   strong {
     color: $needful-cream;
+  }
+
+  // Code inside a link gets the link color, so `Need(T)` reads as a link
+  // rather than as ordinary inline code with a faint underline.
+  a code,
+  a:not([class]) code {
+    color: $needful-saffron;
+    border-color: rgba($needful-saffron, 0.45);
+  }
+
+  a:hover code {
+    color: $needful-marigold;
+    border-color: $needful-marigold;
   }
 
   ul > li::before {
@@ -411,6 +431,8 @@ figure.highlight {
   }
 
   code {
+    font-size: 0.95rem;
+    line-height: 1.55;
     color: $needful-parchment;
   }
 }
@@ -559,7 +581,7 @@ figure.highlight {
 
 th {
   font-family: $body-font-family;
-  font-size: 0.72rem !important;
+  font-size: 0.8rem !important;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -568,6 +590,8 @@ th {
 }
 
 td {
+  font-size: 1rem !important;
+  line-height: 1.5;
   background-color: $needful-green-500;
 }
 
@@ -631,7 +655,8 @@ td {
 //=== Homepage hero ==========================================================//
 
 .needful-hero {
-  margin: 0 0 1.5rem;
+  max-width: 34rem;
+  margin: 0 auto 1.5rem;
 
   img {
     display: block;
