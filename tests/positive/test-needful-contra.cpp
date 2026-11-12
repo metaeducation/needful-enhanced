@@ -235,7 +235,8 @@ void test_sink_self_assignment_preserves_pending() {
     Sink(Derived) out = &base;
     assert(out.corruption_pending);
 
-    out = out;  // self-assignment should not clear pending state
+    Sink(Derived)& self = out;  // (via reference: Clang warns on `out = out`)
+    out = self;  // self-assignment should not clear pending state
     assert(out.corruption_pending);
 
     Derived* p = out;
