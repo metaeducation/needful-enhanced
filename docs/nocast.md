@@ -23,7 +23,7 @@ SomeEnum  e   = nocast 0;                          // C: no-op; C++: constexpr z
 ```
 
 In C, `nocast` expands to nothing. In C++ it expands to a proxy object and an
-`operator+` overload that performs the right conversion at the call site.
+`operator*` overload that performs the right conversion at the call site.
 
 These are the two most common incompatibilities, not the only ones. The rest,
 with a workaround for each, are cataloged in
@@ -124,8 +124,8 @@ is conditional code on defined(__cplusplus) even in `needful.h`.
    support covariant multi-level pointer conversions; a C-style cast replicates
    C's behavior.
 
-2. The choice of `+` as the operator to use is intentional due to wanting
-   something with lower precedence than `%` (used in Result and Optional)
+2. The choice of `*` as the operator to use is intentional due to wanting
+   something with lower precedence than `->*` (used in Result and Optional)
 
 ---
 

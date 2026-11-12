@@ -247,7 +247,7 @@ discharge macros inject a postfix extractor token via the modulus operator:
     (((_expr_ needful_postfix_extract_option)) == needful_none)
 ```
 
-Because `%` binds tighter than assignment (`=`) but looser than a function
+Because `->*` binds tighter than assignment (`=`) but looser than a function
 call, the macro intercepts the `Fallible(T)` return value, peels off the
 wrapper, and lets the underlying raw type assign cleanly to the local variable
 -- all before the comparison happens.

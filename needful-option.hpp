@@ -391,10 +391,10 @@ constexpr FallibleHelper g_fallible_helper = {};
 
 #undef needful_fallible
 #define needful_fallible \
-    needful::g_fallible_helper +  // lower precedence than %
+    needful::g_fallible_helper *  // lower precedence than ->*
 
 template<typename T>
-OptionWrapper<T> operator+(
+OptionWrapper<T> operator*(
     FallibleHelper,
     const FallibleWrapper<T>& f
 ){
@@ -402,7 +402,7 @@ OptionWrapper<T> operator+(
 }
 
 template<typename T>
-OptionWrapper<T> operator+(
+OptionWrapper<T> operator*(
     FallibleHelper,
     const OptionWrapper<T>&
 ){
@@ -423,13 +423,13 @@ OptionWrapper<T> operator+(
 //    if (foo)
 //        Some_Function(unwrap foo)
 //
-//    /* we have `#define unwrap needful::g_unwrap_helper +` so we get... */
+//    /* we have `#define unwrap needful::g_unwrap_helper *` so we get... */
 //
 //    Option(Foo*) foo = ...;
 //    if (foo)
-//        Some_Function(g_unwrap_helper + foo)
+//        Some_Function(g_unwrap_helper * foo)
 //
-// 1. Why `+` (and `%` for Result(T) extraction), and which expressions need
+// 1. Why `*` (and `->*` for Result(T) extraction), and which expressions need
 //    parentheses as a result:  https://needful.metaeducation.com/precedence
 //
 // 2. `unwrap` is Option(T)'s vocabulary alone--Need(T) uses `needed`.  So it
@@ -443,10 +443,10 @@ constexpr UnwrapHelper g_unwrap_helper = {};
 
 #undef needful_unwrap
 #define needful_unwrap /* Option(T) only [2] */ \
-    needful::g_unwrap_helper +  // lower precedence than % [1]
+    needful::g_unwrap_helper *  // lower precedence than ->* [1]
 
 template<typename T>
-T operator+(  // lower precedence than % [1]
+T operator*(  // lower precedence than ->* [1]
     UnwrapHelper,
     const OptionWrapper<T>& option
 ){
@@ -471,11 +471,11 @@ constexpr OptHelper g_opt_helper = {};
 
 #undef needful_opt
 #define needful_opt \
-    needful::g_opt_helper +  // lower precedence than % [2]
+    needful::g_opt_helper *  // lower precedence than ->* [2]
 
 
 template<typename T>
-T operator+(  // lower precedence than % [2]
+T operator*(  // lower precedence than ->* [2]
     OptHelper,
     const OptionWrapper<T>& option
 ){
@@ -493,7 +493,7 @@ T operator+(  // lower precedence than % [2]
 struct OptionExtractor {};
 
 template<typename T>
-inline T operator%(  // % high postfix precedence desired [1]
+inline T operator->*(  // ->* high postfix precedence desired [1]
     const OptionWrapper<T>& option,
     OptionExtractor
 ){
@@ -501,7 +501,7 @@ inline T operator%(  // % high postfix precedence desired [1]
 }
 
 template<typename T>
-inline T* operator%(  // % high postfix precedence desired [1]
+inline T* operator->*(  // ->* high postfix precedence desired [1]
     T* pointer,
     OptionExtractor
 ){
@@ -511,7 +511,7 @@ static constexpr OptionExtractor g_option_extractor{};
 
 #undef needful_postfix_extract_option
 #define needful_postfix_extract_option \
-    /* ; <-- ERROR? DON'T PUT SEMICOLON! [2] */ % needful::g_option_extractor
+    /* ; <-- ERROR? DON'T PUT SEMICOLON! [2] */ ->* needful::g_option_extractor
 
 
 //=/// BLOCK `needed` ON OptionWrapper ////////////////////////////////////=//
@@ -528,11 +528,11 @@ static constexpr OptionExtractor g_option_extractor{};
 //
 // The mirror-image block (`unwrap` on a Need(T)) is also here, as this file
 // is included after %needful-need.hpp and it's the one defining UnwrapHelper.
-// Without it you'd still get an error, but a confusing "no operator+" one.
+// Without it you'd still get an error, but a confusing "no operator*" one.
 //
 #if NEEDFUL_NEED_USES_WRAPPER
     template<typename T>
-    T operator+(
+    T operator*(
         NeededHelper,
         const OptionWrapper<T>&
     ){
@@ -544,7 +544,7 @@ static constexpr OptionExtractor g_option_extractor{};
     }
 
     template<typename T>
-    T operator+(
+    T operator*(
         UnwrapHelper,
         const NeedWrapper<T>&
     ){

@@ -179,11 +179,11 @@ constexpr NeededHelper g_needed_helper = {};
 
 #undef needful_needed
 #define needful_needed \
-    needful::g_needed_helper +  // lower precedence than %
+    needful::g_needed_helper *  // lower precedence than ->*
 
 
 template<typename T>
-T operator+(  // lower precedence than %
+T operator*(  // lower precedence than ->*
     NeededHelper,
     const NeedWrapper<T>& need
 ){

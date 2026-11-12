@@ -192,7 +192,7 @@ spellings with lenient and rigid variants. Expect to spend time on taxonomy,
 and expect a new contributor to ask what `unwrap` is.
 
 **The prefix keywords are a trick, and tricks leak.** `unwrap foo` is really
-`g_unwrap_helper + foo`, which means precedence surprises (an entire
+`g_unwrap_helper * foo`, which means precedence surprises (an entire
 [page](/precedence) exists for them) and tooling -- formatters, highlighters,
 code search -- that is mildly wrong forever. The saving grace is that a
 misparse is *always* a compile error and never a wrong answer.

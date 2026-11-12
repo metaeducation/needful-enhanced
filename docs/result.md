@@ -417,11 +417,11 @@ expands `stmt` followed by `needful_postfix_extract_result`, and that token is
 where the two builds part company:
 
 ```c
-/* C++ enhanced */  side_effect(ok) % needful::g_result_extractor;
+/* C++ enhanced */  side_effect(ok) ->* needful::g_result_extractor;
 /* plain C      */  side_effect(ok);
 ```
 
-Under enhancement the extractor is `operator%`, so the returned wrapper is
+Under enhancement the extractor is `operator->*`, so the returned wrapper is
 genuinely consumed -- which is exactly how the `[[nodiscard]]` on
 `ResultWrapper` gets discharged by ordinary code. In C the extractor expands to
 nothing, leaving a bare expression statement. Annotating `Result(T)` in C would
@@ -437,7 +437,7 @@ return_if_failed (int v = Compute());  /* fine -- consumed by the initializer */
 Nor can the C extractor simply be given a body. It has to be a postfix token
 that is valid both after a bare call *and* inside a declaration's initializer,
 while preserving the value's type -- including when `T` is a struct. That is
-precisely what `operator%` provides in C++, and C has no equivalent.
+precisely what `operator->*` provides in C++, and C has no equivalent.
 
 A `(void)` cast is not a way out either. It does suppress C23's
 `[[nodiscard]]`, but GCC's `warn_unused_result` deliberately ignores one -- and

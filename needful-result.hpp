@@ -278,20 +278,20 @@ struct IsWrapperSemantic<ResultWrapper<X>> : std::true_type {};
 
 //=//// RESULT EXTRACTOR //////////////////////////////////////////////////=//
 //
-// 1. The choice of % for the result extractor has the goal of being able
+// 1. The choice of ->* for the result extractor has the goal of being able
 //    to extract the result before it would get picked up by things like
 //    `nocast` or `opt` or `unwrap`, which are prefix operators built on
-//    `operator+` -- deliberately lower precedence than `%`:
+//    `operator*` -- deliberately lower precedence than `->*`:
 //
 //       return_if_failed (Foo* foo = opt Some_Function())
 //
 //    This expands to:
 //
-//       Foo* foo = g_opt_helper + Some_Function() % g_result_extractor;
+//       Foo* foo = g_opt_helper * Some_Function() ->* g_result_extractor;
 //       /* more expansion of the return_if_failed macro */
 //
-//    The `%` binds first, peeling the ResultWrapper off, and only then does
-//    the `+` see a plain Option(Foo*) to take the raw value out of.
+//    The `->*` binds first, peeling the ResultWrapper off, and only then does
+//    the `*` see a plain Option(Foo*) to take the raw value out of.
 //
 // 2. The error is a bit opaque if you write:
 //
@@ -309,7 +309,7 @@ struct IsWrapperSemantic<ResultWrapper<X>> : std::true_type {};
 struct ResultExtractor {};
 
 template<typename T>
-inline T operator%(  // % high postfix precedence desired [1]
+inline T operator->*(  // ->* high postfix precedence desired [1]
     const ResultWrapper<T>& result,
     ResultExtractor
 ){
@@ -320,4 +320,4 @@ static constexpr ResultExtractor g_result_extractor{};
 
 #undef needful_postfix_extract_result
 #define needful_postfix_extract_result \
-    /* ; <-- ERROR? DON'T PUT SEMICOLON! [2] */ % needful::g_result_extractor
+    /* ; <-- ERROR? DON'T PUT SEMICOLON! [2] */ ->* needful::g_result_extractor
