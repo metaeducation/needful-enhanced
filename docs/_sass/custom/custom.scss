@@ -65,19 +65,23 @@ code {
   border-right-color: $needful-hairline !important;
 
   @include mq(md) {
-    overflow: hidden;
-
-    // Mandala watermark peeking in from the lower-right corner.
+    // Mandala watermark peeking in from the lower-right corner.  The box
+    // stays inside the sidebar and the image is offset within it, so nothing
+    // overflows.  (Do NOT use `overflow: hidden` on .side-bar to clip this:
+    // that makes the sidebar a scroll container, and the theme's JavaScript
+    // scrolls the active nav link into view on load, which can scroll the
+    // site title out of reach with no way for the user to scroll back.)
     &::after {
       position: absolute;
-      right: -7rem;
-      bottom: -7rem;
+      right: 0;
+      bottom: 0;
       z-index: -1;
-      width: 22rem;
-      height: 22rem;
+      width: 15rem;
+      height: 15rem;
       pointer-events: none;
       content: "";
-      background: url("../images/needful-mark.png") center / contain no-repeat;
+      background: url("../images/needful-mark.png") 7rem 7rem / 22rem 22rem
+        no-repeat;
       opacity: 0.09;
       filter: saturate(0.8);
     }
