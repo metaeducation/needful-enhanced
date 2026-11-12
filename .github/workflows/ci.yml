@@ -225,6 +225,9 @@ jobs:
     #
     # (On MSVC, 11 builds as C++14: that is the lowest /std: it offers.)
     #
+    # make is told to keep going (-k) after a file fails to compile, so one run
+    # reports every failure and not just the first.  The step still fails.
+    #
     - name: Configure, Build And Test At Each C++ Standard
       working-directory: tests
       run: |
@@ -236,7 +239,7 @@ jobs:
             -DCMAKE_CXX_COMPILER="${{ matrix.cxx }}" \
             -DNEEDFUL_H_DIR="$NEEDFUL_H_DIR" \
             -DNEEDFUL_TEST_CXX_STANDARD="$std"
-          cmake --build "build-cxx$std"
+          cmake --build "build-cxx$std" ${{ !matrix.msvc && '-- -k' || '' }}
           ctest --test-dir "build-cxx$std" -V --output-on-failure
           echo "::endgroup::"
         done
