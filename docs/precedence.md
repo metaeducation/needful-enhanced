@@ -30,14 +30,14 @@ unwrap foo    /* really is */    (g_unwrap_helper * foo)
 Which gives the rule:
 
 > **A prefix keyword reaches exactly as far as a multiplication would.**
-> Anything that binds *tighter* than `*` grabs the operand first -- and gets the
-> wrapper instead of the unwrapped value. Anything *looser* sees the unwrapped
-> value and behaves.
+> Anything that binds *tighter* than `*` grabs the operand first. Anything
+> *looser* sees the unwrapped value and behaves.
 
-Very little binds tighter than multiplication: only the unary operators
-(`!`, `-`, `*`, `&`, casts) and the postfix ones (`->`, `.`, `[]`, calls). So
-the short version is: **arithmetic, comparisons, shifts and logic all just
-work; member access and unary operators need parentheses.**
+Very little binds tighter than multiplication: only the postfix operators
+(`->`, `.`, `[]`, calls) and the unary ones (`!`, `-`, `*`, casts). And Needful
+[handles the common unary ones itself](#in-front). So the short version is:
+**nearly everything just works; member access on the result needs
+parentheses.**
 
 ## What works, and what needs parentheses
 
@@ -58,58 +58,83 @@ Every row below was compiled, not reasoned about.
 | `unwrap x ? a : b` | ✅ | `?:` is looser |
 | `r = unwrap x` | ✅ | `=` is looser |
 | `f(unwrap x)` | ✅ | an argument is its own expression |
-| `! opt x` | ✅ | special-cased: see [negation](#negation) |
-| `! unwrap x` | ❌ | always false, and the error says so: see [negation](#negation) |
-| `* unwrap p` | ❌ | prefix `*` binds tighter, same reason |
-| `unwrap n->field` | ❌ | `->` binds tightest of all |
-| `2 * unwrap x` | ❌ | left-associative: `(2 * helper) * x` |
-| `unwrap a * unwrap b` | ❌ | left-associative: `((helper * a) * helper) * b` |
+| `2 * unwrap x` | ✅ | handled: see [operators in front](#in-front) |
+| `unwrap a * unwrap b` | ✅ | same |
+| `- unwrap x` | ✅ | same |
+| `* unwrap p` | ✅ | same |
+| `! opt x` | ✅ | same |
+| `! unwrap x` | ❌ | refused: it could only be false |
+| `* opt p` | ❌ | refused: `p` may be null |
+| `unwrap n->field` | ❌ | `->` binds tighter: this is `unwrap (n->field)` |
 
-The fix is always the same, and always local:
+The last row is the only one that's about precedence, and the fix is local:
 
 ```c
-* (unwrap p)
 (unwrap n)->field
-2 * (unwrap x)
-(unwrap a) * (unwrap b)
 ```
 
-The last two are the same thing: a keyword that comes *after* a `*`, `/` or
-`%` needs parentheses, because those group left to right and reach the helper
-before the keyword's operand does. A keyword at the start of a product is fine.
+It's not a limitation so much as the honest reading: a prefix operator
+applied to `n->field` applies to the field, exactly as `! n->field` and
+`* n->field` do in C.
 
 The `->` row is the one that bites in practice, because
 `unwrap Find_Node()->name` is such a natural thing to type. Reach for
 `(unwrap Find_Node())->name`.
 
-### Negation: `! opt x` works, `! unwrap x` is refused {#negation}
+### Operators in front of a keyword {#in-front}
 
-Prefix `!` binds tighter than the keyword, so `! opt x` really parses as
-`(! helper) * x`: the `!` lands on the helper object, not on your value. That
-would normally be a "no such operator" error. Needful makes use of it instead:
+Something written in front of a keyword can bind as tightly as the keyword's
+own `*`, or tighter. Then it reaches the *helper object* before the keyword
+reaches your value:
 
-- **`! opt x` works.** Negating the `opt` helper produces a second helper,
-  and *that* one's `*` returns the negated test. So `! opt x` is true exactly
-  when `x` is empty. The negation takes effect at the keyword's precedence,
-  which is what you'd want: `! opt x == y` means `(! opt x) == y`.
+```c
+2 * unwrap x    /* really is */    (2 * helper) * x
+- unwrap x      /* really is */    (- helper) * x
+* unwrap p      /* really is */    (* helper) * p
+! opt x         /* really is */    (! helper) * x
+```
 
-- **`! unwrap x` and `! needed x` are compile errors with their own message.**
-  Not because of precedence, but because they can't mean anything: `unwrap`
-  is only legal on an `Option(T)` that holds a value, and a `Need(T)` always
-  holds one. Neither can be null or zero, so the test could only be false. The
-  error says that, and points you at `! x` or `! opt x` if you meant to test
-  the `Option(T)` itself.
+Those would be "no such operator" errors. Needful makes them work instead: an
+operator applied to a helper gives back an object that remembers the
+operator. When the keyword's `*` then reaches your value, the keyword runs
+first and the remembered operator is applied to its result. So each line means
+what it looks like it means.
 
-(Plain `! x` on an `Option(T)` has always worked, and is the usual spelling.
-`! opt x` is there so that negating doesn't force you to restructure an
-expression that already says `opt x`.)
+What's supported in front of `unwrap`, `opt` and `needed`:
+
+| in front | `unwrap` | `needed` | `opt` |
+|---|---|---|---|
+| `x *`, `x /`, `x %` | ✅ | ✅ | ✅ |
+| unary `-`, `~` | ✅ | ✅ | ✅ |
+| unary `*` (dereference) | ✅ | ✅ | ❌ may be null |
+| `!` | ❌ always false | ❌ always false | ✅ |
+
+The three refusals are deliberate, and each has its own error message:
+
+- **`! unwrap x` and `! needed x`** can't mean anything. `unwrap` is only
+  legal on an `Option(T)` that holds a value, and a `Need(T)` always holds
+  one. Neither can be null or zero, so the test could only be false. The error
+  points you at `! x` or `! opt x` if you meant to test the `Option(T)`.
+
+- **`* opt p`** dereferences a pointer in the same breath as saying it might
+  be null, which is the bug `Option(T)` exists to stop. Check it, then
+  `* unwrap p`.
+
+The remembered operator is applied at the keyword's precedence, not at its
+usual one. For these operators that makes no difference to the answer:
+`- unwrap x * 2` is `(-x) * 2` either way, and `! opt x == y` is
+`(! opt x) == y`, as plain C would have it.
+
+(Anything else in front -- a cast, `&`, `sizeof` -- is still a compile error.
+Parenthesize the keyword and its operand.)
 
 ### These are always compile errors, never wrong answers
 
 This matters more than the inconvenience. The helper types (`UnwrapHelper`,
 `OptHelper`, `NeededHelper`) are empty structs with **no conversion
-operators**, so a misparse cannot quietly produce a plausible value -- there is
-simply no `operator*` that matches, and the build stops. A precedence surprise
+operators**, so a misparse cannot quietly produce a plausible value -- outside
+the handful of forms above there is simply no operator that matches, and the
+build stops. A precedence surprise
 in Needful costs you a compile error and a pair of parentheses, never a bug.
 
 ## Why `*`, and why `->*` for extraction
@@ -289,13 +314,31 @@ int main() {
     int r = unwrap x;                          // `=` is looser
     assert(r == 7);
 
-    // Rows that need parentheses: unary and postfix operators bind tighter,
-    // and a keyword after a `*` loses to left-associativity.
+    // Operators in front of a keyword: handled by the helpers.
     //
-    assert(* (unwrap Five_Ptr()) == 5);
+    assert(2 * unwrap x == 14);
+    assert(unwrap x * unwrap Three() == 21);
+    assert(21 / unwrap x == 3);
+    assert(15 % unwrap x == 1);
+    assert(1 + 2 * unwrap x * 3 == 43);
+    assert(- unwrap x == -7);
+    assert((~ unwrap x) == ~7);
+    assert(* unwrap Five_Ptr() == 5);
+    assert(* unwrap Five_Ptr() + 1 == 6);
+    assert(2 * opt x == 14);
+
+    Need(int) five = 5;
+    Need(int*) five_ptr = &g_five;
+    assert(2 * needed five == 10);
+    assert(* needed five_ptr == 5);
+
+    * unwrap Five_Ptr() = 6;                   // the dereference is assignable
+    assert(g_five == 6);
+    g_five = 5;
+
+    // The one row that needs parentheses: postfix operators bind tighter.
+    //
     assert((unwrap Find_Node())->field == 42);
-    assert(2 * (unwrap x) == 14);
-    assert((unwrap x) * (unwrap Three()) == 21);
 
     assert(opt x + 1 == 8);                    // `opt` parses identically
 
@@ -351,6 +394,27 @@ int main() {
     Need(int*) ptr = &value;
     if (! needed ptr)  // ERROR: a Need(T) is never null
         return 1;
+    return 0;
+}
+```
+
+### `* opt p` is a compile error, because `p` may be null
+
+<!-- doctest: negative-test -->
+```cpp
+// MATCH-ERROR-TEXT: `* opt p` would dereference a pointer that may be null
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_OPTION_SHORTHANDS  1
+#include "needful.h"
+
+int main() {
+    int value = 42;
+    Option(int*) p = &value;
+    int v = * opt p;  // ERROR: check it, then `* unwrap p`
+    NEEDFUL_UNUSED(v);
     return 0;
 }
 ```

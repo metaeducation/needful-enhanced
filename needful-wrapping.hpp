@@ -271,3 +271,112 @@ struct IsBasicType {
 
 #define NEEDFUL_EXTRACT_INNER(InnerType, wrapper) \
     reinterpret_cast<const InnerType&>(wrapper)
+
+
+//=//// OPERATORS IN FRONT OF A PREFIX KEYWORD ////////////////////////////=//
+//
+// A keyword like `unwrap` is a helper object and a `*`.  So anything written
+// in front of it that binds as tightly as `*` (or tighter) reaches the
+// *helper* before the keyword reaches its operand:
+//
+//     2 * unwrap x    =>    (2 * helper) * x
+//     - unwrap x      =>    (- helper) * x
+//     * unwrap p      =>    (* helper) * p
+//
+// Rather than have those be errors, the helper plays along.  An operator
+// applied to a helper gives back a "pending" object remembering what was
+// asked for.  When the keyword's own `*` then reaches the operand, the
+// pending object runs the keyword first and applies the operator to the
+// result.  So each line above means what it looks like it means.
+//
+// NEEDFUL_DEFINE_KEYWORD_PREFIX_FORMS(Helper) turns this on for a keyword:
+//
+//     x * kw y    x / kw y    x % kw y    - kw y    ~ kw y
+//
+// Dereference is separate, since it's only sound for keywords whose result
+// can't be null (see NEEDFUL_DEFINE_KEYWORD_DEREF_FORM), and `!` is handled
+// by each keyword itself.
+//
+// These only cost anything (extra calls in a debug build) in expressions
+// that use them, which were compile errors before.
+//
+// 1. The keyword's own operator is found at instantiation time through
+//    argument-dependent lookup, so it doesn't have to be declared yet here.
+//    That call is also what keeps every check the keyword makes: e.g. the
+//    assert in `unwrap`, or the error for using it on a Need(T).
+//
+
+struct KwMul {};  struct KwDiv {};  struct KwMod {};
+struct KwNeg {};  struct KwBitNot {};  struct KwDeref {};
+
+#if defined(_MSC_VER)  // aggregate holding a reference: /setup#c4623
+  #pragma warning(push)
+  #pragma warning(disable: 4623)  // "default constructor implicitly deleted"
+#endif
+
+template<typename L, typename Helper, typename Op>
+struct KeywordPendingBinary { const L& left; };  // only lives for the expression
+
+#if defined(_MSC_VER)
+  #pragma warning(pop)
+#endif
+
+template<typename Helper, typename Op>
+struct KeywordPendingUnary {};
+
+template<typename L, typename H, typename W>
+auto operator*(KeywordPendingBinary<L,H,KwMul> k, const W& w)
+    -> decltype(k.left * (H{} * w))  // [1]
+    { return k.left * (H{} * w); }
+
+template<typename L, typename H, typename W>
+auto operator*(KeywordPendingBinary<L,H,KwDiv> k, const W& w)
+    -> decltype(k.left / (H{} * w))
+    { return k.left / (H{} * w); }
+
+template<typename L, typename H, typename W>
+auto operator*(KeywordPendingBinary<L,H,KwMod> k, const W& w)
+    -> decltype(k.left % (H{} * w))
+    { return k.left % (H{} * w); }
+
+template<typename H, typename W>
+auto operator*(KeywordPendingUnary<H,KwNeg>, const W& w)
+    -> decltype(-(H{} * w))
+    { return -(H{} * w); }
+
+template<typename H, typename W>
+auto operator*(KeywordPendingUnary<H,KwBitNot>, const W& w)
+    -> decltype(~(H{} * w))
+    { return ~(H{} * w); }
+
+template<typename H, typename W>
+auto operator*(KeywordPendingUnary<H,KwDeref>, const W& w)
+    -> decltype(*(H{} * w))  // a reference to the pointed-to thing
+    { return *(H{} * w); }
+
+#define NEEDFUL_DEFINE_KEYWORD_PREFIX_FORMS(Helper) \
+    template<typename L> \
+    KeywordPendingBinary<L,Helper,KwMul> operator*(const L& left, Helper) \
+        { return KeywordPendingBinary<L,Helper,KwMul>{left}; } \
+    \
+    template<typename L> \
+    KeywordPendingBinary<L,Helper,KwDiv> operator/(const L& left, Helper) \
+        { return KeywordPendingBinary<L,Helper,KwDiv>{left}; } \
+    \
+    template<typename L> \
+    KeywordPendingBinary<L,Helper,KwMod> operator%(const L& left, Helper) \
+        { return KeywordPendingBinary<L,Helper,KwMod>{left}; } \
+    \
+    constexpr KeywordPendingUnary<Helper,KwNeg> operator-(Helper) \
+        { return KeywordPendingUnary<Helper,KwNeg>{}; } \
+    \
+    constexpr KeywordPendingUnary<Helper,KwBitNot> operator~(Helper) \
+        { return KeywordPendingUnary<Helper,KwBitNot>{}; } \
+    \
+    static_assert(true, "")  /* so the callsite takes a semicolon */
+
+#define NEEDFUL_DEFINE_KEYWORD_DEREF_FORM(Helper) \
+    constexpr KeywordPendingUnary<Helper,KwDeref> operator*(Helper) \
+        { return KeywordPendingUnary<Helper,KwDeref>{}; } \
+    \
+    static_assert(true, "")  /* so the callsite takes a semicolon */

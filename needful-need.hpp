@@ -190,6 +190,9 @@ T operator*(  // lower precedence than ->*
     return need.n;  // never allowed to be zero or null
 }
 
+NEEDFUL_DEFINE_KEYWORD_PREFIX_FORMS(NeededHelper);  // `2 * needed x`, etc.
+NEEDFUL_DEFINE_KEYWORD_DEREF_FORM(NeededHelper);  // `* needed p`
+
 // `! needed x` parses as `(! helper) * x`.  As with `! unwrap x`, it could
 // only ever be false: a Need(T) is never zero or null.  Say so, instead of
 // giving a "no operator!" error.  (See UnwrapHelper's version for details.)

@@ -454,6 +454,9 @@ T operator*(  // lower precedence than ->* [1]
     return option.o;
 }
 
+NEEDFUL_DEFINE_KEYWORD_PREFIX_FORMS(UnwrapHelper);  // `2 * unwrap x`, etc.
+NEEDFUL_DEFINE_KEYWORD_DEREF_FORM(UnwrapHelper);  // `* unwrap p`
+
 // `! unwrap x` parses as `(! helper) * x`, since prefix `!` binds tighter
 // than the keyword's `*`.  That would just be a "no operator!" error.  But
 // there's something better to say: an unwrapped value is never zero or null,
@@ -508,6 +511,23 @@ T operator*(  // lower precedence than ->* [2]
     const OptionWrapper<T>& option
 ){
     return option.o;
+}
+
+NEEDFUL_DEFINE_KEYWORD_PREFIX_FORMS(OptHelper);  // `2 * opt x`, etc.
+
+// `* opt p` is refused: `opt` is how you say "this may be null", and then
+// dereferencing it in the same breath is the bug Option(T) exists to stop.
+// (Returns what a legal dereference would, so that the rest of the expression
+// compiles and the static_assert is the only error shown.)
+//
+template<typename Dummy = int>
+KeywordPendingUnary<OptHelper,KwDeref> operator*(OptHelper) {
+    static_assert(
+        sizeof(Dummy) != sizeof(Dummy),  // dependent false
+        "`* opt p` would dereference a pointer that may be null."
+        "  Check it, then use `* unwrap p`."
+    );
+    return KeywordPendingUnary<OptHelper,KwDeref>{};
 }
 
 struct NotOptHelper {};  // makes `! opt x` work [3]
