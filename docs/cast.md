@@ -363,6 +363,51 @@ int main() {
 }
 ```
 
+### `raw_downcast` passes a `Result(T)` through
+
+A function returning `Result(Derived*)` can downcast a `Result(Base*)` it got
+from a helper. The holder `raw_downcast` makes then wraps a `Result`, which
+has no default constructor, so this also checks that strict MSVC warning
+levels accept it (see [C4623](/setup#c4623)).
+
+<!-- doctest: positive-test -->
+```cpp
+#include <assert.h>
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_CAST_SHORTHANDS  1
+#define NEEDFUL_RESULT_SHORTHANDS  1
+#include "needful.h"
+#include "needful-result-hooks-singlethreaded.h"
+
+struct BaseStruct { int x; };
+typedef struct BaseStruct Base;
+
+#if NEEDFUL_CPP_ENHANCED
+  struct Derived : Base {};  // no extra fields -- same layout
+#else
+  typedef Base Derived;  // Derived identical to Base if not enhanced
+#endif
+
+static Derived g_derived;
+
+Result(Base*) Get_Base(void) {
+    return &g_derived;
+}
+
+Result(Derived*) Get_Derived(void) {
+    return raw_downcast Get_Base();
+}
+
+int main() {
+    assert_not_failed (Derived* d = Get_Derived());
+    assert(d == &g_derived);
+    return 0;
+}
+```
+
 ### `downcast` rejects const-stripping targets
 
 <!-- doctest: negative-test -->

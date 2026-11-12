@@ -203,6 +203,28 @@ through a table), consider recording at build time whether
 `NEEDFUL_CPP_ENHANCED` was on, and having the two sides compare it when they
 connect, so a mismatch is reported instead of corrupting return values.
 
+## Strict Warning Levels (MSVC C4623) {#c4623}
+
+If you build with MSVC's `/Wall` (or opt into C4623 with `/w44623`) and
+treat warnings as errors, there is one warning Needful's own templates would
+trigger. Needful silences it itself, so you don't need to disable it.
+
+Prefix operators like `nocast` and `downcast` work by returning a small
+"holder" struct that converts to whatever type is being assigned to. Those
+holders are *aggregates*, built as `Holder<T>{value}`: no constructor call, so
+nothing extra runs in unoptimized debug builds.
+
+An aggregate can't declare any constructor, not even a deleted default one,
+because since C++20 a user-declared constructor makes a class not an
+aggregate. When the held type itself has no default constructor (a
+`Result(T)` does not, for example), the holder's default constructor is then
+implicitly deleted, and MSVC's off-by-default warning C4623 reports exactly
+that. The deletion is harmless, since a holder is only ever built from a
+value. So the holders are wrapped in
+`#pragma warning(push)`/`disable: 4623`/`pop`. For this warning, MSVC uses
+the state in effect where the template is *defined*, so the pragma covers
+instantiations in your code too (the test suite checks that it does).
+
 ## Configuration Switches {#configuration-switches}
 
 All of these are defined **before** including `needful.h`.

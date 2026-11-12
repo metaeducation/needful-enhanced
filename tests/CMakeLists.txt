@@ -17,7 +17,11 @@
 cmake_minimum_required(VERSION 3.14)
 project(needful_tests C CXX)  # C too: needful.h must build as plain C
 
-set(CMAKE_CXX_STANDARD 11)
+# CI builds the suite once per standard (see ci.yml).  11 is the floor.
+#
+set(NEEDFUL_TEST_CXX_STANDARD 11
+    CACHE STRING "C++ standard for the compiled tests (11, 17, 20...)")
+set(CMAKE_CXX_STANDARD ${NEEDFUL_TEST_CXX_STANDARD})
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_C_STANDARD 11)
@@ -104,6 +108,38 @@ target_include_directories(needful-result-hooks-threadlocal
 )
 
 find_package(Threads REQUIRED)
+
+
+#=[ STRICT WARNINGS FOR POSITIVE TESTS ]======================================
+#
+# Positive tests build with warnings as errors, so that anything a strict
+# client (like Ren-C, at MSVC /Wall /WX) would reject fails here first.
+#
+# /W4 rather than /Wall, since Microsoft's own headers aren't /Wall-clean.
+# The /Wall-only warnings worth having are opted into individually:
+#
+#   C4623 "default constructor was implicitly defined as deleted": the
+#         downcast and nocast holders must stay aggregates (C++20), so a held
+#         type with no default constructor trips this.  Needful silences it
+#         with a pragma, and this checks that the pragma keeps working.
+#         (See /setup#c4623)
+#
+# Applied to C++ sources only: C builds have their own sweep in CI.
+
+add_library(needful-strict-warnings INTERFACE)
+if(MSVC)
+    target_compile_options(needful-strict-warnings INTERFACE
+        "$<$<COMPILE_LANGUAGE:CXX>:/W4>"
+        "$<$<COMPILE_LANGUAGE:CXX>:/WX>"
+        "$<$<COMPILE_LANGUAGE:CXX>:/w44623>"
+    )
+else()
+    target_compile_options(needful-strict-warnings INTERFACE
+        "$<$<COMPILE_LANGUAGE:CXX>:-Wall>"
+        "$<$<COMPILE_LANGUAGE:CXX>:-Wextra>"
+        "$<$<COMPILE_LANGUAGE:CXX>:-Werror>"
+    )
+endif()
 
 
 #=[ INSTALLATION SMOKE TESTS ]===============================================
@@ -258,7 +294,7 @@ foreach(test_name ${POSITIVE_TESTS})
     target_compile_definitions(${test_name} PRIVATE NEEDFUL_CPP_ENHANCED=1)
     target_include_directories(${test_name} PRIVATE "${NEEDFUL_H_DIR}")
     target_link_libraries(${test_name}
-        PRIVATE needful-result-hooks-singlethreaded
+        PRIVATE needful-result-hooks-singlethreaded needful-strict-warnings
     )
     add_test(NAME ${test_name} COMMAND ${test_name})
 endforeach()
@@ -274,6 +310,7 @@ target_compile_definitions(test-needful-result-hooks-threadlocal
 )
 target_link_libraries(test-needful-result-hooks-threadlocal
     PRIVATE needful-result-hooks-threadlocal Threads::Threads
+        needful-strict-warnings
 )
 add_test(NAME test-needful-result-hooks-threadlocal
     COMMAND test-needful-result-hooks-threadlocal
@@ -385,7 +422,7 @@ foreach(src ${DOCTEST_POSITIVE_SOURCES})
     target_compile_definitions(${target_name} PRIVATE NEEDFUL_CPP_ENHANCED=1)
     target_include_directories(${target_name} PRIVATE "${NEEDFUL_H_DIR}")
     target_link_libraries(${target_name}
-        PRIVATE needful-result-hooks-singlethreaded
+        PRIVATE needful-result-hooks-singlethreaded needful-strict-warnings
     )
     add_test(NAME "${target_name}" COMMAND ${target_name})
 endforeach()

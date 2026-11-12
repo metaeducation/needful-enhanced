@@ -162,3 +162,36 @@ int main() {
     return 0;
 }
 ```
+
+### `nocast` of a type with no default constructor
+
+The holder `nocast` makes has to stay an aggregate, so a type without a
+default constructor gives it an implicitly deleted one. Strict MSVC warning
+levels flag that unless Needful silences it (see [C4623](/setup#c4623)).
+
+<!-- doctest: positive-test -->
+```cpp
+#include <assert.h>
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_CAST_SHORTHANDS  1
+#include "needful.h"
+
+#ifdef __cplusplus
+  struct NoDefault {
+    int x;
+    explicit NoDefault(int x) : x(x) {}
+    operator int() const { return x; }
+  };
+#endif
+
+int main() {
+  #ifdef __cplusplus
+    int i = nocast NoDefault(3);
+    assert(i == 3);
+  #endif
+    return 0;
+}
+```

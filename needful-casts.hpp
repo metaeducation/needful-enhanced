@@ -749,6 +749,12 @@ struct UpcastHelper {
 //    with the % used by Result(T) extraction, and why << is avoided due to
 //    some compilers issuing warnings.  The same issues apply to downcast.
 //
+// 5. Holder can't declare `Holder() = delete`: since C++20, a class with
+//    any user-declared constructor is not an aggregate, so `Holder<T>{value}`
+//    stops compiling.  But when From has no default constructor (as with
+//    ResultWrapper), MSVC's C4623 then flags the implicitly deleted one.
+//    It's harmless, so it's silenced.  See /setup#c4623
+//
 
 #define NEEDFUL_DEFINE_DOWNCAST_HELPERS(BaseName, hookability) /* ugh [1] */ \
     template<typename From> \
@@ -778,8 +784,17 @@ struct UpcastHelper {
     \
     constexpr BaseName##Maker g_##BaseName##_maker{}
 
+#if defined(_MSC_VER)  // Holder must stay an aggregate [5]
+  #pragma warning(push)
+  #pragma warning(disable: 4623)  // "default constructor implicitly deleted"
+#endif
+
 NEEDFUL_DEFINE_DOWNCAST_HELPERS(HookableDowncast, hookable);
 NEEDFUL_DEFINE_DOWNCAST_HELPERS(UnhookableDowncast, unhookable);
+
+#if defined(_MSC_VER)
+  #pragma warning(pop)
+#endif
 
 #undef NEEDFUL_DEFINE_DOWNCAST_HELPERS  // macro need not leak
 
