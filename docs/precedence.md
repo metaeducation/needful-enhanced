@@ -58,7 +58,8 @@ Every row below was compiled, not reasoned about.
 | `unwrap x ? a : b` | ✅ | `?:` is looser |
 | `r = unwrap x` | ✅ | `=` is looser |
 | `f(unwrap x)` | ✅ | an argument is its own expression |
-| `! unwrap x` | ❌ | prefix `!` binds tighter -- applies to the *helper* |
+| `! opt x` | ✅ | special-cased: see [negation](#negation) |
+| `! unwrap x` | ❌ | always false, and the error says so: see [negation](#negation) |
 | `* unwrap p` | ❌ | prefix `*` binds tighter, same reason |
 | `unwrap n->field` | ❌ | `->` binds tightest of all |
 | `2 * unwrap x` | ❌ | left-associative: `(2 * helper) * x` |
@@ -67,7 +68,6 @@ Every row below was compiled, not reasoned about.
 The fix is always the same, and always local:
 
 ```c
-! (unwrap x)
 * (unwrap p)
 (unwrap n)->field
 2 * (unwrap x)
@@ -81,6 +81,28 @@ before the keyword's operand does. A keyword at the start of a product is fine.
 The `->` row is the one that bites in practice, because
 `unwrap Find_Node()->name` is such a natural thing to type. Reach for
 `(unwrap Find_Node())->name`.
+
+### Negation: `! opt x` works, `! unwrap x` is refused {#negation}
+
+Prefix `!` binds tighter than the keyword, so `! opt x` really parses as
+`(! helper) * x`: the `!` lands on the helper object, not on your value. That
+would normally be a "no such operator" error. Needful makes use of it instead:
+
+- **`! opt x` works.** Negating the `opt` helper produces a second helper,
+  and *that* one's `*` returns the negated test. So `! opt x` is true exactly
+  when `x` is empty. The negation takes effect at the keyword's precedence,
+  which is what you'd want: `! opt x == y` means `(! opt x) == y`.
+
+- **`! unwrap x` and `! needed x` are compile errors with their own message.**
+  Not because of precedence, but because they can't mean anything: `unwrap`
+  is only legal on an `Option(T)` that holds a value, and a `Need(T)` always
+  holds one. Neither can be null or zero, so the test could only be false. The
+  error says that, and points you at `! x` or `! opt x` if you meant to test
+  the `Option(T)` itself.
+
+(Plain `! x` on an `Option(T)` has always worked, and is the usual spelling.
+`! opt x` is there so that negating doesn't force you to restructure an
+expression that already says `opt x`.)
 
 ### These are always compile errors, never wrong answers
 
@@ -228,6 +250,7 @@ static Option(int) Seven(void) { return 7; }
 static Option(int) Three(void) { return 3; }
 static Option(int*) Five_Ptr(void) { return &g_five; }
 static Option(Node*) Find_Node(void) { return &g_node; }
+static Option(Node*) Nothing(void) { return nullptr; }
 
 static Result(int) Compute(void) { return 20; }
 
@@ -269,7 +292,6 @@ int main() {
     // Rows that need parentheses: unary and postfix operators bind tighter,
     // and a keyword after a `*` loses to left-associativity.
     //
-    assert((! (unwrap x)) == 0);
     assert(* (unwrap Five_Ptr()) == 5);
     assert((unwrap Find_Node())->field == 42);
     assert(2 * (unwrap x) == 14);
@@ -277,12 +299,58 @@ int main() {
 
     assert(opt x + 1 == 8);                    // `opt` parses identically
 
+    Option(int) empty = none;                  // `! opt` is special-cased
+    assert(! opt empty);
+    assert((! opt x) == false);
+    assert(! opt empty && ! opt Nothing());
+
     assert_not_failed (int e = Doubles_Before());
     assert(e == 40);
 
     assert_not_failed (int d = Doubles_Afterward());
     assert(d == 40);
 
+    return 0;
+}
+```
+
+### `! unwrap x` is a compile error, because it is always false
+
+<!-- doctest: negative-test -->
+```cpp
+// MATCH-ERROR-TEXT: `! unwrap x` is always false
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_OPTION_SHORTHANDS  1
+#include "needful.h"
+
+int main() {
+    Option(int) x = 7;
+    if (! unwrap x)  // ERROR: an unwrapped value is never zero
+        return 1;
+    return 0;
+}
+```
+
+### `! needed x` is a compile error, because it is always false
+
+<!-- doctest: negative-test -->
+```cpp
+// MATCH-ERROR-TEXT: `! needed x` is always false
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_OPTION_SHORTHANDS  1
+#include "needful.h"
+
+int main() {
+    int value = 42;
+    Need(int*) ptr = &value;
+    if (! needed ptr)  // ERROR: a Need(T) is never null
+        return 1;
     return 0;
 }
 ```

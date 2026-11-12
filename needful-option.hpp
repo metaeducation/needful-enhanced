@@ -454,6 +454,24 @@ T operator*(  // lower precedence than ->* [1]
     return option.o;
 }
 
+// `! unwrap x` parses as `(! helper) * x`, since prefix `!` binds tighter
+// than the keyword's `*`.  That would just be a "no operator!" error.  But
+// there's something better to say: an unwrapped value is never zero or null,
+// so the test could only ever be false.
+//
+// (Returns the helper, so the rest of the expression compiles and the
+// static_assert is the only error shown.)
+//
+template<typename Dummy = int>
+UnwrapHelper operator!(UnwrapHelper) {
+    static_assert(
+        sizeof(Dummy) != sizeof(Dummy),  // dependent false
+        "`! unwrap x` is always false: unwrap gives a non-null/non-zero value."
+        "  Use `! x` or `! opt x` to test the Option(T) itself."
+    );
+    return UnwrapHelper{};
+}
+
 
 //=/// OPT HELPER CLASS ///////////////////////////////////////////////////=//
 //
@@ -464,7 +482,17 @@ T operator*(  // lower precedence than ->* [1]
 //    potential empty state safely. See also: [A] at top of file.
 //
 // 2. See the definition of UnwrapHelper for mechanics of how this "keyword"
-//    is accomplished (and why the `+` operator was chosen specifically).
+//    is accomplished (and why the `*` operator was chosen specifically).
+//
+// 3. `! opt x` parses as `(! helper) * x`, as prefix `!` binds tighter than
+//    the keyword's `*`.  Unlike with `unwrap`, the test is meaningful.  So
+//    `!` on the helper gives a second helper, whose `*` does the negation:
+//
+//        ! opt x   =>   (! g_opt_helper) * x   =>   NotOptHelper{} * x
+//
+//    The negation then happens at the keyword's precedence, not at prefix
+//    precedence.  That's what you'd want: `! opt x == y` is `(! opt x) == y`.
+//
 
 struct OptHelper {};
 constexpr OptHelper g_opt_helper = {};
@@ -480,6 +508,18 @@ T operator*(  // lower precedence than ->* [2]
     const OptionWrapper<T>& option
 ){
     return option.o;
+}
+
+struct NotOptHelper {};  // makes `! opt x` work [3]
+
+constexpr NotOptHelper operator!(OptHelper) { return NotOptHelper{}; }
+
+template<typename T>
+bool operator*(
+    NotOptHelper,
+    const OptionWrapper<T>& option
+){
+    return not option.o;
 }
 
 

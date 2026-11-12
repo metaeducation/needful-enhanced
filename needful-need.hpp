@@ -189,3 +189,16 @@ T operator*(  // lower precedence than ->*
 ){
     return need.n;  // never allowed to be zero or null
 }
+
+// `! needed x` parses as `(! helper) * x`.  As with `! unwrap x`, it could
+// only ever be false: a Need(T) is never zero or null.  Say so, instead of
+// giving a "no operator!" error.  (See UnwrapHelper's version for details.)
+//
+template<typename Dummy = int>
+NeededHelper operator!(NeededHelper) {
+    static_assert(
+        sizeof(Dummy) != sizeof(Dummy),  // dependent false
+        "`! needed x` is always false: a Need(T) is never null or zero."
+    );
+    return NeededHelper{};
+}
