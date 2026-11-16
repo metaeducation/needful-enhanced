@@ -113,7 +113,7 @@ find_package(Threads REQUIRED)
 #=[ STRICT WARNINGS FOR POSITIVE TESTS ]======================================
 #
 # Positive tests build with warnings as errors, so that anything a strict
-# client (like Ren-C, at MSVC /Wall /WX) would reject fails here first.
+# client (like Revolt, at MSVC /Wall /WX) would reject fails here first.
 #
 # /W4 rather than /Wall, since Microsoft's own headers aren't /Wall-clean.
 # The /Wall-only warnings worth having are opted into individually:

@@ -73,14 +73,14 @@ because it's open ended as to what you'd use for your error value type.
 
 Both of them end the current function. The difference is whether the caller is
 *allowed to disagree*, and it is a design decision rather than a stylistic one.
-The clearest formulation of the test comes from Ren-C, the language Needful was
+The clearest formulation of the test comes from Revolt, the language Needful was
 extracted from, which draws the same distinction in its own error model:
 
 > Do you feel that the call is fundamentally malformed (in the way a type
 > checking error on a parameter would be thought of as a mistake), or did you
 > understand what was asked clearly... but just couldn't do it?
 >
-> -- [PANIC vs. RETURN FAIL in Ren-C][renc-panic-fail]
+> -- [PANIC vs. RETURN FAIL in Revolt][renc-panic-fail]
 
 Applied here:
 

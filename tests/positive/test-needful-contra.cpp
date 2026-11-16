@@ -1,7 +1,7 @@
 // test-needful-contra.cpp
 // Tests for Sink(T), Init(T), Contra(T): contravariant output parameters.
 //
-// Ren-C uses stylized inheritance where derived types are MORE constrained
+// Revolt uses stylized inheritance where derived types are MORE constrained
 // (more specific) than their bases.  So Sink(Derived) accepting Base*
 // is SAFE: the function writes more-constrained bits into a less-constrained
 // slot.  Sink(Base) accepting Derived* is UNSAFE (less-constrained bits
@@ -28,7 +28,7 @@
 //=//// TEST TYPE HIERARCHY ///////////////////////////////////////////////=//
 //
 // Base is less constrained; Derived is more constrained (no extra members).
-// This models Ren-C's Cell <- Value <- Element style hierarchy.
+// This models Revolt's Cell <- Value <- Element style hierarchy.
 
 struct Base {
     int bits;

@@ -184,7 +184,7 @@ jobs:
     #
     # https://github.com/ilammy/msvc-dev-cmd
     #
-    # See Ren-C README: !!! IMPORTANT - Untrusted Actions, Use Audited Hash !!!
+    # See Revolt README: !!! IMPORTANT - Untrusted Actions, Use Audited Hash !!!
     #
     - name: Enable MSVC CL.EXE and Build Tools
       if: matrix.msvc
