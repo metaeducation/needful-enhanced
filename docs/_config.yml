@@ -1,7 +1,8 @@
 title: Needful
 description: >
-  Single-header C library with Rust-grade safety when built as C++.
-  Zero runtime cost, no dependencies, no tools beyond your compiler.
+  Single-header C library with Rust-grade type checking when built as C++.
+  Option(T), Result(T), and comments that fail the build when they go stale.
+  Your C stays C: zero runtime cost, no dependencies.
 
 url: "https://needful.metaeducation.com"
 baseurl: ""
