@@ -233,14 +233,14 @@ Option(Node*) node = fallible Find_Node_Checked(name);  // failure => none
 habit that is harmless everywhere and means nothing anywhere. In C it is a
 no-op, like the other prefix keywords.
 
-## Mechanics: The Postfix Modulus Trick
+## Mechanics: The Postfix Extractor Trick {#postfix-extractor}
 
 In pure C, `Fallible(T)` transparently falls back to `T`, and `none` is plain
 `0`. In C++ enhanced mode, `Fallible(T)` expands to a `[[nodiscard]]` wrapper
 deriving from `OptionWrapper<T>`.
 
 To keep macro syntax clean and prevent errors during inline assignment, the
-discharge macros inject a postfix extractor token via the modulus operator:
+discharge macros inject a postfix extractor token, built on the `->*` operator:
 
 ```c
 #define needful_is_none(_expr_) \
