@@ -166,9 +166,26 @@ settled; see the note under Closed.
   strongest argument on the merits, but it needs a paragraph to land rather
   than a snippet, which makes it a bad opener and a good closer.
 
+- **The asymmetry, shown instead of told.** The objection above is that the
+  asymmetry needs a paragraph. It needs a paragraph when *described*; it needs
+  one line when *shown*, and the line is `#define Option(T)  T`. The sequence
+  is: a familiar bug, one changed word, the entire C definition of that word,
+  then the checked build's real error message. The reader works out "same
+  source, two builds" for themselves, which is more convincing than being told
+  it. This uses `Option` as the vehicle without the pitch being "`Option` for
+  C" -- the reveal is what separates it from the crowded genre. The homepage
+  and the `needful` README were rewritten this way in response to a reader
+  reporting that the homepage "didn't sell it with an example" (it had no
+  code on it at all). Comment macros follow as the third snippet, where "cute"
+  lands as a bonus rather than as the first impression.
+
 *Leaning:* none held firmly. The tension is real -- the most *novel* thing and
 the most *persuasive* thing are different things, and leading with novelty
-risks the whole library being filed under "clever."
+risks the whole library being filed under "clever." The homepage now tries the
+shown-asymmetry ordering; whether it works is a question for the next few
+fresh readers, not for argument. What to watch for: does a reader repeat back
+"it's just a `#define` in my build" unprompted? If they instead say "so it's
+`Option` for C," the reveal isn't landing and the order should be revisited.
 
 ---
 
