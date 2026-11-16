@@ -103,7 +103,9 @@
 // leans on a standard C feature: a `for` loop can scope declarations, so
 // `decl` is assigned the error and the state cleared before the body runs
 // exactly once.  Because it expands to a `for`, an `else` clause attaches to
-// it naturally, giving a success branch.
+// it naturally, giving a success branch.  (And because it expands to a `for`,
+// a `break` or `continue` in the handler exits the handler, not a loop of
+// yours enclosing it!  See %docs/result.md#catch-is-a-loop)
 //
 //     Result(int) foo() {
 //         bar() catch_if_failed (Error* err) {
