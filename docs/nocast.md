@@ -29,6 +29,29 @@ These are the two most common incompatibilities, not the only ones. The rest,
 with a workaround for each, are cataloged in
 [Building C as C++](/c-as-cpp).
 
+### What `nocast` will not do {#nocast-limits}
+
+`nocast` exists to give back what C allowed, and it should not hand out more
+than that -- otherwise the C++ build, which is supposed to be the *stricter*
+one, becomes the place a bad conversion hides. Two cases are closed off:
+
+* **It will not cast away `const`.** `char* m = nocast some_const_char_ptr;`
+  draws a warning in C, and is a compile error in C++. Say
+  [`m_cast()`](/cast) when that is what you mean.
+
+* **It will not turn a nonzero integer into a pointer.** C++ can't tell
+  `nocast 0` from `nocast some_int` at compile time, and for the first it
+  must produce a null pointer. Producing null for the second as well would
+  make the two builds disagree at *runtime* (C keeps the integer's value), so
+  that is a `NEEDFUL_ASSERT()` failure instead. Use [`p_cast()`](/cast) to
+  build a pointer out of an integer.
+
+One gap remains open, and is worth knowing about: pointer-to-pointer `nocast`
+between *unrelated* types (`float* f = nocast &some_int;`) compiles silently
+in C++, where C warns. It can't be tightened without also breaking `downcast`
+(which is a `nocast` when the enhancements are off) and the multi-level
+`Derived** -> Base**` case below. The C build is the check for that one.
+
 ## `needful_nocast_0` -- Generic Zero {#needful_nocast_0}
 
 `needful_nocast_0` is a constexpr zero that converts to any type. It is used
@@ -119,7 +142,9 @@ is conditional code on defined(__cplusplus) even in `needful.h`.
 1. NocastConvert: two cases need special handling.  `static_cast` already
    handles (void* -> T*), (int -> enum), and same-type conversions.  The
    exception: (int -> T*) must substitute nullptr (C++ forbids implicit
-   int-to-pointer conversion, even for literal 0).  Also, pointer-to-pointer
+   int-to-pointer conversion, even for literal 0).  Since the literal can't
+   be told from a variable, the integer is asserted to be zero: see
+   [limits](#nocast-limits).  Also, pointer-to-pointer
    casts (e.g. Derived** -> Base**) fail with static_cast because C++ doesn't
    support covariant multi-level pointer conversions; a C-style cast replicates
    C's behavior.
@@ -192,6 +217,58 @@ int main() {
     int i = nocast NoDefault(3);
     assert(i == 3);
   #endif
+    return 0;
+}
+```
+
+### `nocast` won't cast away `const`
+
+C only warns about this one, so if `nocast` let it through then the checked
+build would be the more permissive of the two. See [limits](#nocast-limits).
+
+<!-- doctest: negative-test -->
+```cpp
+// MATCH-ERROR-TEXT: nocast won't cast away const
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_CAST_SHORTHANDS  1
+#include "needful.h"
+
+int main() {
+    const char* message = "read-only";
+    char* writable = nocast message;  // ERROR: discards const, use m_cast()
+    NEEDFUL_UNUSED(writable);
+    return 0;
+}
+```
+
+### `nocast` adding `const`, or keeping it, is fine
+
+<!-- doctest: positive-test -->
+```cpp
+#include <assert.h>
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_CAST_SHORTHANDS  1
+#include "needful.h"
+
+int main() {
+    int value = 304;
+    void* raw = &value;
+    const void* const_raw = &value;
+
+    const int* added = nocast raw;      // void* -> const int*
+    const int* kept = nocast const_raw;  // const void* -> const int*
+    assert(*added == 304 && *kept == 304);
+
+    int zero = 0;  // an integer that IS zero may still become a null pointer
+    int* np = nocast zero;
+    assert(np == nullptr);
+
     return 0;
 }
 ```
