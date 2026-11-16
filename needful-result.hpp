@@ -115,9 +115,9 @@
 //     }
 //
 //     Result(int) foo() {
-//         Option(Error*) err;
-//         bar() catch_if_failed (err) {
-//             // handle error in err
+//         Option(Error*) err = none;
+//         bar() catch_if_failed (Error* e) {  // must be a declaration...
+//             err = e;  // ...so copy out; `catch_if_failed (err)` won't work
 //         }
 //         // code common to the failing and non-failing case
 //         if (err)
