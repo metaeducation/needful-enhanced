@@ -78,9 +78,8 @@ That is the whole idea. **Ship the C. Let a C++ compiler check it harder.**
 There is no runtime library, no code generator, and no tool to install beyond
 a C++ compiler.
 
-*(That is MSVC's wording; GCC and Clang say the same thing in their own.
-Every example on this page is [compiled in CI](#compile-time-tests), including
-the ones that are supposed to fail.)*
+*(Note: Every example on these pages is [compiled in CI](#compile-time-tests),
+including the ones that are supposed to fail.)*
 
 ### An error you cannot drop on the floor
 
