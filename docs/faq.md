@@ -206,8 +206,8 @@ file or function scope, not inside expressions, and produce cryptic errors.
 Compiler and standard edge cases are too numerous to paper over cleanly.
 
 So Needful intentionally does not provide a pre-C11 shim. In pre-C11 C,
-`STATIC_ASSERT` is a no-op; in C11+ it maps to `_Static_assert`; and the C++
-enhanced build enforces it as well. Run the C++ build in CI if you need
+`STATIC_ASSERT` is a no-op; in C11+ it maps to `_Static_assert`; and any C++
+build enforces it with `static_assert`. Run the C++ build in CI if you need
 strong compile-time checking on older C toolchains.
 
 ---
