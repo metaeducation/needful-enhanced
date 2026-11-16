@@ -21,9 +21,9 @@ if (abc)
 if (! xxx)
     printf("xxx is none, don't unwrap!\n");
 
-char* s = abc;          // ERROR (C++ build): must unwrap first
-char* s = unwrap abc;   // OK: explicit extraction
-char* s = opt abc;      // OK: extracts even if none (use with care)
+char* s1 = abc;          // ERROR (C++ build): must unwrap first
+char* s2 = unwrap abc;   // OK: explicit extraction
+char* s3 = opt abc;      // OK: extracts even if none (use with care)
 ```
 
 In C, `Option(T)` is a transparent no-op -- it expands to `T`. The C++ build
@@ -35,9 +35,31 @@ and requires explicit `unwrap` or `opt`.
 ```c
 #define Option(T)   // => T in C, OptionWrapper<T> in C++
 #define none        // zero/null sentinel (needful_nocast_0)
-#define unwrap      // extract; panics if none in debug build
+#define unwrap      // extract; asserts not none in the checked build
 #define opt         // extract unconditionally (unsafe)
 ```
+
+## What `unwrap` Checks, and When {#unwrap-checks}
+
+`unwrap` does two different jobs, and only one of them exists in the build
+you ship:
+
+| | compile time | run time |
+|---|---|---|
+| C build | nothing: `Option(T)` is `T`, and `unwrap` expands to nothing | nothing |
+| Enhanced C++ build | an `Option(T)` can't be used as a `T` until you write `unwrap` or `opt` | `NEEDFUL_ASSERT()` that the value is not none |
+
+So the protection is not that `unwrap` tests the value at run time in
+production. It doesn't. The protection is that the checked build won't let you
+*forget* the value is optional: every place one becomes a plain `T` is a
+place somebody had to type `unwrap`, and can be found with a search. Whether
+each of those is guarded by an `if` is still up to you -- and the run-time
+assert is there to catch the ones that aren't, if you run your tests on the
+checked build (with whatever `NEEDFUL_ASSERT` is defined as, see
+[Setup](/setup)).
+
+If you want a test that survives into the shipping build, write one:
+`if (not x) ...` works identically in every mode.
 
 ## Why Not `std::optional`?
 
@@ -66,9 +88,19 @@ semantically equivalent.
 
 ## Limitations
 
-Types without a natural zero state (e.g. a struct with no "empty"
-representation) cannot be wrapped in `Option(T)`. For those, use a separate
-boolean or `Result(T)`.
+**Zero is spoken for.** The "same size as `T`" property is paid for by giving
+up one value of `T`: its falsey state *is* none. That costs nothing for
+pointers, where null was never a legitimate target anyway, and it is usually
+what you want for an enum whose zero member means "unset". But it means there
+is no difference between an `Option(int)` holding `0` and one holding nothing,
+and an `Option(bool)` can't hold `false`. If zero is a real answer for your
+type -- a count, an offset, an index -- then `Option(T)` is the wrong tool:
+return it through a [`Result(T)`](/result), which keeps the failure somewhere
+other than in the value.
+
+**No zero, no `Option`.** Types without a natural zero state (e.g. a struct
+with no "empty" representation) cannot be wrapped in `Option(T)`. For those,
+use a separate boolean or `Result(T)`.
 
 ## Related
 
