@@ -119,13 +119,15 @@ macros like `catch_if_failed(...)`.
 In order for these macros to work, they need to be able to test and clear the
 global error state.  Hence you have to define:
 
-    ErrorType* Needful_Test_And_Clear_Failure()
-    ErrorType* Needful_Get_Failure()
-    void Needful_Set_Failure(ErrorType* error)
-    void Needful_Panic_Abruptly()
+    ErrorType* Needful_Get_Failure(void)             // is one pending?
+    void       Needful_Set_Failure(ErrorType* error) // record one
+    ErrorType* Needful_Test_And_Clear_Failure(void)  // take it, leave none
+    void       Needful_Panic_Abruptly(ErrorType* error)  // report, don't return
 
-These can be functions or macros with the same signature.  They should use
-thread-local state if they're to work in multi-threaded code.
+These can be functions or macros with the same signature, and `ErrorType` is
+whatever your project uses (the ready-made hooks use `const char`).  They
+should use thread-local state if they're to work in multi-threaded code.
+See [Setup: Result Hooks](#setup-result-hooks).
 
 There used to be a fifth, `Needful_Assert_Not_Failing()`, so that Needful did
 not have to depend on `assert()`. That reason went away once every Needful
@@ -159,6 +161,38 @@ int result = Some_Func(30) catch_if_failed (Error* e) {
 
 This is standard C99. `needful_catch_if_failed` expands into a `for` loop that
 runs exactly once, scoping the error variable to the block.
+
+### The handler is a loop body: no `break` or `continue` {#catch-is-a-loop}
+
+That `for` is the one place the trick leaks. It is a real loop as far as the
+compiler is concerned, so a `break` or `continue` written in the handler (or in
+its `else`) belongs to *it*, and not to a loop of yours that encloses it:
+
+```c
+while (More_Items()) {
+    Process_Item() catch_if_failed (Error* e) {
+        Log(e);
+        break;  // WRONG: leaves the catch, and the `while` keeps going
+    }
+    Count_Item();  // ...so this still runs for the item that failed
+}
+```
+
+Nothing diagnoses this, in any build: both spellings are legal C, and the two
+builds agree on the (wrong) meaning. Use `return` or `goto` to leave an
+enclosing loop from a handler. A `switch` *inside* the handler is fine, since
+its `break` is its own.
+
+This is not hypothetical. Revolt, the codebase Needful was extracted from, had
+exactly this bug: a `break` in a handler was meant to exit an enclosing retry
+loop, fell through to the retry instead, and hung the interpreter.
+
+Since the compiler can't be the guard, there is a lint that is:
+`tools/check-catch-break.py` in the needful-enhanced repository. It flags a
+`break` or `continue` in a handler (or its `else`) unless a loop or `switch`
+nested in the handler owns it, and takes `--alias` for project spellings:
+
+    python tools/check-catch-break.py --alias except src/
 
 ## Statement Macros Need Braces {#scope-guard}
 
@@ -210,8 +244,12 @@ Limitations:
 - A `case` label directly before one also needs braces (in C before C23, a
   label can't precede a declaration).
 
-Alternatives that don't work: `_Static_assert` is also a declaration, but in
-C++ it's a legal `if` body with nothing after it to fail (and C99 lacks it).
+One alternative that looks like it should work, and doesn't: a
+`_Static_assert(1, "")` is also a declaration, so in C it would be rejected as
+an unbraced `if` body just the same. But in C++ it is a perfectly legal `if`
+body, and unlike the `typedef` it introduces no name -- so there is nothing
+for a following line to trip over, and the mistake compiles. (C99 doesn't
+have it at all.)
 
 ## There Is No `make_failure(...)` {#no-make-failure}
 
@@ -350,31 +388,39 @@ and the reason is more interesting than "nobody got around to it."
 ### How the scoping trick works
 
 To scope the error variable and allow an optional `else` block to attach
-seamlessly in standard C, `catch_if_failed` introduces two nested `for` loops.
-The outer loop serves as a container to inject a state variable (`_done_`),
-and the inner loop performs the assignment:
+seamlessly in standard C, `catch_if_failed` introduces a `for` loop. A `for`
+is the only statement in C99 that can both declare a variable and scope it to
+the statement that follows. The catch is that the loop needs its own
+"have I run yet?" state, and one `for` can only declare variables that share a
+base type -- the caller's. So the state is built out of that type:
 
 ```c
-for (int _done_ = 0; _done_ == 0; )
-    for (Error* e = Needful_Get_Failure(); _done_ == 0; _done_ = 1)
-        if (Needful_Test_And_Clear_Failure())
-            /* { error body } */
-        else
-            /* { success body } */
+for (Error* e = Needful_Get_Failure(),
+        *_needful_slot_ = NULL,     /* an Error*, never dereferenced */
+        **_needful_once_ = NULL;    /* an Error**, null until one pass ran */
+        !_needful_once_; _needful_once_ = &_needful_slot_)
+    if (Needful_Test_And_Clear_Failure())
+        /* { error body } */
+    else
+        /* { success body } */
 ```
 
-This ensures the block runs exactly once, scoping `e` and `_done_` to the
-loop body like a normal `if` block, without polluting the outer scope.
+`_needful_once_` starts null, the body runs, and then it is pointed at
+`_needful_slot_` -- an ordinary, well-defined address-of -- which ends the
+loop. The block runs exactly once, with `e` scoped to it like a normal `if`
+block. No `<stdbool.h>`, no extra `int` declared in the caller's scope.
 
-*(Note on `int` vs `bool`: Needful enforces a zero-dependency, minimal footprint philosophy. By using `int _done_ = 0` (and `_done_ == 0`) vs a `<stdbool.h>`'s
-`bool _done_ = false`, the library avoids forcing C projects to take on a
-dependency on standard boolean definitions.)*
-
-*(Note: An earlier, trickier iteration of this macro merged everything into
-one loop using C99's ability to declare multiple same-typed variables:*
+*(Note: An earlier iteration used one helper instead of two:*
 `for (Error* e = Needful_Get_Failure(), *_once = nullptr; !_once; ++_once)`.
-*However, incrementing a null pointer constitutes Undefined Behavior in C/C++,
-prompting the safer two-loop design.)*
+*Incrementing a null pointer is Undefined Behavior in C and C++. It also
+needs `sizeof(Error)`, so it would not compile at all when the error type was
+opaque (declared but not defined) -- the common case for a library's error
+handle. Taking an address needs neither.)*
+
+*(Note: A two-loop design with a separate `int _done_` flag in an outer loop
+avoids the pointer trick, but makes the* [`break` hazard](#catch-is-a-loop)
+*worse: a `break` exits only the inner loop, the outer one re-enters it, and
+the `else` body then runs after the error body has.)*
 
 ## Which builds actually check this {#enforcement}
 
@@ -649,6 +695,78 @@ Result(int) quarter(int x, int flag) {
 }
 
 int main() {
+    return 0;
+}
+```
+
+### `catch_if_failed` works with an opaque error type, and runs exactly once
+
+The error type here is declared and never defined, as a library's error handle
+usually is. (An earlier `catch_if_failed` incremented a pointer of that type,
+which needs its size -- see [the scoping trick](#how-the-scoping-trick-works).)
+The `break` is the [documented hazard](#catch-is-a-loop): it leaves the catch,
+not the enclosing loop, and this pins that down so the builds can't diverge.
+
+<!-- doctest: positive-test -->
+```cpp
+#include <assert.h>
+#include <stdlib.h>
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_RESULT_SHORTHANDS  1
+
+typedef struct OpaqueError OpaqueError;  // never completed in this file
+
+static OpaqueError* g_failure = 0;
+
+static OpaqueError* Needful_Get_Failure(void)
+  { return g_failure; }
+
+static OpaqueError* Needful_Test_And_Clear_Failure(void)
+  { OpaqueError* e = g_failure; g_failure = 0; return e; }
+
+static void Needful_Set_Failure(OpaqueError* e)
+  { g_failure = e; }
+
+static void Needful_Panic_Abruptly(OpaqueError* e)
+  { (void)e; abort(); }
+
+#include "needful.h"
+
+static int g_something;  // its address stands in for an error object
+
+static Result(int) half(int x) {
+    if (x % 2)
+        return_fail ((OpaqueError*)&g_something);
+    return x / 2;
+}
+
+int main() {
+    int handled = 0;
+    int succeeded = 0;
+    int iterations = 0;
+
+    int i;
+    for (i = 0; i < 4; ++i) {
+        int h = half(i) catch_if_failed (OpaqueError* e) {
+            assert(e == (OpaqueError*)&g_something);
+            ++handled;
+            break;  // exits the catch only: the `for` carries on!
+        } else {
+            assert(h == i / 2);
+            ++succeeded;
+        }
+        ++iterations;
+    }
+
+    assert(handled == 2 && succeeded == 2);  // each body ran once per pass
+    assert(iterations == 4);  // the `break` did not leave the `for`
+    assert(Needful_Get_Failure() == 0);
+
+    panic_if_failed (int q = half(8));  // (also: all four hooks get used)
+    assert(q == 4);
     return 0;
 }
 ```
