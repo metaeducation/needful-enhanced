@@ -7,12 +7,20 @@ permalink: /contra
 
 # `Contra(T)`, `Sink(T)`, `Init(T)` -- Contravariant Output Parameters
 
+An output parameter is a pointer you hand to a function so it can write
+through it. C checks these exactly as it checks every other pointer, and that
+turns out to be the wrong way around: it will happily let a function that
+writes *anything* fill a slot that was only supposed to hold *something
+specific*. These three markers say "this pointer is for writing through," and
+let the checked build apply the rule that actually fits.
+
 ## The Core Idea: [Contravariance][variance-wiki]
 
-While C builds don't have inheritance available, it's possible for a C++
-enhanced build to conditionally declare an inheritance relationship to a
-struct (as long as it doesn't add any fields!)  Needful can leverage this
-relationship.
+The rule only means something when your types have a "more specific than"
+relationship. C has no inheritance, but a C++ enhanced build can declare one
+conditionally (as long as the derived type adds no fields!), and Needful can
+use that. Here `Derived` is a `Base` that makes some extra promise about its
+contents -- "never null", "already validated", "only ever one of these kinds":
 
 ```cpp
 struct Base { int bits; };
@@ -34,12 +42,20 @@ is expected is safe.
 
 For outputs, the reverse is true. A function that *writes* `Base` bits into a
 slot must be given a `Base`-typed slot. Giving it a `Derived`-typed slot is
-**unsafe**: the writer knows only `Base`'s layout, and may not fill the fields
-that `Derived` adds.
+**unsafe** -- and since `Derived` adds no fields, the danger has nothing to do
+with layout. It is about meaning. `Derived` is `Base` plus a promise, and a
+function that only knows how to produce a `Base` knows nothing about that
+promise. Once it has written, the slot may hold bits that its type says are
+impossible, and everything downstream that trusted the type is now wrong.
+
+The other direction is fine: a function that writes `Derived` bits can fill a
+`Base` slot, because anything satisfying the stronger promise satisfies the
+weaker one too.
 
 ```
-Input  (covariant):     Derived* → Base*   ✓  more specific is acceptable
+Input  (covariant):     Derived* → Base*       ✓  more specific is acceptable
 Output (contravariant): Derived* → Sink(Base)  ✗  more specific is REJECTED
+                        Base* → Sink(Derived)  ✓  less specific is acceptable
 ```
 
 This reversal is what `Sink(T)`, `Init(T)`, and `Contra(T)` enforce in C++
