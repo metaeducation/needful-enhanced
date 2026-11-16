@@ -22,24 +22,128 @@ permalink: /
 
 Needful is a [single-file, header-only library][needful-h-raw] that brings
 `Option(T)`, `Result(T)`, non-null `Need(T)`, type-safe casts, and executable
-comment annotations to C codebases.
+comment annotations to C codebases -- without the code ceasing to be C.
+
+## The Thirty-Second Version
+
+Here is a bug every C programmer has shipped. A function can come back empty,
+and the only thing that says so is a comment:
+
+```c
+User* Find_User(const char* name);  // returns NULL if there's no such user
+
+void Welcome(const char* name) {
+    User* user = Find_User(name);
+    Send_Mail(user, "Welcome!");    // no warning, even at -Wall... and it
+}                                   // crashes the first time there's no user
+```
+
+With Needful, the comment moves into the type. One word changes:
+
+```c
+Option(User*) Find_User(const char* name);
+```
+
+Your ordinary C build does not notice, because this is the *entire*
+definition it sees:
+
+```c
+#define Option(T)  T
+```
+
+Same compiler, same binary, same bug. But now compile that **same file** as
+C++ with Needful's checks switched on -- a second job in CI, not a port -- and
+the same macro becomes a wrapper type. The line that forgot about `NULL` no
+longer builds:
+
+```text
+welcome.c(4): error C2440: 'initializing': cannot convert from
+    'needful::OptionWrapper<User *>' to 'User *'
+```
+
+So you fix it, in C, and both builds pass:
+
+```c
+void Welcome(const char* name) {
+    Option(User*) user = Find_User(name);
+    if (user)
+        Send_Mail(unwrap user, "Welcome!");
+}
+```
+
+`unwrap` is the same trade: it is `#define unwrap` -- nothing at all -- in the
+C build, and a checked extraction in the other one.
+
+That is the whole idea. **Ship the C. Let a C++ compiler check it harder.**
+There is no runtime library, no code generator, and no tool to install beyond
+a C++ compiler.
+
+*(That is MSVC's wording; GCC and Clang say the same thing in their own.
+Every example on this page is [compiled in CI](#compile-time-tests), including
+the ones that are supposed to fail.)*
+
+### An error you cannot drop on the floor
+
+`Result(T)` carries a failure alongside a return value, and
+`return_if_failed` passes it up the stack the way Rust's `?` does:
+
+```c
+Result(int) Parse_Port(const char* text) {
+    int port = 0;
+    for (; *text; ++text) {
+        if (*text < '0' || *text > '9')
+            return_fail ("port must be a number");
+        port = port * 10 + (*text - '0');
+    }
+    return port;
+}
+
+Result(int) Connect(const char* text) {
+    return_if_failed (
+      int port = Parse_Port(text)  // if this failed, Connect() fails too
+    );
+    printf("connecting on %d\n", port);
+    return 1;
+}
+```
+
+Forget, and write `int port = Parse_Port(text);` the way C has always let
+you? The C build carries on and prints `connecting on 0`. The checked build
+refuses: `cannot convert from 'needful::ResultWrapper<int>' to 'int'`.
+[More on `Result(T)`...](/result)
+
+### A comment that cannot go stale
+
+```c
+void Reset(Buffer* b) {
+    possibly(b->len == 0);   // may be empty already, and that's fine
+    dont(Free_Buffer(b));    // tempting, but the caller still owns it
+    b->len = 0;
+}
+```
+
+Neither line generates any code, in any build. But they are real expressions,
+so the checked build has to be able to compile them. Rename `len`, or change
+what `Free_Buffer()` takes, and the comment that would have quietly become a
+lie is a build error instead: `'len': is not a member of 'Buffer'`.
+
+These ask nothing of your types or your build, which makes them the cheapest
+part of Needful to try. [More on comment macros...](/comments)
+
+### What it is not
 
 It is a type-discipline layer, not a memory-safety layer. It catches
 mis-modeled values and interface mistakes; it does not prevent use-after-free,
-buffer overruns, data races, or overflow bugs.
+buffer overruns, data races, or overflow bugs. The rest of the bad news is
+collected, without softening, under [The Weak Points](#the-weak-points).
 
-The key trick is architectural, not magical: the same source can be compiled
-in multiple modes, and the macros change role from transparent vocabulary to
-strict checking wrappers.
-
-Your C code stays C. The C++ compiler can just *check* it harder.
-
-From a security perspective, Needful is straightforward to evaluate: whether
-release builds use C or C++, if `NEEDFUL_CPP_ENHANCED` is off you are running
-zero additional runtime code. Running checked builds in CI then adds static
-analysis pressure that finds real bugs.
+---
 
 ## How It Works (No Surprises)
+
+The trick is architectural, not magical: the same source compiles in more
+than one mode, and the macros change role from transparent vocabulary to
+strict checking wrappers.
 
 Needful has three practical build modes:
 
@@ -70,23 +174,19 @@ become compile errors.
 If the C++ compiler rejects your C before any Needful check runs, that is
 expected on a first attempt: see [Building C as C++](/c-as-cpp).
 
-For CI to enforce those checks reliably, run the checked build with warnings
-as errors (`-Werror` / `/WX`).
-
-What that changes in practice:
-
-| Feature area | Without `-Werror` / `/WX` | With `-Werror` / `/WX` |
-|---|---|---|
-| `Need(T)`, `Option(T)`, `Sink/Init/Contra`, `known(...)` type constraints | Still meaningful: these are mostly hard type errors | Same guarantees, plus warning-based checks below become enforceable |
-| Comment macros (`possibly`, `dont`, etc.) | Still meaningful: stale/invalid expressions fail compilation | Same |
-| `Fallible(T)` / must-use checks | Often degrades: compilers typically emit a warning, then exit 0 | Enforced in CI as intended |
-| `Result(T)` dropped-value/must-use style checks (where implemented via nodiscard-style diagnostics) | Can degrade to warnings depending on compiler/mode | Enforced as failures |
-
-So yes, Needful is still useful without warnings-as-errors, but part of the
-"must use / must handle" promise becomes advisory instead of mandatory.
-
 **Step 3.** Run both modes in CI: C build for production, C++ enhanced build to
-catch bugs. No code changes needed between them!
+catch bugs. No code changes needed between them:
+
+```yaml
+- run: gcc -o app main.c                                  # what you ship
+- run: g++ -x c++ -std=c++17 -Werror -DNEEDFUL_CPP_ENHANCED=1 -fsyntax-only main.c
+```
+
+Two things in that second line matter more than they look. The type errors
+shown at the top of this page are hard errors regardless, but the *must-use*
+checks (a `Result(T)` or `Fallible(T)` that is ignored outright) arrive as
+warnings, so they need `-Werror` / `/WX` to fail a build, and C++17 to exist
+at all. [Setup](/setup) has the details, per compiler.
 
 ---
 
@@ -221,6 +321,228 @@ If none of those are dealbreakers, the rest of this site is the good parts.
 
 Common gotchas and design rationale are collected in the [FAQ](/faq).
 Threaded integration details are collected in [Threading](/threading).
+
+---
+
+## Compile-Time Tests
+
+The examples from the top of this page, as the complete programs CI builds.
+The ones marked as errors must *fail* to compile, for the reason given.
+
+### The fixed `Welcome()` compiles, and survives a missing user
+
+<!-- doctest: positive-test -->
+```cpp
+#include <assert.h>
+#include <string.h>
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_OPTION_SHORTHANDS  1
+#include "needful.h"
+
+typedef struct { const char* name; const char* email; } User;
+
+User g_ada = { "ada", "ada@example.com" };
+int g_mails_sent = 0;
+
+Option(User*) Find_User(const char* name) {
+    if (strcmp(name, g_ada.name) == 0)
+        return &g_ada;
+    return none;
+}
+
+void Send_Mail(User* to, const char* text) {
+    assert(to->email and text);
+    ++g_mails_sent;
+}
+
+void Welcome(const char* name) {
+    Option(User*) user = Find_User(name);
+    if (user)
+        Send_Mail(unwrap user, "Welcome!");
+}
+
+int main() {
+    Welcome("ada");
+    Welcome("bob");  // no such user: the unfixed version crashes here
+    assert(g_mails_sent == 1);
+    return 0;
+}
+```
+
+### The original `Welcome()` is a compile error
+
+<!-- doctest: negative-test -->
+```cpp
+// MATCH-ERROR-TEXT: cannot convert        <- GCC, MSVC
+// MATCH-ERROR-TEXT: no viable conversion  <- Clang
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_OPTION_SHORTHANDS  1
+#include "needful.h"
+
+typedef struct { const char* name; const char* email; } User;
+
+Option(User*) Find_User(const char* name);
+void Send_Mail(User* to, const char* text);
+
+void Welcome(const char* name) {
+    User* user = Find_User(name);  // ERROR: might be none, must unwrap
+    Send_Mail(user, "Welcome!");
+}
+
+int main() {
+    return 0;
+}
+```
+
+### `return_if_failed` propagates a failure
+
+<!-- doctest: positive-test -->
+```cpp
+#include <assert.h>
+#include <stdio.h>
+#include <string.h>
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_RESULT_SHORTHANDS  1
+#include "needful.h"
+#include "needful-result-hooks-singlethreaded.h"  // simple default hooks
+
+Result(int) Parse_Port(const char* text) {
+    int port = 0;
+    for (; *text; ++text) {
+        if (*text < '0' || *text > '9')
+            return_fail ("port must be a number");
+        port = port * 10 + (*text - '0');
+    }
+    return port;
+}
+
+Result(int) Connect(const char* text) {
+    return_if_failed (
+      int port = Parse_Port(text)  // if this failed, Connect() fails too
+    );
+    printf("connecting on %d\n", port);
+    return 1;
+}
+
+int main() {
+    int connected = 0;
+    int failed = 0;
+
+    Connect("8080") catch_if_failed (const char* e) {
+        NEEDFUL_UNUSED(e);
+        ++failed;
+    } else {
+        ++connected;
+    }
+
+    Connect("http") catch_if_failed (const char* e) {
+        assert(strcmp(e, "port must be a number") == 0);
+        ++failed;
+    } else {
+        ++connected;
+    }
+
+    assert(connected == 1 and failed == 1);
+    return 0;
+}
+```
+
+### Taking a `Result(T)`'s value without handling failure is a compile error
+
+<!-- doctest: negative-test -->
+```cpp
+// MATCH-ERROR-TEXT: cannot convert        <- GCC, MSVC
+// MATCH-ERROR-TEXT: no viable conversion  <- Clang
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_RESULT_SHORTHANDS  1
+#include "needful.h"
+#include "needful-result-hooks-singlethreaded.h"
+
+Result(int) Parse_Port(const char* text);
+
+Result(int) Connect(const char* text) {
+    int port = Parse_Port(text);  // ERROR: and in C, port would just be 0
+    NEEDFUL_UNUSED(port);
+    return 1;
+}
+
+int main() {
+    return 0;
+}
+```
+
+### Comment macros compile, and generate nothing
+
+<!-- doctest: positive-test -->
+```cpp
+#include <assert.h>
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_COMMENT_SHORTHANDS  1
+#include "needful.h"
+
+typedef struct { int len; int capacity; char* data; } Buffer;
+
+int g_frees = 0;
+
+void Free_Buffer(Buffer* b) {
+    NEEDFUL_UNUSED(b);
+    ++g_frees;
+}
+
+void Reset(Buffer* b) {
+    possibly(b->len == 0);   // may be empty already, and that's fine
+    dont(Free_Buffer(b));    // tempting, but the caller still owns it
+    b->len = 0;
+}
+
+int main() {
+    Buffer b = { 3, 8, nullptr };
+    Reset(&b);
+    assert(b.len == 0);
+    assert(g_frees == 0);  // dont() really didn't
+    return 0;
+}
+```
+
+### A comment macro naming a field that no longer exists is a compile error
+
+<!-- doctest: negative-test -->
+```cpp
+// MATCH-ERROR-TEXT: no member named   <- GCC, Clang
+// MATCH-ERROR-TEXT: is not a member   <- MSVC
+
+#ifdef __cplusplus
+  #define NEEDFUL_CPP_ENHANCED  1
+#endif
+#define NEEDFUL_COMMENT_SHORTHANDS  1
+#include "needful.h"
+
+typedef struct { int length; int capacity; char* data; } Buffer;  // was `len`
+
+void Reset(Buffer* b) {
+    possibly(b->len == 0);  // ERROR: the comment is stale
+    b->length = 0;
+}
+
+int main() {
+    return 0;
+}
+```
 
 [needful-h-raw]: https://raw.githubusercontent.com/metaeducation/needful/refs/heads/main/needful.h
 [needful-repo]: https://github.com/metaeducation/needful/
